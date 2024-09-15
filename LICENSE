@@ -1,16 +1,28 @@
-MIT License
+License
 
 Copyright (c) 2024 Cal Page
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+For "non-commercial use", this software is licensed under GNU General Public License 3 (GPL-3.0). See README-GPL3.md for the latest copy.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+If you wish to use the software for "commercial use" purposes, you must obtain a commercial license from fail3banAI.
+See LICENSE-Commercial.md for the latest copy and details such as how to obtain a license.
+
+For the purposes of this license, "non-commercial use" means personal, academic, or research use, where no revenue or commercial gain is derived directly or indirectly from the use of the software.
+
+For the purposes of this license, "Commercial Use" means any use of the Software or its modifications:
+	    1. As part of a product or service that is sold, licensed, leased, or rented for a fee.
+	    2. In connection with any business activity where the Software is used to perform work for which you receive monetary compensation.
+	    3. For the purposes of developing, marketing, or distributing a product that generates revenue.
+	    4. In any activity conducted by a for-profit entity, **government agency**, or **military organization**, including, but not limited to, internal operations, procurement, and contract work.
+	    5. For the purpose of providing paid support or maintenance services for the Software to third parties.
+	    6. Any use by **government agencies, including federal, state, or local government** entities or the **military**, for operational, administrative, or combat-related activities.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+You should have received a copy of the GNU General Public Licens 3 along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+A "commercial use" license shall first include the GNU General Public License 3 (GPL-3.0), but that that the
+commercial license, as documened at LICENSE-Commercial.md, shall take precidence where appropriate.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -19,3 +31,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+fail3banAI may, at its descretion, update these licenses as necessary by posting them at
+https://github.com/cpsource/fail3banAI.git
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+

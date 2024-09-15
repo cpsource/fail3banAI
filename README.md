@@ -45,8 +45,87 @@ request will be remembered, so as to not ask AI again. If AI comes back with yes
 will ask for the control strings to monitor the threat. When these are returned fail3banAI incorporates
 these into its control structures.
 
+## How To Install
 
+Get the latest copy of fail3banAI as follows:
 
+```
+	cd ~/
+	git clone https://github.com/cpsource/fail3banAI.git
+```
 
+If you've already done the last step, you can update to the latest baselevel of fail3banAI by:
 
+```
+	cd ~/
+	cd fail3banAI
+	git pull
+```
+
+Make sure you are running python version 3. Do so by:
+
+```
+	python3 --version
+```
+
+It's customary to create a virtual python environment, so let's do so:
+
+```
+	cd ~/
+	python3 -m venv openai
+```
+
+Now enter the virtual environment as so:
+
+```
+	cd ~/
+	. openai/bin/activate
+```
+
+Next, be shure you are activated with the previous step, then
+make sure you have the right number of packages installed, as so:
+
+```
+	cd ~/fail3banAI
+	pip install --upgrade pip
+	pip install -r requirements.txt
+```
+
+You must obtain an API key, etc from openai.com. Then, create a key file of the form
+
+```
+	~/OpenAI-keys.sh
+```
+
+It should look like this (Note: fail3banAI requires the three OPENAI_ environmental variables
+be defined, as the code uses them.):
+
+```
+	#!/bin/bash
+	export OPENAI_API_KEY="<your-key-here>"
+	export OPENAI_ORGANIZATION_ID="<your organization id here>"
+	export OPENAI_PROJECT_ID="<your project id here>"
+
+```
+
+Be sure to make OpenAI-keys.sh runnable by:
+
+```
+	chmod 755 ~/OpenAI-keys.sh
+```
+
+## How to run.
+
+The codebase is in beta testing, so it's not ready to be run. Therefore, the code is not included
+in this repository.
+
+In any event, do these setup steps first:
+
+```
+	cd ~/
+	. ~/OpenAI-keys.sh
+	. ~/openai/bin/activate
+	cd fail3binAI
+
+```
 
