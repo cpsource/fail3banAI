@@ -5,8 +5,8 @@
 
 Fail3ban is an intrustion detection and prevention tool on ubuntu that uses the power of AI to
 continuously adapt to an ever changing threat environment. It reads various logs and journals of
-a running linux box, and if intrusions or attempted intrusions are detected, iptables is utilized
-to block further access to the machine.
+a running linux box, and if intrusions or attempted intrusions are detected, AI is consulted, and
+if necessary, iptables are used to block further access to the machine.
 
 The power of AI (ChatGPT) is consulted so that fail3banAI can keep abreast of threats automatically.
 
