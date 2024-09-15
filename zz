@@ -1,0 +1,40 @@
+# Example main to use the new get_expired_records method
+def main():
+    db = SQLiteDB()
+    db.initialize('bans.db')
+
+    # Example usage of add_or_update_ban method
+    ip_addr = '2001:db8::1'  # Example shortened IPv6 address
+    jail_name = 'ssh'
+    minutes_until_ban_end = 1  # Set short ban for testing
+    # First call to add_or_update_ban (inserts a new record)
+    db.add_or_update_ban(ip_addr, jail_name, minutes_until_ban_end)
+
+    # Example usage of add_or_update_ban method
+    ip_addr = '192.168.8.0'  # Example IPv4 address
+    jail_name = 'ssh'
+    minutes_until_ban_end = 1  # Set short ban for testing
+    # First call to add_or_update_ban (inserts a new record)
+    db.add_or_update_ban(ip_addr, jail_name, minutes_until_ban_end)
+
+    # and show
+    db.show_database()
+    
+    # Wait for the ban to expire (for testing purposes)
+    print("Waiting for the bans to expire...")
+    import time
+    time.sleep(70)  # Wait for over a minute
+
+    # Get and print expired records
+    expired_records = db.get_expired_records()
+    if expired_records:
+        print("Expired records:")
+        for record in expired_records:
+            print(record)
+    else:
+        print("No expired records.")
+
+    # and lastly
+    db.show_database()
+        
+    db.close()

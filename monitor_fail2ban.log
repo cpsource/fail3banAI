@@ -1,0 +1,22 @@
+2024-09-15 02:36:26,970 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_is_feature_enabled: Ioctl failed: -22
+2024-09-15 02:36:26,970 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+2024-09-15 02:36:26,971 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+2024-09-15 02:36:26,971 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+2024-09-15 02:36:26,971 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+2024-09-15 02:36:26,972 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+2024-09-15 02:36:26,972 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+2024-09-15 02:36:26,972 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+2024-09-15 02:36:26,973 - INFO - CC: n/a : Sep 15 02:28:38 AlienPC kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+2024-09-15 02:36:26,973 - INFO - CC: n/a : Sep 15 02:35:21 AlienPC sudo[35017]: pam_unix(sudo:session): session closed for user root
+2024-09-15 02:38:25,369 - ERROR - Script interrupted. Exiting...
+2024-09-15 02:55:16,609 - INFO - CC: n/a : Sep 15 02:46:34 AlienPC kernel: mini_init (246): drop_caches: 1
+2024-09-15 02:55:16,610 - INFO - CC: n/a : Sep 15 02:46:52 AlienPC sudo[48579]:    pagec : TTY=pts/0 ; PWD=/opt ; USER=root ; COMMAND=/usr/bin/chmod 777 .
+2024-09-15 02:55:16,610 - INFO - CC: n/a : Sep 15 02:46:52 AlienPC sudo[48579]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+2024-09-15 02:55:16,610 - INFO - CC: n/a : Sep 15 02:46:52 AlienPC sudo[48579]: pam_unix(sudo:session): session closed for user root
+2024-09-15 02:55:16,611 - INFO - CC: n/a : Sep 15 02:47:06 AlienPC sudo[48638]:    pagec : TTY=pts/0 ; PWD=/opt ; USER=root ; COMMAND=/usr/bin/chmod 777 /opt
+2024-09-15 02:55:16,611 - INFO - CC: n/a : Sep 15 02:47:06 AlienPC sudo[48638]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+2024-09-15 02:55:16,612 - INFO - CC: n/a : Sep 15 02:47:06 AlienPC sudo[48638]: pam_unix(sudo:session): session closed for user root
+2024-09-15 02:55:16,612 - INFO - CC: n/a : Sep 15 02:49:20 AlienPC sudo[49204]:    pagec : TTY=pts/0 ; PWD=/opt ; USER=root ; COMMAND=/usr/bin/chmod 755 .
+2024-09-15 02:55:16,612 - INFO - CC: n/a : Sep 15 02:49:20 AlienPC sudo[49204]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+2024-09-15 02:55:16,612 - INFO - CC: n/a : Sep 15 02:49:20 AlienPC sudo[49204]: pam_unix(sudo:session): session closed for user root
+2024-09-15 02:55:31,392 - ERROR - Script interrupted. Exiting...

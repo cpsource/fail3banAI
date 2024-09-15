@@ -1,0 +1,71 @@
+
+[INCLUDES]
+
+# Read common prefixes. If any customizations available -- read them from
+# common.local
+before = common.conf
+
+[DEFAULT]
+
+_daemon = sshd(?:-session)?
+
+# optional prefix (logged from several ssh versions) like "error: ", "error: PAM: " or "fatal: "
+__pref = (?:(?:error|fatal): (?:PAM: )?)?
+# optional suffix (logged from several ssh versions) like " [preauth]"
+#__suff = (?: port \d+)?(?: \[preauth\])?\s*
+__suff = (?: (?:port \d+|on \S+|\[preauth\])){0,3}\s*
+__on_port_opt = (?: (?:port \d+|on \S+)){0,2}
+# close by authenticating user (don't use <HOST> after %(__authng_user)s because of catch-all `.*?`):
+__authng_user = (?: (?:by|from))?(?: (?:invalid|authenticating) user <F-USER>\S+|.*?</F-USER>)?(?: from)?
+
+# for all possible (also future) forms of "no matching (cipher|mac|MAC|compression method|key exchange method|host key type) found",
+# see ssherr.c for all possible SSH_ERR_..._ALG_MATCH errors.
+__alg_match = (?:(?:\w+ (?!found\b)){0,2}\w+)
+
+# PAM authentication mechanism, can be overridden, e. g. `filter = sshd[__pam_auth='pam_ldap']`:
+__pam_auth = pam_[a-z]+
+
+[Definition]
+
+prefregex = ^<F-MLFID>%(__prefix_line)s</F-MLFID>%(__pref)s<F-CONTENT>.+</F-CONTENT>$
+
+# consider failed publickey for valid users too (don't need RE, see cmnfailed):
+cmnfailre-failed-pub-any =
+# same as invalid, but consider failed publickey for valid users too, just as no failure (helper to get IP and user-name only, see cmnfailed):
+cmnfailre-failed-pub-nofail = <cmnfailre-failed-pub-invalid>
+# don't consider failed publickey as failures (don't need RE, see cmnfailed):
+cmnfailre-failed-pub-ignore =
+
+cfooterre = ^<F-NOFAIL>Connection from</F-NOFAIL> <HOST>
+
+failregex = %(cmnfailre)s
+            <mdre-<mode>>
+            %(cfooterre)s
+
+# Parameter "mode": normal (default), ddos, extra or aggressive (combines all)
+# Usage example (for jail.local):
+#   [sshd]
+#   mode = extra
+#   # or another jail (rewrite filter parameters of jail):
+#   [sshd-aggressive]
+#   filter = sshd[mode=aggressive]
+#
+mode = normal
+
+#filter = sshd[mode=aggressive]
+
+ignoreregex = 
+
+maxlines = 1
+
+journalmatch = _SYSTEMD_UNIT=sshd.service + _COMM=sshd + _COMM=sshd-session
+
+# DEV Notes:
+#
+#   "Failed \S+ for .*? from <HOST>..." failregex uses non-greedy catch-all because
+#   it is coming before use of <HOST> which is not hard-anchored at the end as well,
+#   and later catch-all's could contain user-provided input, which need to be greedily
+#   matched away first.
+#
+# Author: Cyril Jaquier, Yaroslav Halchenko, Petr Voralek, Daniel Black and Sergey Brester aka sebres
+# Rewritten using prefregex (and introduced "mode" parameter) by Serg G. Brester.
