@@ -14,6 +14,9 @@ import logging
 # Handle regex
 import re
 import os
+import sys
+# Handle iptables
+import f3b_iptables
 
 # Extracted constants for log file name and format
 LOG_FILE_NAME = "fail3ban.log"
@@ -32,6 +35,8 @@ class WhiteList:
         self.configData = configData
         # Obtain logger
         self.logger = logging.getLogger(logger_id)
+        # We need iptables
+        self.ipt = f3b_iptables.Iptables()
         # And show logger for debugging
         print(f"__init__: logger = {self.logger}")
         
@@ -132,6 +137,21 @@ class WhiteList:
         # Return True if the caller is from the same instance
         return isinstance(caller_class, self.__class__)
 
+    # add whitelisted elements to iptables
+    def add_whitelist_to_iptables(self,extra="whitelist"):
+        for ip_address in self.whitelist:
+            self.ipt.add_allow_ip_to_front_of_input_chain(ip_address,extra)
+
+    # show iptables
+    def show_iptables(self):
+        self.ipt.show_input_chain()
+
+    # remove our ip's from INPUT
+    def remove_iptables_from_input(self,extra="whitelist"):
+        for ip_address in self.whitelist:
+            # delete it
+            self.ipt.remove_ip_from_input_chain(ip_address,extra)
+
 # Extracted function to set up logging configuration
 def setup_logging():
     logging.basicConfig(
@@ -158,6 +178,21 @@ if __name__ == "__main__":
     wl.whitelist_init()
     print("Whitelisted IPs:", wl.get_whitelist())
 
+    # put them into INPUT table
+    wl.add_whitelist_to_iptables()
+
+    # show
+    wl.show_iptables()
+    
+    # remove them
+    wl.remove_iptables_from_input()
+
+    # show again
+    wl.show_iptables()
+
+    # done for now
+    sys.exit(0)
+    
     # Example of checking if an IP is whitelisted
     fail_flag = False
 
@@ -182,5 +217,3 @@ if __name__ == "__main__":
         print("Test OK")
     else:
         print("Test FAILED")
-
-
