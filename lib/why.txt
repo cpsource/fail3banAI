@@ -1,0 +1,3 @@
+ACCEPT     all  --  customer.nwyynyx1.pop.starlinkisp.net  anywhere
+
+Why did this show up as the first entry on my INPUT table ???
