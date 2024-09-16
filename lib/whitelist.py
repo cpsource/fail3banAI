@@ -15,6 +15,7 @@ import logging
 import re
 import os
 import sys
+import atexit
 # Handle iptables
 import f3b_iptables
 
@@ -38,7 +39,9 @@ class WhiteList:
         # We need iptables
         self.ipt = f3b_iptables.Iptables()
         # And show logger for debugging
-        print(f"__init__: logger = {self.logger}")
+        #print(f"__init__: logger = {self.logger}")
+        # register a cleanup
+        atexit.register(self.cleanup)
         
     # Initialize the class by reading whitlist.ctl into a dictionary
     def whitelist_init(self):
@@ -95,20 +98,30 @@ class WhiteList:
 
     def get_my_public_ip(self):
         if not self._is_called_within_class():
-            self.logger.warn(f"get_my_public_ip called from outside the class")
-            
-        try:
-            # Fetch the public IP using a public API
-            response = requests.get('https://api.ipify.org?format=json')
-            response.raise_for_status()  # Raise an error for bad status codes
-            ip_info = response.json()
-            ip_address = ip_info['ip']
-            self.logger.debug(f"our ip address is {ip_address}")
-            return ip_address
+            self.logger.warning("get_my_public_ip called from outside the class")
 
-        except requests.RequestException as e:
-            return None # f"Error fetching IP address: {e}"
+        url = 'https://api.ipify.org?format=json'
+        max_retries = 3
+        timeout = 5  # seconds
 
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Fetch the public IP using a public API with timeout
+                response = requests.get(url, timeout=timeout)
+                response.raise_for_status()  # Raise an error for bad status codes
+                ip_info = response.json()
+                ip_address = ip_info['ip']
+                self.logger.debug(f"Attempt {attempt}: Obtained public IP address {ip_address}")
+                return ip_address
+
+            except requests.Timeout:
+                self.logger.warning(f"Attempt {attempt}: Timeout occurred after {timeout} seconds.")
+            except requests.RequestException as e:
+                self.logger.error(f"Attempt {attempt}: Error fetching IP address: {e}")
+
+        self.logger.error(f"Failed to get public IP address after {max_retries} attempts.")
+        return None
+    
     def get_whitelist_path(self):
         # Get the current working directory
         current_dir = os.getcwd()
@@ -152,6 +165,12 @@ class WhiteList:
             # delete it
             self.ipt.remove_ip_from_input_chain(ip_address,extra)
 
+    def cleanup(self):
+        try:
+            self.remove_ip_tables_from_input()
+        except Exception as e:
+            self.logger.error(f"Exception during cleanup: {e}")
+            
 # Extracted function to set up logging configuration
 def setup_logging():
     logging.basicConfig(

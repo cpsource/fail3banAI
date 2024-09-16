@@ -55,7 +55,7 @@ class Iptables:
             return False
         
     def add_allow_ip_to_front_of_input_chain(self, ip_address, extra="test"):
-        if not self.is_ip_in_input_chain(ip_address):
+        if not self.is_ip_in_input_chain(ip_address, extra):
             try:
                 # Construct the iptables command to insert the IP address at the first position in INPUT chain
                 command = ["iptables", "-I", "INPUT", "1", "-s", ip_address, "-j",
@@ -69,7 +69,25 @@ class Iptables:
         
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"Failed to add IP address {ip_address} to INPUT chain: {e}")
-            
+                
+    def add_deny_ip_to_back_of_input_chain(self, ip_address, extra="test"):
+        if not self.is_ip_in_input_chain(ip_address, extra):
+            try:
+                # Construct the iptables command to append the IP address to the end of INPUT chain
+                command = [
+                    "iptables", "-A", "INPUT", 
+                    "-s", ip_address, "-j", "DROP",
+                    "-m", "comment", "--comment", f"fail3ban {extra}"
+                ]
+
+                # Execute the command using subprocess
+                self.run_command(command)
+
+                self.logger.debug(f"IP address {ip_address} successfully added to the INPUT chain to deny access.")
+
+            except subprocess.CalledProcessError as e:
+                self.logger.error(f"Failed to add IP address {ip_address} to INPUT chain: {e}")
+                
     def is_in_chain(self, ip_address):
         """Check if the IP address is already in iptables."""
         try:
@@ -205,7 +223,7 @@ class Iptables:
             print(f"Error occurred while modifying iptables: {e}")
             return False
 
-    def remove_fail3ban_entries_from_iptables_INPUT(self):
+    def remove_fail3ban_entries_from_iptables_INPUT(self, extra="test"):
         try:
             # Run the iptables command to list the INPUT chain with comments
             result = subprocess.run(["iptables", "-L", "INPUT", "-n", "-v", "--line-numbers", "-x"], 
@@ -214,7 +232,7 @@ class Iptables:
             # Iterate through each line of the result in reverse order (to prevent rule number shift)
             for line in reversed(result.stdout.splitlines()):
                 # Check if the line contains the comment 'fail3ban'
-                if "fail3ban" in line:
+                if "fail3ban" in line and extra in line:
                     # Extract the rule number (first item in the line)
                     rule_number = line.split()[0]
                     
