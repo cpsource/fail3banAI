@@ -199,6 +199,29 @@ class Iptables:
         except subprocess.CalledProcessError as e:
             print(f"Error occurred while modifying iptables: {e}")
             return False
+
+    def remove_fail3ban_entries_from_iptables_INPUT(self):
+        try:
+            # Run the iptables command to list the INPUT chain with comments
+            result = subprocess.run(["iptables", "-L", "INPUT", "-n", "-v", "--line-numbers", "-x"], 
+                                    capture_output=True, text=True, check=True)
+            
+            # Iterate through each line of the result in reverse order (to prevent rule number shift)
+            for line in reversed(result.stdout.splitlines()):
+                # Check if the line contains the comment 'fail3ban'
+                if "fail3ban" in line:
+                    # Extract the rule number (first item in the line)
+                    rule_number = line.split()[0]
+                    
+                    # Construct the iptables command to delete the rule by its number
+                    delete_command = ["iptables", "-D", "INPUT", rule_number]
+                    
+                    # Execute the command to delete the rule
+                    subprocess.run(delete_command, check=True)
+                    self.logger.debug(f"Rule with comment 'fail3ban' successfully removed (rule number {rule_number}).")
+        
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Error occurred while modifying iptables: {e}")
             
 # Extracted function to set up logging configuration
 def setup_logging():
