@@ -17,7 +17,7 @@ import logging
 #import sys
 #sys.path.append('/home/pagec/fail3ban/lib')
 
-from whitelist import WhiteList
+from f3b_whitelist import WhiteList
 
 class Iptables:
     def __init__(self, logger_id=LOG_ID):
