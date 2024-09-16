@@ -16,8 +16,10 @@ import re
 import os
 import sys
 import atexit
-# Handle iptables
-import f3b_iptables
+
+if __name__ != "__main__":
+    # Handle iptables
+    import f3b_iptables
 
 # Extracted constants for log file name and format
 LOG_FILE_NAME = "fail3ban.log"
@@ -36,8 +38,6 @@ class WhiteList:
         self.configData = configData
         # Obtain logger
         self.logger = logging.getLogger(logger_id)
-        # We need iptables
-        self.ipt = f3b_iptables.Iptables()
         # And show logger for debugging
         #print(f"__init__: logger = {self.logger}")
         # register a cleanup
@@ -45,6 +45,8 @@ class WhiteList:
         
     # Initialize the class by reading whitlist.ctl into a dictionary
     def whitelist_init(self):
+        # We need iptables
+        self.ipt = f3b_iptables.Iptables()
         # Open the whitelist.ctl file
         WHITELIST_FILE = self.get_whitelist_path()
         try:
@@ -184,6 +186,9 @@ def setup_logging():
 
 # Example usage
 if __name__ == "__main__":
+
+    # Handle iptables
+    import f3b_iptables
 
     # setup logging
     setup_logging()

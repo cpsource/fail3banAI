@@ -9,7 +9,9 @@ import re
 import os
 import sys
 import atexit
-import f3b_iptables
+
+if __name__ != "__main__":
+    import f3b_iptables
 
 # Constants for log file name and format
 LOG_FILE_NAME = "fail3ban.log"
@@ -29,8 +31,6 @@ class BlackList:
         self.configData = configData
         # Obtain logger
         self.logger = logging.getLogger(logger_id)
-        # We need iptables
-        self.ipt = f3b_iptables.Iptables()
         # Get our public IP address
         self.my_public_ip = self.get_my_public_ip()
         # register a cleanup
@@ -38,6 +38,8 @@ class BlackList:
         
     # Initialize the class by reading blacklist.ctl into a list
     def blacklist_init(self):
+        # We need iptables
+        self.ipt = f3b_iptables.Iptables()
         # Open the blacklist.ctl file
         BLACKLIST_FILE = self.get_blacklist_path()
         try:
@@ -192,6 +194,8 @@ def setup_logging():
 
 # Example usage
 if __name__ == "__main__":
+
+    import f3b_iptables
 
     # Setup logging
     setup_logging()

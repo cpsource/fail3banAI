@@ -1,17 +1,39 @@
 import re
+import os
+import atexit
 
 class Config:
     def __init__(self, config_file='config.ctl'):
         self.config_data = {}
         self.load_config(config_file)
+        # register a cleanup
+        atexit.register(self.cleanup)
 
+    def get_ctl_path(self,control_file_name):
+        # Get the current working directory
+        current_dir = os.getcwd()
+        
+        # Check if the current directory ends with '/lib'
+        if re.search(r'.*/lib\Z', current_dir):
+            # Return path for lib context
+            return os.path.join('..', 'control', control_file_name)
+        # Check if the current directory ends with '/fail3banAI'
+        elif re.search(r'.*/fail3banAI\Z', current_dir):
+            # Return path for fail3banAI context
+            return os.path.join('control', control_file_name)
+        else:
+            # Handle other cases (optional)
+            return None
+        
     def get_config_data(self):
         return self.config_data
     
     def load_config(self, config_file):
         """Read the config.ctl file and store variable-value pairs."""
+        # Open the config.ctl file
+        CONTROL_FILE = self.get_ctl_path(config_file)
         try:
-            with open(config_file, 'r') as file:
+            with open(CONTROL_FILE, 'r') as file:
                 for line in file:
                     # Strip whitespace and skip comments and empty lines
                     line = line.strip()
@@ -36,9 +58,9 @@ class Config:
                         self.config_data[variable] = value
 
         except FileNotFoundError:
-            print(f"Error: {config_file} not found.")
+            print(f"Error: {CONTROL_FILE} not found.")
         except Exception as e:
-            print(f"An error occurred while reading {config_file}: {e}")
+            print(f"An error occurred while reading {CONTROL_FILE}: {e}")
 
         # return this dictionary
         return self.config_data
@@ -47,7 +69,13 @@ class Config:
         """Retrieve the value of the specified variable."""
         return self.config_data.get(variable_name, None)
 
-def main():
+    def cleanup(self):
+        try:
+            self.config_data = None
+        except Exception as e:
+            self.logger.error(f"Exception during cleanup: {e}")
+
+if __name__ == "__main__":
     # Create a Config instance and load the config.ctl file
     config = Config('config.ctl')
 
@@ -59,8 +87,4 @@ def main():
         print(f"The value for '{test_variable}' is: {result}")
     else:
         print(f"'{test_variable}' not found in config.ctl")
-
-
-if __name__ == "__main__":
-    main()
 
