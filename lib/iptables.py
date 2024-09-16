@@ -124,7 +124,7 @@ class Iptables:
         self.logger.debug(f"Removing rule number {rule_num} from chain {chain}. Executing command: {' '.join(delete_rule_command)}")
         self.run_command(delete_rule_command)
 
-    def add_chain_to_INPUT(self, ip_address, jail_name):
+    def add_chain_to_INPUT(self, ip_address, jail_name, extra):
         """Add IP to a custom chain with the jail name, and create the chain if it doesn't exist."""
         chain_name = f"f3b-{jail_name}"
 
@@ -133,18 +133,22 @@ class Iptables:
             result = self.run_command(['sudo', 'iptables', '-L', chain_name, '-n'])
             if not result or "No chain" in result:
                 self.logger.debug(f"Chain {chain_name} does not exist. Creating it.")
-                self.run_command(['sudo', 'iptables', '-N', chain_name])
+                self.run_command(['sudo', 'iptables', '-N', chain_name,
+                                  '-m', 'comment', '--comment', f'fail3ban {extra}'])
 
             # Link chain to INPUT
             result = self.run_command(['sudo', 'iptables', '-L', 'INPUT', '-n'])
             if chain_name not in result:
                 self.logger.debug(f"Linking chain {chain_name} to INPUT.")
-                self.run_command(['sudo', 'iptables', '-A', 'INPUT', '-j', chain_name, '-m', 'comment', '--comment', 'fail3ban'])
+                self.run_command(['sudo', 'iptables', '-A', 'INPUT', '-j', chain_name,
+                                  '-m', 'comment', '--comment', f'fail3ban {extra}'])
 
             # Add the reject rule to the custom chain
             if ip_address not in result:
                 self.logger.debug(f"Adding ban for IP {ip_address} to chain {chain_name}.")
-                self.run_command(['sudo', 'iptables', '-A', chain_name, '-s', ip_address, '-j', 'REJECT', '--reject-with', 'icmp-port-unreachable', '-m', 'comment', '--comment', 'fail3ban'])
+                self.run_command(['sudo', 'iptables', '-A', chain_name, '-s', ip_address, '-j', 'REJECT',
+                                  '--reject-with', 'icmp-port-unreachable',
+                                  '-m', 'comment', '--comment', f'fail3ban {extra}'])
             else:
                 self.logger.debug(f"IP {ip_address} already exists in chain {chain_name}.")
 

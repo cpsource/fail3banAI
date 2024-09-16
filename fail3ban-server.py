@@ -8,6 +8,9 @@ from datetime import datetime
 import time
 import logging
 
+# Define the stop_event as a threading.Event before starting thread
+stop_event = threading.Event()
+
 #
 # Allow our foundation classes to be loaded
 #
@@ -53,13 +56,14 @@ def setup_logging():
         ]
     )
 # Create a named logger consistent with the log file name
-logger = logging.getLogger(LOG_ID)
+#logger = logging.getLogger(LOG_ID)
 
 #
 # routine to fold None into False
 #
 def check_var(var):
     return var if isinstance(var, bool) else (False if var is None else var)
+
 # Test cases
 #print(check_var(True))    # True
 #print(check_var(False))   # False
@@ -67,53 +71,73 @@ def check_var(var):
 #print(check_var(42))      # 42 (since var is not None or bool)
 #print(check_var("hello")) # "hello" (since var is not None or bool)
 
-# A worker thread
-def manage_bans(db_instance, iptables_class):
+#
+# A worker thread - periodically, we scan the database for
+# expired bans. If we find any, we remove them from iptables
+#
+def manage_bans(stop_event):
     """Manage bans by ensuring non-banned IPs are in iptables, and expired IPs are removed."""
-    
-    # Save ptr to database
-    db_instance = db_instance
-    # ipt allows us to manage iptables
-    ipt = iptables_class()
 
+    # Get our logger - use global logger
+    logger.debug("manage_bans thread started")
+    
+    # Create a new database instance. (For thread safety with SQLite3, each thread needs their own)
+    db_instance = f3b_sqlite3_db.SQLiteDB()
+    if db_instance is not None:
+        logger.debug(f"sqlite3 database initialized")
+    else:
+        logger.error(f"can't initialize sqlite3 database")            
+        sys.exit(1)
+
+    # ipt allows us to manage iptables
+    ipt = f3b_iptables.Iptables()
+    
     # 1. Initial step: ensure non-banned IPs are in iptables
     logger.debug("Ensuring non-banned IPs are in iptables...")
-    non_banned_records = db_instance.get_expired_records()  # Method should return non-banned IPs
+    non_banned_records = db_instance.get_non_expired_records()  # Method should return non-banned IPs
     for record in non_banned_records:
         ip_addr, is_ipv6, jail = record
         # Ensure the IP is in iptables
         if not ipt.is_in_chain(ip_addr):  # Assuming iptables class has this method
-            ipt.add_chain_to_INPUT(ip_addr, jail)
+            ipt.add_chain_to_INPUT(ip_addr, jail, "server")
 
-    # 2. Loop forever to scan for expired bans
-    while True:
+    # 2. Loop forever or told to stop. Scan for expired bans and remove them
+    while not stop_event.is_set():
         logger.debug("Scanning for expired bans...")
         
         # Query for expired bans
         expired_bans = db_instance.get_expired_records()  # Get expired IPs from database
         for record in expired_bans:
             ip_addr, is_ipv6, jail = record
-            
-            # Remove from iptables
-            ipt.remove_chain(ip_addr)
-            logger.debug(f"Removed IP {ip_addr} from iptables.")
-            
-            # Remove from the database
-            db_instance.remove_record(ip_addr, jail)
-            logger.debug(f"Removed IP {ip_addr} from database.")
-        
-        # Sleep for an hour
-        logger.debug("Sleeping for 1 hour...")
-        time.sleep(3600)
 
-# Thread - manage bans
-def start_manage_bans(db_instance):
-    thread = threading.Thread(target=manage_bans, args=(db_instance, f3b_iptables.iptables))  # Or use mariaDB
-    thread.start()
+            logger.debug(f"Expired: record = {record}")
 
+            if False:
+                # Remove from iptables $$$ needs something like unjail(ip,ipv6-flag,jail,extra)
+                ipt.remove_chain(ip_addr, "server")
+                logger.debug(f"Removed IP {ip_addr} from iptables.")
+            
+                # Remove from the database
+                db_instance.remove_record(ip_addr, jail)
+                logger.debug(f"Removed IP {ip_addr} from database.")
+
+        # wait around in dribs and drabs so we can be responsive to a stop_event
+        iteration = 0
+        #RESOLUTION = 4 # 4 is every 15 secondes (debugging), 1 is once a minute (production)
+        while not stop_event.is_set() and iteration < 60:
+            iteration += 1
+            # Sleep for an hour
+            #logger.debug("Sleeping for 1 hour...")
+            time.sleep(1)
+        logger.debug(f"awakened from sleep, iterations remaining {iteration}")
+    logger.debug("thread manage_bans is returning")
+    
 if __name__ == "__main__":
     # setup logging
     setup_logging()
+    # Create a named logger consistent with the log file name
+    logger = logging.getLogger(LOG_ID)
+    
     # And show logger for debugging
     logger.debug(f"__main__: logger = {logger}")
     
@@ -136,11 +160,12 @@ if __name__ == "__main__":
         default_ban_time = 1
         logger.debug(f"default ban time defaults to 1 minute")
 
-    # sqlite3 initialization
+    # sqlite3 initialization. We just open it to be sure it's in good shape
     db_instance = f3b_sqlite3_db.SQLiteDB()
     if db_instance is not None:
-        #db_instance.initialize(configData.get('database_name'))
-        logger.debug(f"sqlite3 database initialized")            
+        logger.debug(f"sqlite3 database initialized")
+        db_instance.close()
+        db_instance = None
     else:
         logger.debug(f"can't initialize sqlite3 database initialized")            
             
@@ -174,7 +199,21 @@ if __name__ == "__main__":
 
     # lets show our iptables again (should be empty)
     wl.show_iptables()
-   
+
+    # start scanning database for expired bans
+    thread = threading.Thread(target=manage_bans, args=(stop_event,))  # Or use mariaDB
+    thread.start()
+
+    # run for a bit
+    time.sleep(90)
+
+    # Signal thread manage_bans to stop
+    stop_event.set()
+
+    # Wait for thread
+    thread.join()
+    logger.debug("thread manage_bans stopped cleanly")
+    
     # exit for now
     sys.exit(0)
     

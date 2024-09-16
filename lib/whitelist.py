@@ -169,7 +169,7 @@ class WhiteList:
 
     def cleanup(self):
         try:
-            self.remove_ip_tables_from_input()
+            self.remove_iptables_from_input("server")
         except Exception as e:
             self.logger.error(f"Exception during cleanup: {e}")
             

@@ -141,6 +141,44 @@ class SQLiteDB:
 
         return expired_records
 
+    def get_non_expired_records(self):
+        """Return a list of expired records in the form [ip_addr, is_ipv6, jail]."""
+        expired_records = []
+
+        # Get the current time
+        current_time = datetime.now()
+
+        try:
+            # Query for expired records (ban_expire_time < current_time)
+            query = '''
+            SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time >= ?
+            '''
+            self.cursor.execute(query, (current_time,))
+            records = self.cursor.fetchall()
+
+            # Process each record to check if the IP is IPv6 and format the output
+            for record in records:
+                ip_addr, jail, ban_expire_time = record
+                # Determine if the IP address is IPv6 using ipaddress module
+                try:
+                    ip_obj = ipaddress.ip_address(ip_addr)
+                    is_ipv6 = isinstance(ip_obj, ipaddress.IPv6Address)
+
+                    # If it's IPv6, shrink it to its smallest form (compressed)
+                    if is_ipv6:
+                        ip_addr = ip_obj.compressed
+                except ValueError:
+                    # Handle any invalid IP address (if applicable)
+                    is_ipv6 = False
+
+                # Add the record in the form [ip_addr, is_ipv6, jail]
+                expired_records.append([ip_addr, is_ipv6, jail])
+        except sqlite3.Error as e:
+            self.logger.error(f"An error occurred while fetching expired records: {e}")
+            raise  # Re-raise to notify higher-level code
+
+        return expired_records
+    
     def show_bans(self, ip_addr=None, jail_name=None):
         """Show a list of records in a human-readable format for the given ip_addr and jail_name."""
         # Build the base query
