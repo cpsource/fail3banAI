@@ -18,6 +18,7 @@ LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
 LOG_ID = "fail3ban"
 
 TEST_IP = "192.168.211.34"
+LOCAL_IP = "127.0.0.1"
 
 class Whitelist:
     configData = None
@@ -56,6 +57,9 @@ class Whitelist:
         # add us to whitelist if not there
         if not self.is_whitelisted(tmp_var):
             self.whitelist.append(tmp_var)
+        # and add LOCAL_IP 
+        self.whitelist.append(LOCAL_IP)
+       
         # lets add TEST_IP for testing if called from main
         if self.called_from_main() and not self.is_whitelisted(TEST_IP):
             self.whitelist.append(TEST_IP)
@@ -152,10 +156,26 @@ if __name__ == "__main__":
     print("Whitelisted IPs:", wl.get_whitelist())
 
     # Example of checking if an IP is whitelisted
+    fail_flag = False
+
     test_ip = TEST_IP
     status = "whitelisted" if wl.is_whitelisted(test_ip) else "not whitelisted"
     print(f"{test_ip} is {status}.")
-    if status == "whitelisted":
+    if not status == "whitelisted":
+        fail_flag = True
+    test_ip = LOCAL_IP
+    status = "whitelisted" if wl.is_whitelisted(test_ip) else "not whitelisted"
+    print(f"{test_ip} is {status}.")
+    if not status == "whitelisted":
+        fail_flag = True
+    test_ip = "211.211.211.211"
+    status = "whitelisted" if wl.is_whitelisted(test_ip) else "not whitelisted"
+    print(f"{test_ip} is {status}.")
+    if not status == "not whitelisted":
+        fail_flag = True
+        
+    # test summary
+    if not fail_flag:
         print("Test OK")
     else:
         print("Test FAILED")
