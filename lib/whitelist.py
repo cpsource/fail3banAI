@@ -2,6 +2,9 @@
 
 # handle everything from whitelist.ctl
 
+#import sys
+#sys.path.append('/home/pagec/openai/lib/python3.10/site-packages')
+
 # Makie an internet request for a url
 import requests
 # Used to inspect our class stack
@@ -20,7 +23,7 @@ LOG_ID = "fail3ban"
 TEST_IP = "192.168.211.34"
 LOCAL_IP = "127.0.0.1"
 
-class Whitelist:
+class WhiteList:
     configData = None
     def __init__(self, configData=None, logger_id=LOG_ID):
         # Initialize an empty array to store whitelisted IPs
@@ -151,7 +154,7 @@ if __name__ == "__main__":
     print(f"__main__: logger = {logger}")
 
     # onward to test class
-    wl = Whitelist()
+    wl = WhiteList()
     wl.whitelist_init()
     print("Whitelisted IPs:", wl.get_whitelist())
 

@@ -14,6 +14,11 @@ import time
 # Configure logging
 import logging
 
+#import sys
+#sys.path.append('/home/pagec/fail3ban/lib')
+
+from whitelist import WhiteList
+
 class Iptables:
     def __init__(self, logger_id=LOG_ID):
         # Obtain logger
@@ -33,7 +38,7 @@ class Iptables:
             self.logger.error(f"An error occurred: {e.stderr}")
             return None
 
-    def is_ip_in_input_chain(self, ip_address):
+    def is_ip_in_input_chain(self, ip_address, extra="test"):
         try:
             # Run the iptables command to list the INPUT chain
             result = subprocess.run(["iptables", "-L", "INPUT", "-n", "-v", "--line-numbers", "-x"], 
@@ -41,7 +46,7 @@ class Iptables:
             
             # Check each line in the result for the IP address and the comment "fail3ban"
             for line in result.stdout.splitlines():
-                if ip_address in line and "fail3ban" in line:
+                if ip_address in line and "fail3ban" in line and extra in line:
                     return True
             return False
         
@@ -49,12 +54,12 @@ class Iptables:
             self.logger.error(f"Error occurred while checking iptables: {e}")
             return False
         
-    def add_allow_ip_to_front_of_input_chain(self, ip_address):
+    def add_allow_ip_to_front_of_input_chain(self, ip_address, extra="test"):
         if not self.is_ip_in_input_chain(ip_address):
             try:
                 # Construct the iptables command to insert the IP address at the first position in INPUT chain
                 command = ["iptables", "-I", "INPUT", "1", "-s", ip_address, "-j",
-                           "ACCEPT", "-m", "comment", "--comment", "fail3ban"]
+                           "ACCEPT", "-m", "comment", "--comment", f"fail3ban {extra}"]
             
                 # Execute the command using subprocess
                 self.run_command(command)
@@ -172,7 +177,7 @@ class Iptables:
         except subprocess.CalledProcessError as e:
             print(f"Error occurred while retrieving iptables INPUT chain: {e}")
 
-    def remove_ip_from_input_chain(self, ip_address):
+    def remove_ip_from_input_chain(self, ip_address, extra="test"):
         try:
             # Run the iptables command to list the INPUT chain with comments
             result = subprocess.run(["iptables", "-L", "INPUT", "-n", "-v", "--line-numbers", "-x"], 
@@ -181,7 +186,7 @@ class Iptables:
             # Iterate through each line of the result
             for line in result.stdout.splitlines():
                 # Check if the line contains the IP address and the comment 'fail3ban'
-                if ip_address in line and "fail3ban" in line:
+                if ip_address in line and "fail3ban" in line and extra in line:
                     # Extract the rule number (first item in the line)
                     rule_number = line.split()[0]
                     
@@ -236,6 +241,7 @@ def setup_logging():
                 
 # Command-line interface
 if __name__ == "__main__":
+
     # setup logging
     setup_logging()
     # Create a named logger consistent with the log file name
@@ -250,7 +256,7 @@ if __name__ == "__main__":
         
     # lets add a simple ip address to INPUT
     ip_address = "192.168.98.32" # some stupid address we will never use
-    ipt.add_allow_ip_to_front_of_input_chain(ip_address)
+    ipt.add_allow_ip_to_front_of_input_chain(ip_address,"test")
 
     # show it
     ipt.show_input_chain()
@@ -262,7 +268,7 @@ if __name__ == "__main__":
         logger.error(f"ip address {ip_address} is NOT in INPUT chain")
 
     # delete it
-    ipt.remove_ip_from_input_chain(ip_address)
+    ipt.remove_ip_from_input_chain(ip_address,"test")
 
     # it must not be there
     if ipt.is_ip_in_input_chain(ip_address):
@@ -272,7 +278,27 @@ if __name__ == "__main__":
 
     # show it
     ipt.show_input_chain()
+
+    #
+    # now lets test with whitelist
+    #
+    wl = WhiteList()
+    wl.whitelist_init()
+    whitelist = wl.get_whitelist()
+    for ip_address in whitelist:
+        ipt.add_allow_ip_to_front_of_input_chain(ip_address,"test")
     
+    # show it
+    ipt.show_input_chain()
+
+    # delete the whitelist
+    for ip_address in whitelist:
+        # delete it
+        ipt.remove_ip_from_input_chain(ip_address,"test")
+ 
+    # show it
+    ipt.show_input_chain()
+       
     # done for now
     sys.exit(0)
 
