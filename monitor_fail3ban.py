@@ -11,7 +11,7 @@ import sys
 import logging
 
 # Extracted constants for log file name and format
-LOG_FILE_NAME = "monitor_fail2ban.log"
+LOG_FILE_NAME = "monitor_fail3ban.log"
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
 # Extracted function to set up logging configuration
 def setup_logging():
@@ -441,18 +441,18 @@ def process_journalctl_line(zline):
     
     # Flag to track if a match was found
 
-    # Iterate over each subdirectory and run fail2ban-regex
+    # Iterate over each subdirectory and run fail3ban-regex
     for zdir in os.listdir('.'):
         if os.path.isdir(zdir):
             # Check if jail is enabled
             if is_jail_enabled(zdir):
-                # Create a temporary file for fail2ban-regex output
-                with tempfile.NamedTemporaryFile(delete=False, mode='w', prefix='fail2ban_', suffix='.log') as regex_temp_file:
+                # Create a temporary file for fail3ban-regex output
+                with tempfile.NamedTemporaryFile(delete=False, mode='w', prefix='fail3ban_', suffix='.log') as regex_temp_file:
                     regex_temp_file_path = regex_temp_file.name
                 
-                # Run fail2ban-regex and redirect the output to the temp file
+                # Run fail3ban-regex and redirect the output to the temp file
                 try:
-                    subprocess.run(['fail2ban-regex', temp_file.name, zdir],
+                    subprocess.run(['fail3ban-regex', temp_file.name, zdir],
                                    stdout=open(regex_temp_file_path, 'w'),
                                    stderr=subprocess.STDOUT,
                                    check=True)
