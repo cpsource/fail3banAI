@@ -52,8 +52,10 @@ for chain in chains:
         
         # Try to find this rule in the currently active iptables rules
         for iptables_rule in iptables_rules:
-            if rule in iptables_rule:
-                rule_number = iptables_rule.split()[0]
+            # Only process lines that have a valid rule number (first element must be a digit)
+            rule_parts = iptables_rule.split()
+            if rule_parts and rule_parts[0].isdigit() and rule in iptables_rule:
+                rule_number = rule_parts[0]  # Extract the rule number
                 rules_to_remove.append(rule_number)
                 break
 
@@ -72,11 +74,11 @@ for line in lines:
         rules_to_remove = []
 
         # Match and remove rules for ufw- chains
-        for rule in iptables_rules:
-            if not rule.strip() or rule.startswith("Chain") or rule.startswith("target"):
-                continue
-            rule_number = rule.split()[0]
-            rules_to_remove.append(rule_number)
+        for iptables_rule in iptables_rules:
+            rule_parts = iptables_rule.split()
+            if rule_parts and rule_parts[0].isdigit():  # Only consider lines with valid rule numbers
+                rule_number = rule_parts[0]
+                rules_to_remove.append(rule_number)
 
         # Sort and remove rules in reverse order
         rules_to_remove.sort(reverse=True)
