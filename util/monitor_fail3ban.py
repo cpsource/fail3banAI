@@ -10,29 +10,6 @@ import sys
 # Configure logging
 import logging
 
-class HashedSet:
-    def __init__(self, hashed_set_file='hashed_set.py'):
-        self.hashed_set_file = hashed_set_file
-        self.hashed_set = self.load_hashed_set()
-
-    def load_hashed_set(self):
-        try:
-            # Dynamically import the hashed_set from the given file
-            hashed_set_module = {}
-            with open(self.hashed_set_file, 'r') as file:
-                exec(file.read(), hashed_set_module)
-            return hashed_set_module['hashed_set']
-        except FileNotFoundError:
-            print(f"File {self.hashed_set_file} not found.")
-            return set()
-        except KeyError:
-            print("Error loading hashed_set from file.")
-            return set()
-
-    def is_ip_in_set(self, ip_address):
-        """Check if an IP address is in the hashed set."""
-        return ip_address in self.hashed_set
-
 # Extracted constants for log file name and format
 LOG_FILE_NAME = "monitor_fail3ban.log"
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
@@ -78,6 +55,12 @@ else:
 
 import previousJournalctl
 
+# get HashedSet
+import f3b_HashedSet
+
+# get CountryCode
+import f3b_CountryCodes
+
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -95,212 +78,6 @@ import subprocess
 #import f3b_blacklist
 #import re
 
-# country codes
-country_code_to_country_name = {
-    "AF": "Afghanistan",
-    "AL": "Albania",
-    "DZ": "Algeria",
-    "AS": "American Samoa",
-    "AD": "Andorra",
-    "AO": "Angola",
-    "AI": "Anguilla",
-    "AQ": "Antarctica",
-    "AG": "Antigua and Barbuda",
-    "AR": "Argentina",
-    "AM": "Armenia",
-    "AW": "Aruba",
-    "AU": "Australia",
-    "AT": "Austria",
-    "AZ": "Azerbaijan",
-    "BS": "Bahamas",
-    "BH": "Bahrain",
-    "BD": "Bangladesh",
-    "BB": "Barbados",
-    "BY": "Belarus",
-    "BE": "Belgium",
-    "BZ": "Belize",
-    "BJ": "Benin",
-    "BM": "Bermuda",
-    "BT": "Bhutan",
-    "BO": "Bolivia",
-    "BA": "Bosnia and Herzegovina",
-    "BW": "Botswana",
-    "BR": "Brazil",
-    "BN": "Brunei",
-    "BG": "Bulgaria",
-    "BF": "Burkina Faso",
-    "BI": "Burundi",
-    "CV": "Cabo Verde",
-    "KH": "Cambodia",
-    "CM": "Cameroon",
-    "CA": "Canada",
-    "KY": "Cayman Islands",
-    "CF": "Central African Republic",
-    "TD": "Chad",
-    "CL": "Chile",
-    "CN": "China",
-    "CO": "Colombia",
-    "KM": "Comoros",
-    "CD": "Congo (Democratic Republic)",
-    "CG": "Congo (Republic)",
-    "CR": "Costa Rica",
-    "CI": "Côte d'Ivoire",
-    "HR": "Croatia",
-    "CU": "Cuba",
-    "CY": "Cyprus",
-    "CZ": "Czech Republic",
-    "DK": "Denmark",
-    "DJ": "Djibouti",
-    "DM": "Dominica",
-    "DO": "Dominican Republic",
-    "EC": "Ecuador",
-    "EG": "Egypt",
-    "SV": "El Salvador",
-    "GQ": "Equatorial Guinea",
-    "ER": "Eritrea",
-    "EE": "Estonia",
-    "SZ": "Eswatini",
-    "ET": "Ethiopia",
-    "FJ": "Fiji",
-    "FI": "Finland",
-    "FR": "France",
-    "GA": "Gabon",
-    "GM": "Gambia",
-    "GE": "Georgia",
-    "DE": "Germany",
-    "GH": "Ghana",
-    "GR": "Greece",
-    "GD": "Grenada",
-    "GU": "Guam",
-    "GT": "Guatemala",
-    "GN": "Guinea",
-    "GW": "Guinea-Bissau",
-    "GY": "Guyana",
-    "HT": "Haiti",
-    "HN": "Honduras",
-    "HK": "Hong Kong",
-    "HU": "Hungary",
-    "IS": "Iceland",
-    "IN": "India",
-    "ID": "Indonesia",
-    "IR": "Iran",
-    "IQ": "Iraq",
-    "IE": "Ireland",
-    "IL": "Israel",
-    "IT": "Italy",
-    "JM": "Jamaica",
-    "JP": "Japan",
-    "JO": "Jordan",
-    "KZ": "Kazakhstan",
-    "KE": "Kenya",
-    "KI": "Kiribati",
-    "KP": "Korea (North)",
-    "KR": "Korea (South)",
-    "KW": "Kuwait",
-    "KG": "Kyrgyzstan",
-    "LA": "Laos",
-    "LV": "Latvia",
-    "LB": "Lebanon",
-    "LS": "Lesotho",
-    "LR": "Liberia",
-    "LY": "Libya",
-    "LI": "Liechtenstein",
-    "LT": "Lithuania",
-    "LU": "Luxembourg",
-    "MO": "Macau",
-    "MG": "Madagascar",
-    "MW": "Malawi",
-    "MY": "Malaysia",
-    "MV": "Maldives",
-    "ML": "Mali",
-    "MT": "Malta",
-    "MH": "Marshall Islands",
-    "MR": "Mauritania",
-    "MU": "Mauritius",
-    "MX": "Mexico",
-    "FM": "Micronesia",
-    "MD": "Moldova",
-    "MC": "Monaco",
-    "MN": "Mongolia",
-    "ME": "Montenegro",
-    "MA": "Morocco",
-    "MZ": "Mozambique",
-    "MM": "Myanmar",
-    "NA": "Namibia",
-    "NR": "Nauru",
-    "NP": "Nepal",
-    "NL": "Netherlands",
-    "NZ": "New Zealand",
-    "NI": "Nicaragua",
-    "NE": "Niger",
-    "NG": "Nigeria",
-    "NO": "Norway",
-    "OM": "Oman",
-    "PK": "Pakistan",
-    "PW": "Palau",
-    "PA": "Panama",
-    "PG": "Papua New Guinea",
-    "PY": "Paraguay",
-    "PE": "Peru",
-    "PH": "Philippines",
-    "PL": "Poland",
-    "PT": "Portugal",
-    "QA": "Qatar",
-    "RO": "Romania",
-    "RU": "Russia",
-    "RW": "Rwanda",
-    "KN": "Saint Kitts and Nevis",
-    "LC": "Saint Lucia",
-    "VC": "Saint Vincent and the Grenadines",
-    "WS": "Samoa",
-    "SM": "San Marino",
-    "ST": "Sao Tome and Principe",
-    "SA": "Saudi Arabia",
-    "SN": "Senegal",
-    "RS": "Serbia",
-    "SC": "Seychelles",
-    "SL": "Sierra Leone",
-    "SG": "Singapore",
-    "SK": "Slovakia",
-    "SI": "Slovenia",
-    "SB": "Solomon Islands",
-    "SO": "Somalia",
-    "ZA": "South Africa",
-    "ES": "Spain",
-    "LK": "Sri Lanka",
-    "SD": "Sudan",
-    "SR": "Suriname",
-    "SE": "Sweden",
-    "CH": "Switzerland",
-    "SY": "Syria",
-    "TW": "Taiwan",
-    "TJ": "Tajikistan",
-    "TZ": "Tanzania",
-    "TH": "Thailand",
-    "TL": "Timor-Leste",
-    "TG": "Togo",
-    "TO": "Tonga",
-    "TT": "Trinidad and Tobago",
-    "TN": "Tunisia",
-    "TR": "Turkey",
-    "TM": "Turkmenistan",
-    "TV": "Tuvalu",
-    "UG": "Uganda",
-    "UA": "Ukraine",
-    "AE": "United Arab Emirates",
-    "GB": "United Kingdom",
-    "US": "United States of America",
-    "UY": "Uruguay",
-    "UZ": "Uzbekistan",
-    "VU": "Vanuatu",
-    "VE": "Venezuela",
-    "VN": "Vietnam",
-    "YE": "Yemen",
-    "ZM": "Zambia",
-    "ZW": "Zimbabwe"
-}
-
-
 def find_country(ip_address_string):
     try:
         # Execute the 'whois' command for the given IP address
@@ -315,9 +92,9 @@ def find_country(ip_address_string):
         
         if match:
             # Extract and return the country code (everything after 'country:')
-            cc = match.group(1).strip()
-            country = country_code_to_country_name.get(cc,cc)
-            return country
+            tmp_country = match.group(1).strip()
+            tmp_country_code = cc.get_country(tmp_cc)
+            return tmp_country_code
         else:
             # Return None if no country line is found
             return None
@@ -521,7 +298,9 @@ journalctl_proc = subprocess.Popen(['journalctl', '-f'], stdout=subprocess.PIPE,
 # use new PreviousJournalctl class
 prevs = previousJournalctl.PreviousJournalctl()
 # and our HashedSet class
-hs = HashedSet()
+hs = f3b_HashedSet.HashedSet()
+# and our country codes class
+cc = f3b_CountryCodes.CountryCodes()
 
 try:
     # Process each line from journalctl -f
@@ -539,7 +318,7 @@ try:
         bad_dude_status = "n/a"
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
-            country_code = find_country(tmp_ip_address)
+            country_code = cc.find_country(tmp_ip_address)
             # is this ip address in HashedSet
             if hs.is_ip_in_set(tmp_ip_address) :
                 # yep, a really bad dude
