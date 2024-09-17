@@ -528,12 +528,12 @@ try:
         result = prevs.prev_entry()
 
         country_code = None
-        bad_dude_status = None
+        bad_dude_status = "no ip"
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
             country_code = find_country(tmp_ip_address)
             # is this ip address in HashedSet
-            if hs.is_ip_in_set(tmp_ipaddress) :
+            if hs.is_ip_in_set(tmp_ip_address) :
                 # yep, a really bad dude
                 bad_dude_status = "In HashedSet"
             else:
