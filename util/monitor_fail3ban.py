@@ -314,7 +314,7 @@ try:
         # Now, call prev_entry and check if it returns the correct match
         result = prevs.prev_entry()
 
-        country_code = None
+        country = None
         bad_dude_status = "n/a"
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
