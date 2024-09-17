@@ -53,14 +53,22 @@ setup_logging()
 logger = logging.getLogger("fail3ban")
 
 #
-# Load our foundation classes
+# Load our python3 paths
 #
-# Get the FAIL3BAN_PROJECT_ROOT environment variable and append '/lib'
-project_root = os.getenv('FAIL3BAN_PROJECT_ROOT', os.getcwd())  # Use current directory if env var is not set
+# Get the FAIL3BAN_PROJECT_ROOT environment variable
+project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
+# Check if FAIL3BAN_PROJECT_ROOT is not set
+if project_root is None:
+    print("Error: The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
+    sys.exit(1)  # Exit the program with an error code
+# Construct the lib path
 lib_path = os.path.join(project_root, 'lib')
-# Add the constructed path to the system path
-sys.path.append(lib_path)
-print(f"Added {lib_path} to the system path.")
+# Add the constructed path to sys.path only if it's not already in sys.path
+if lib_path not in sys.path:
+    sys.path.append(lib_path)
+    print(f"Added {lib_path} to the system path.")
+else:
+    print(f"{lib_path} is already in the system path.")
 
 # Get the absolute path of the current directory (the directory containing this script)
 #current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -528,7 +536,7 @@ try:
         result = prevs.prev_entry()
 
         country_code = None
-        bad_dude_status = "no ip"
+        bad_dude_status = "n/a"
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
             country_code = find_country(tmp_ip_address)
