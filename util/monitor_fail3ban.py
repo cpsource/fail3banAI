@@ -318,7 +318,8 @@ try:
         bad_dude_status = "n/a"
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
-            country_code = cc.get_country(tmp_ip_address)
+            country_code = find_country(tmp_ip_address)
+            country = cc.get_country(country_code)
             # is this ip address in HashedSet
             if hs.is_ip_in_set(tmp_ip_address) :
                 # yep, a really bad dude
@@ -327,9 +328,9 @@ try:
                 # nope, but a bad dude anyway
                 bad_dude_status = "Not In HashedSet"
                 
-        if country_code is not None:
+        if country is not None:
             # Print the journalctl line before processing
-            logging.info(f"CC: {country_code} HS: {bad_dude_status} : {line.strip()}")
+            logging.info(f"CC: {country} HS: {bad_dude_status} : {line.strip()}")
         else:
             # Print the journalctl line before processing
             logging.info(f"CC: n/a : HS: {bad_dude_status} {line.strip()}")
