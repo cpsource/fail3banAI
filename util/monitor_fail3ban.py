@@ -318,7 +318,7 @@ try:
         bad_dude_status = "n/a"
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
-            country_code = cc.find_country(tmp_ip_address)
+            country_code = cc.get_country(tmp_ip_address)
             # is this ip address in HashedSet
             if hs.is_ip_in_set(tmp_ip_address) :
                 # yep, a really bad dude
