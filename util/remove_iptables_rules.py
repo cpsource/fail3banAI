@@ -31,6 +31,9 @@ with open(file_path, 'r') as file:
 # Get the current iptables rules with line numbers
 iptables_rules = get_iptables_rules()
 
+# Store rules and their corresponding line numbers
+rules_to_remove = []
+
 # Iterate through the log and match relevant iptables rules for removal
 for line in lines:
     if line.startswith("Chain") or line.startswith("target") or line.strip() == "":
@@ -44,7 +47,14 @@ for line in lines:
         if rule in iptables_rule:
             # Extract the rule number from the beginning of the matching line
             rule_number = iptables_rule.split()[0]
-            # Remove the rule by its number
-            remove_iptables_rule_by_number(rule_number)
+            # Add the rule number to the list of rules to remove
+            rules_to_remove.append(rule_number)
             break
+
+# Sort the rule numbers in reverse order
+rules_to_remove.sort(reverse=True)
+
+# Remove the rules in reverse order to avoid index shifting
+for rule_number in rules_to_remove:
+    remove_iptables_rule_by_number(rule_number)
 
