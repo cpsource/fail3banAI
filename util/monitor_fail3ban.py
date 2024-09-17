@@ -10,6 +10,29 @@ import sys
 # Configure logging
 import logging
 
+class HashedSet:
+    def __init__(self, hashed_set_file='hashed_set.py'):
+        self.hashed_set_file = hashed_set_file
+        self.hashed_set = self.load_hashed_set()
+
+    def load_hashed_set(self):
+        try:
+            # Dynamically import the hashed_set from the given file
+            hashed_set_module = {}
+            with open(self.hashed_set_file, 'r') as file:
+                exec(file.read(), hashed_set_module)
+            return hashed_set_module['hashed_set']
+        except FileNotFoundError:
+            print(f"File {self.hashed_set_file} not found.")
+            return set()
+        except KeyError:
+            print("Error loading hashed_set from file.")
+            return set()
+
+    def is_ip_in_set(self, ip_address):
+        """Check if an IP address is in the hashed set."""
+        return ip_address in self.hashed_set
+
 # Extracted constants for log file name and format
 LOG_FILE_NAME = "monitor_fail3ban.log"
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
@@ -32,11 +55,18 @@ logger = logging.getLogger("fail3ban")
 #
 # Load our foundation classes
 #
+# Get the FAIL3BAN_PROJECT_ROOT environment variable and append '/lib'
+project_root = os.getenv('FAIL3BAN_PROJECT_ROOT', os.getcwd())  # Use current directory if env var is not set
+lib_path = os.path.join(project_root, 'lib')
+# Add the constructed path to the system path
+sys.path.append(lib_path)
+print(f"Added {lib_path} to the system path.")
+
 # Get the absolute path of the current directory (the directory containing this script)
-current_dir = os.path.dirname(os.path.abspath(__file__))
+#current_dir = os.path.dirname(os.path.abspath(__file__))
 # Add the subdirectory to the system path
-subdirectory_path = os.path.join(current_dir, 'lib')
-sys.path.append(subdirectory_path)
+#subdirectory_path = os.path.join(current_dir, '../lib')
+#sys.path.append(subdirectory_path)
 
 import previousJournalctl
 
@@ -482,6 +512,8 @@ journalctl_proc = subprocess.Popen(['journalctl', '-f'], stdout=subprocess.PIPE,
 
 # use new PreviousJournalctl class
 prevs = previousJournalctl.PreviousJournalctl()
+# and our HashedSet class
+hs = HashedSet()
 
 try:
     # Process each line from journalctl -f
@@ -496,16 +528,24 @@ try:
         result = prevs.prev_entry()
 
         country_code = None
+        bad_dude_status = None
         tmp_ip_address = prevs.get_top_ip_address()
         if tmp_ip_address is not None:
             country_code = find_country(tmp_ip_address)
-        
+            # is this ip address in HashedSet
+            if hs.is_ip_in_set(tmp_ipaddress) :
+                # yep, a really bad dude
+                bad_dude_status = "In HashedSet"
+            else:
+                # nope, but a bad dude anyway
+                bad_dude_status = "Not In HashedSet"
+                
         if country_code is not None:
             # Print the journalctl line before processing
-            logging.info(f"CC: {country_code} : {line.strip()}")
+            logging.info(f"CC: {country_code} HS: {bad_dude_status} : {line.strip()}")
         else:
             # Print the journalctl line before processing
-            logging.info(f"CC: n/a : {line.strip()}")
+            logging.info(f"CC: n/a : HS: {bad_dude_status} {line.strip()}")
         
         # Was there a match ???
         if result[0]:
