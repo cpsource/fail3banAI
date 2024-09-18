@@ -36,7 +36,7 @@ def setup_logging():
 setup_logging()
 
 # Create a named logger consistent with the log file name
-logger = logging.getLogger("fail3ban")
+logger = logging.getlogger("fail3ban")
 
 #
 # Load our python3 paths
