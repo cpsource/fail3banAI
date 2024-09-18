@@ -120,7 +120,7 @@ class WhiteList:
         return None
     
     def get_whitelist_path(self):
-        path = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "whitelist.ctl"
+        path = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/" + "whitelist.ctl"
         if path is None:
             path = "whitelist.ctl"
         return path
