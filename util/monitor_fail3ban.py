@@ -340,7 +340,7 @@ try:
     # Process each line from journalctl -f
     for line in journalctl_proc.stdout:
         # Clean up previous temporary files
-        clean_temp_files()
+        #clean_temp_files()
 
         # Now save
         prevs.add_entry(line)
@@ -386,7 +386,7 @@ try:
             f"Orig      : {res if res is not None else 'n/a'}\n"
             f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
             f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
-            f"BadDude   : True if bad_dude_status else 'False'}\n"            
+            f"BadDude   : {True if bad_dude_status else 'False'}\n"            
             f"Country   : {country if country is not None else 'n/a'}\n"
         )
         # and display it
@@ -423,8 +423,9 @@ try:
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
 finally:
+    pass
     # Cleanup: close the temporary file and delete it
-    if os.path.exists(temp_file.name):
-        temp_file.close()
-        os.remove(temp_file.name)
-        logging.debug(f"Temporary file {temp_file.name} removed.")
+    #if os.path.exists(temp_file.name):
+    #    temp_file.close()
+    #    os.remove(temp_file.name)
+    #    logging.debug(f"Temporary file {temp_file.name} removed.")
