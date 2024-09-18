@@ -26,11 +26,14 @@ LOG_FILE_NAME = "fail3ban.log"
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
 LOG_ID = "fail3ban"
 
+# some garbase ip address
 TEST_IP = "192.168.211.34"
+# localhost is always good to have in the whitelist
 LOCAL_IP = "127.0.0.1"
 
 class WhiteList:
     configData = None
+
     def __init__(self, configData=None, logger_id=LOG_ID):
         # Initialize an empty array to store whitelisted IPs
         self.whitelist = []
@@ -45,7 +48,7 @@ class WhiteList:
         
     # Initialize the class by reading whitlist.ctl into a dictionary
     def whitelist_init(self):
-        # We need iptables
+        # We need iptables for many operations
         self.ipt = f3b_iptables.Iptables()
         # Open the whitelist.ctl file
         WHITELIST_FILE = self.get_whitelist_path()
@@ -76,14 +79,6 @@ class WhiteList:
         # lets add TEST_IP for testing if called from main
         if self.called_from_main() and not self.is_whitelisted(TEST_IP):
             self.whitelist.append(TEST_IP)
-
-        # test of scope - (obsoleted form)
-        if self.configData is not None:
-            debug = self.configData.get('debug')
-            if debug :
-                self.logger.debug(f"at whitelist_init, debug = {debug}")
-        else:
-            debug = False
 
     def called_from_main(self):
         # Check if the method is being called from the main program

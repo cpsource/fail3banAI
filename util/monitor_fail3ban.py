@@ -9,6 +9,13 @@ import sys
 
 # Configure logging
 import logging
+# and some magic numbers for logging
+FLAG_CRITICAL = 50
+FLAG_ERROR = 40
+FLAG_WARNING = 30
+FLAG_INFO = 20
+FLAG_DEBUG = 10
+FLAG_NOSET = 0
 
 # Extracted constants for log file name and format
 LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "monitor_fail3ban.log"
@@ -68,7 +75,10 @@ import f3b_ShortenJournalString
 
 # get database
 import f3b_sqlite3_db
-                          
+
+# get whitelist
+import f3b_whitelist
+
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -83,32 +93,39 @@ import f3b_sqlite3_db
 temp_file = tempfile.NamedTemporaryFile(delete=False, dir='/tmp', mode='w', prefix='journal_', suffix='.log')
 
 import subprocess
-#import f3b_blacklist
-#import re
+import re
+import time
 
 def find_country(ip_address_string):
-    try:
-        # Execute the 'whois' command for the given IP address
-        tmp_result = subprocess.run(['whois', ip_address_string], capture_output=True, text=True)
-        
-        # Check if the command ran successfully
-        if tmp_result.returncode != 0:
-            raise Exception("Failed to run whois command.")
-        
-        # Search for the line starting with 'country:'
-        match = re.search(r"^country:\s+(.+)$", tmp_result.stdout, re.MULTILINE | re.IGNORECASE)
-        
-        if match:
-            # Extract and return the country code (everything after 'country:')
-            tmp_country = match.group(1).strip()
-            tmp_country_code = cc.get_country(tmp_country)
-            return tmp_country_code
-        else:
-            # Return None if no country line is found
-            return None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+    attempts = 3  # Number of retry attempts
+    sleep_time = 0.1  # Sleep for 100 milliseconds (0.1 seconds)
+
+    for attempt in range(attempts):
+        try:
+            # Execute the 'whois' command for the given IP address
+            tmp_result = subprocess.run(['whois', ip_address_string], capture_output=True, text=True)
+
+            # Check if the command ran successfully
+            if tmp_result.returncode != 0:
+                raise Exception("Failed to run whois command.")
+
+            # Search for the line starting with 'country:'
+            match = re.search(r"^country:\s+(.+)$", tmp_result.stdout, re.MULTILINE | re.IGNORECASE)
+
+            if match:
+                # Extract and return the country code (everything after 'country:')
+                tmp_country = match.group(1).strip()
+                tmp_country_code = cc.get_country(tmp_country)
+                return tmp_country_code
+            else:
+                # Return None if no country line is found
+                return None
+        except Exception as e:
+            if attempt < attempts - 1:  # If this isn't the last attempt, sleep and retry
+                time.sleep(sleep_time)
+            else:
+                print(f"Error after {attempts} attempts: {e}")
+                return None
 
 def has_ip_address(input_string):
     """
@@ -313,7 +330,10 @@ cc = f3b_CountryCodes.CountryCodes()
 sjs = f3b_ShortenJournalString.ShortenJournalString()
 # and our database
 db = f3b_sqlite3_db.SQLiteDB()
-                          
+# our whitelist
+wl = f3b_whitelist.WhiteList()
+wl.whitelist_init()
+
 try:
     # Process each line from journalctl -f
     for line in journalctl_proc.stdout:
@@ -336,6 +356,7 @@ try:
         else:
             # not found, go with the origional line
             res = line
+        res = res.strip()
 
         # is there an ip address in a line or the combined line ???
         found_dict, shortened_str = sjs.shorten_string(res.strip())
@@ -371,9 +392,31 @@ try:
         print("-" * 50)
         
         # do we have an ip address in res ?
+        threat = "unk"
         if ip_address is not None:
+            # check that this ip is not in the whitelist
+            if wl.is_whitelisted(ip_address) is not None:
+                print(f"Our ip address {ip_address} is in whitelist.ctl.")
+                threat = "no"
             # we are finally! ready to mess with the threat_table database
-            pass
+            tmp_flag, tmp_threat = db.fetch_threat_level(shortened_str)
+            if tmp_flag is True:
+                print(f"Database returns threat as {tmp_threat}")
+                threat = tmp_threat
+            else:
+                print(f"ip is not in the threat database")
+
+            # if we are debugging,
+            if logger.getLogger() <= FLAG_DEBUG :
+                # at this point, we'd want to check with ChatGPT to ascertain the threat level
+                
+                # then add to our threat database
+                db.insert_or_update_threat(shortened_str, 1, threat)
+
+            # done processing this line
+            continue
+        else:
+            continue
         
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
