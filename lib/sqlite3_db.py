@@ -87,7 +87,7 @@ class SQLiteDB:
     #
     def insert_or_update_threat(self, shortened_string, hit_count, hazard_level):
         try:
-            cursor = self.conn.cursor()
+            cursor = self.connection.cursor()
             # Insert new row or update existing one if shortened_string already exists
             query = '''
             INSERT INTO threat_table (shortened_string, hit_count, hazard_level)
@@ -97,13 +97,13 @@ class SQLiteDB:
                           hazard_level = excluded.hazard_level
             '''
             cursor.execute(query, (shortened_string, hit_count, hazard_level))
-            self.conn.commit()
+            self.connection.commit()
         except sqlite3.Error as e:
             print(f"Error occurred: {e}")
 
     def fetch_threat_level(self, shortened_string):
         try:
-            cursor = self.conn.cursor()
+            cursor = self.connection.cursor()
             # Query to fetch hazard_level and hit_count based on shortened_string
             query = '''
             SELECT hit_count, hazard_level FROM threat_table WHERE shortened_string = ?
@@ -122,7 +122,7 @@ class SQLiteDB:
                 WHERE shortened_string = ?
                 '''
                 cursor.execute(update_query, (hit_count, shortened_string))
-                self.conn.commit()
+                self.connection.commit()
 
                 return (True, hazard_level)  # Return True and hazard_level
             else:
@@ -133,7 +133,7 @@ class SQLiteDB:
             
     def show_threats(self):
         try:
-            cursor = self.conn.cursor()
+            cursor = self.connection.cursor()
             # Query to select all rows from the threat_table
             query = '''
             SELECT id, shortened_string, hit_count, hazard_level FROM threat_table
