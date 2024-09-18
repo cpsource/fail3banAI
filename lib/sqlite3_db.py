@@ -6,6 +6,7 @@
 #  their own SQLiteDB
 #
 
+import os
 import sqlite3
 from datetime import datetime, timedelta
 import ipaddress
@@ -27,6 +28,8 @@ class SQLiteDB:
         self.logger = logging.getLogger(log_id)
         # register a cleanup
         atexit.register(self.cleanup)
+        # adjust path for db_name
+        db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + db_name
 
         try:
             self.db_name = db_name
@@ -34,6 +37,7 @@ class SQLiteDB:
             self.cursor = self.connection.cursor()
             # Create tables if they don't exist
             self.create_ban_table()
+            self.create_threat_table()
             self.logger.info(f"Connected to database '{db_name}' successfully.")
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while connecting to the database: {e}")
@@ -59,6 +63,96 @@ class SQLiteDB:
             self.logger.error(f"An error occurred while creating ban_table: {e}")
             raise  # Re-raise the exception to notify higher-level code
 
+    def create_threat_table(self):
+        """Create the threat_table if it doesn't already exist."""
+        create_threat_query = '''
+        CREATE TABLE IF NOT EXISTS threat_table (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shortened_string CHAR(255),
+            hit_count INTEGER,
+            hazard_level CHAR(12),
+            UNIQUE(shortened_string)
+        )
+        '''
+        try:
+            self.cursor.execute(create_threat_query)
+            self.connection.commit()
+            self.logger.info("threat_table created or already exists.")
+        except sqlite3.Error as e:
+            self.logger.error(f"An error occurred while creating threat_table: {e}")
+            raise  # Re-raise the exception to notify higher-level code
+
+    #
+    # Handle threat table
+    #
+    def insert_or_update_threat(self, shortened_string, hit_count, hazard_level):
+        try:
+            cursor = self.conn.cursor()
+            # Insert new row or update existing one if shortened_string already exists
+            query = '''
+            INSERT INTO threat_table (shortened_string, hit_count, hazard_level)
+            VALUES (?, ?, ?)
+            ON CONFLICT(shortened_string) 
+            DO UPDATE SET hit_count = hit_count + excluded.hit_count, 
+                          hazard_level = excluded.hazard_level
+            '''
+            cursor.execute(query, (shortened_string, hit_count, hazard_level))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"Error occurred: {e}")
+
+    def fetch_threat_level(self, shortened_string):
+        try:
+            cursor = self.conn.cursor()
+            # Query to fetch hazard_level and hit_count based on shortened_string
+            query = '''
+            SELECT hit_count, hazard_level FROM threat_table WHERE shortened_string = ?
+            '''
+            cursor.execute(query, (shortened_string,))
+            result = cursor.fetchone()  # Fetch one result
+            if result:
+                # If record exists, increment hit_count
+                hit_count = result[0] + 1
+                hazard_level = result[1]
+
+                # Update hit_count
+                update_query = '''
+                UPDATE threat_table
+                SET hit_count = ?
+                WHERE shortened_string = ?
+                '''
+                cursor.execute(update_query, (hit_count, shortened_string))
+                self.conn.commit()
+
+                return (True, hazard_level)  # Return True and hazard_level
+            else:
+                return (False, None)  # Return False if not found
+        except sqlite3.Error as e:
+            print(f"Error occurred: {e}")
+            return (False, None)
+            
+    def show_threats(self):
+        try:
+            cursor = self.conn.cursor()
+            # Query to select all rows from the threat_table
+            query = '''
+            SELECT id, shortened_string, hit_count, hazard_level FROM threat_table
+            '''
+            cursor.execute(query)
+            results = cursor.fetchall()  # Fetch all results
+            if results:
+                print(f"{'ID':<5} {'Shortened String':<25} {'Hit Count':<10} {'Hazard Level':<15}")
+                print("-" * 60)
+                for row in results:
+                    print(f"{row[0]:<5} {row[1]:<25} {row[2]:<10} {row[3]:<15}")
+            else:
+                print("No threats found in the table.")
+        except sqlite3.Error as e:
+            print(f"Error occurred: {e}")
+
+    #
+    # Handle ban table
+    #
     def add_or_update_ban(self, ip_addr, jail_name, minutes_until_ban_end):
         """Add a new ban or update an existing ban based on ip_address and jail."""
         # Parse and expand the IP address (IPv6 addresses to full form)
