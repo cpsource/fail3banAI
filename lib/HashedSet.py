@@ -1,3 +1,5 @@
+import os
+
 class HashedSet:
     def __init__(self, hashed_set_file='hashed_set.py'):
         self.hashed_set_file = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/util/" + hashed_set_file

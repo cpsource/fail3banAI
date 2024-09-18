@@ -360,6 +360,14 @@ try:
                 print(f"Found Items: {found}")
                 print(f"Shortened: {shortened_str}")
                 print("-" * 50)
+        else:
+            logging.debug("shortened_string test")
+            # display ShortenJournalString (for debugging)
+            found, shortened_str = sjs.shorten_string(line.strip())
+            print(f"Original: {line.strip()}")
+            print(f"Found Items: {found}")
+            print(f"Shortened: {shortened_str}")
+            print("-" * 50)
         
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
