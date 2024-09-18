@@ -120,20 +120,10 @@ class WhiteList:
         return None
     
     def get_whitelist_path(self):
-        # Get the current working directory
-        current_dir = os.getcwd()
-        
-        # Check if the current directory ends with '/lib'
-        if re.search(r'.*/lib\Z', current_dir):
-            # Return path for lib context
-            return os.path.join('..', 'control', 'whitelist.ctl')
-        # Check if the current directory ends with '/fail3banAI'
-        elif re.search(r'.*/fail3banAI\Z', current_dir):
-            # Return path for fail3banAI context
-            return os.path.join('control', 'whitelist.ctl')
-        else:
-            # Handle other cases (optional)
-            return None
+        path = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "whitelist.ctl"
+        if path is None:
+            path = "whitelist.ctl"
+        return path
         
     # a utility class
     def _is_called_within_class(self):
