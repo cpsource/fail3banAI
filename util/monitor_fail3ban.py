@@ -11,8 +11,10 @@ import sys
 import logging
 
 # Extracted constants for log file name and format
-LOG_FILE_NAME = "monitor_fail3ban.log"
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "monitor_fail3ban.log"
+# Set up the logging format to include file name and line number
+LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
+
 # Extracted function to set up logging configuration
 def setup_logging():
     logging.basicConfig(
@@ -64,6 +66,9 @@ import f3b_CountryCodes
 # get ShortenJournalString
 import f3b_ShortenJournalString
 
+# get database
+import f3b_sqlite3_db
+                          
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -306,7 +311,9 @@ hs = f3b_HashedSet.HashedSet()
 cc = f3b_CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = f3b_ShortenJournalString.ShortenJournalString()
-
+# and our database
+db = f3b_sqlite3_db.SQLiteDB()
+                          
 try:
     # Process each line from journalctl -f
     for line in journalctl_proc.stdout:
@@ -318,56 +325,55 @@ try:
 
         # Now, call prev_entry and check if it returns the correct match
         result = prevs.prev_entry()
+        # Was there a previous result to combine with this one ???
+        res = None
+        if result[0]:
+            logging.debug(f"Match found: {result[1]}")
+            # combine the strings into one
+            res = combine(result[1][3], line)
+            # print the new line
+            logging.info(f"*** Combined line: {res.strip()}")
+        else:
+            # not found, go with the origional line
+            res = line
 
+        # is there an ip address in a line or the combined line ???
+        found_dict, shortened_str = sjs.shorten_string(res.strip())
+        if 'ip_address' in found_dict:
+            ip_address = found_dict['ip_address']
+        else:
+            # we are done if there is not ip_address, on to the next line
+            continue
+
+        # get country and in HashedSet
         country = None
         bad_dude_status = "n/a"
-        tmp_ip_address = prevs.get_top_ip_address()
-        if tmp_ip_address is not None:
-            country = find_country(tmp_ip_address)
+        if ip_address is not None:
+            country = find_country(ip_address)
             # is this ip address in HashedSet
-            if hs.is_ip_in_set(tmp_ip_address) :
+            if hs.is_ip_in_set(ip_address) :
                 # yep, a really bad dude
                 bad_dude_status = "In HashedSet"
             else:
                 # nope, but a bad dude anyway
                 bad_dude_status = "Not In HashedSet"
-                
-        if country is not None:
-            # Print the journalctl line before processing
-            logging.info(f"CC: {country} HS: {bad_dude_status} : {line.strip()}")
-        else:
-            # Print the journalctl line before processing
-            logging.info(f"CC: n/a : HS: {bad_dude_status} {line.strip()}")
+
+        # format message to be displayed
+        formatted_string = (
+            f"Orig      : {res if res is not None else 'n/a'}\n"
+            f"Country   : {country if country is not None else 'n/a'}\n"
+            f"Bad Dude  : {bad_dude_status if bad_dude_status is not None else 'n/a'}\n"
+            f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
+            f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"            
+        )
+        # and display it
+        print(formatted_string)
+        print("-" * 50)
         
-        # Was there a match ???
-        if result[0]:
-            logging.debug(f"Match found: {result[1]}")
-            res = combine(result[1][3], line)
-            if res is not None:
-                # print the new line
-                logging.info(f"*** Combined line: {res.strip()}")
-                # display ShortenJournalString (for debugging)
-                found, shortened_str = sjs.shorten_string(res.strip())
-                print(f"Original: {input_str}")
-                print(f"Found Items: {found}")
-                print(f"Shortened: {shortened_str}")
-                print("-" * 50)
-            else:
-                logging.error("could not combine lines")
-                # display ShortenJournalString (for debugging)
-                found, shortened_str = sjs.shorten_string(line.strip())
-                print(f"Original: {input_str}")
-                print(f"Found Items: {found}")
-                print(f"Shortened: {shortened_str}")
-                print("-" * 50)
-        else:
-            logging.debug("shortened_string test")
-            # display ShortenJournalString (for debugging)
-            found, shortened_str = sjs.shorten_string(line.strip())
-            print(f"Original: {line.strip()}")
-            print(f"Found Items: {found}")
-            print(f"Shortened: {shortened_str}")
-            print("-" * 50)
+        # do we have an ip address in res ?
+        if ip_address is not None:
+            # we are finally! ready to mess with the threat_table database
+            pass
         
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
