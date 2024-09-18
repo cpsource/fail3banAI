@@ -53,13 +53,16 @@ else:
 #subdirectory_path = os.path.join(current_dir, '../lib')
 #sys.path.append(subdirectory_path)
 
-import previousJournalctl
+import f3b_previousJournalctl
 
 # get HashedSet
 import f3b_HashedSet
 
 # get CountryCode
 import f3b_CountryCodes
+
+# get ShortenJournalString
+import f3b_ShortenJournalString
 
 #
 # Here's a double line that needs to be combined
@@ -296,11 +299,13 @@ journalctl_proc = subprocess.Popen(['journalctl', '-f'], stdout=subprocess.PIPE,
 #previous_line = None
 
 # use new PreviousJournalctl class
-prevs = previousJournalctl.PreviousJournalctl()
+prevs = f3b_previousJournalctl.PreviousJournalctl()
 # and our HashedSet class
 hs = f3b_HashedSet.HashedSet()
 # and our country codes class
 cc = f3b_CountryCodes.CountryCodes()
+# and our ShortenJournalString
+sjs = f3b_ShortenJournalString.ShortenJournalString()
 
 try:
     # Process each line from journalctl -f
@@ -341,8 +346,20 @@ try:
             if res is not None:
                 # print the new line
                 logging.info(f"*** Combined line: {res.strip()}")
+                # display ShortenJournalString (for debugging)
+                found, shortened_str = sjs.shorten_string(res.strip())
+                print(f"Original: {input_str}")
+                print(f"Found Items: {found}")
+                print(f"Shortened: {shortened_str}")
+                print("-" * 50)
             else:
                 logging.error("could not combine lines")
+                # display ShortenJournalString (for debugging)
+                found, shortened_str = sjs.shorten_string(line.strip())
+                print(f"Original: {input_str}")
+                print(f"Found Items: {found}")
+                print(f"Shortened: {shortened_str}")
+                print("-" * 50)
         
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
