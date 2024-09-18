@@ -90,7 +90,7 @@ import f3b_whitelist
 #Journalctl line: Sep 13 12:46:37 ip-172-26-10-222 sshd[172070]: Connection closed by 104.152.52.121 port 51587
 
 # Path to the temporary file in /tmp
-temp_file = tempfile.NamedTemporaryFile(delete=False, dir='/tmp', mode='w', prefix='journal_', suffix='.log')
+#temp_file = tempfile.NamedTemporaryFile(delete=False, dir='/tmp', mode='w', prefix='journal_', suffix='.log')
 
 import subprocess
 import re
@@ -273,6 +273,8 @@ def is_jail_enabled(dir_name):
     return False  # Default to False if no 'enabled = true' was found
 
 
+# Note: Unused
+
 # Function to process each line from journalctl
 def process_journalctl_line(zline):
     # Write the line to the temporary file
@@ -374,18 +376,18 @@ try:
             # is this ip address in HashedSet
             if hs.is_ip_in_set(ip_address) :
                 # yep, a really bad dude
-                bad_dude_status = "In HashedSet"
+                bad_dude_status = True
             else:
                 # nope, but a bad dude anyway
-                bad_dude_status = "Not In HashedSet"
+                bad_dude_status = False
 
         # format message to be displayed
         formatted_string = (
             f"Orig      : {res if res is not None else 'n/a'}\n"
-            f"Country   : {country if country is not None else 'n/a'}\n"
-            f"Bad Dude  : {bad_dude_status if bad_dude_status is not None else 'n/a'}\n"
             f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
-            f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"            
+            f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
+            f"BadDude   : True if bad_dude_status else 'False'}\n"            
+            f"Country   : {country if country is not None else 'n/a'}\n"
         )
         # and display it
         print(formatted_string)

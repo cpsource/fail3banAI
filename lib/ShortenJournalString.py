@@ -9,7 +9,7 @@ class ShortenJournalString:
             "task_name_pid": r"(\w+)\[(\d+)\]",
             "user": r"user ((\w+\(uid=\d+\))|(\w+))",
             "by": r"by (\w+\(uid=\d+\)+)",
-            "ip_address": r"(((\d{1,3}\.){3}\d{1,3})|([a-fA-F0-9:]+:+[a-fA-F0-9]+))",  # IPv4/6 address
+            "ip_address": r"\w+\[\d+\](((\d{1,3}\.){3}\d{1,3})|([a-fA-F0-9:]+:+[a-fA-F0-9]+))",  # IPv4/6 address
             "port": r"port (\d+)"
         }
 
