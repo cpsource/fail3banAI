@@ -36,7 +36,7 @@ def setup_logging():
 setup_logging()
 
 # Create a named logger consistent with the log file name
-logger = logging.getlogger("fail3ban")
+logger = logging.getLogger("fail3ban")
 
 #
 # Load our python3 paths
@@ -407,7 +407,7 @@ try:
                 print(f"ip is not in the threat database")
 
             # if we are debugging,
-            if logger.getLogger() <= FLAG_DEBUG :
+            if logger.getEffectiveLevel() <= FLAG_DEBUG :
                 # at this point, we'd want to check with ChatGPT to ascertain the threat level
                 
                 # then add to our threat database
