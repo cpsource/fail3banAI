@@ -115,7 +115,7 @@ def find_country(ip_address_string):
             if match:
                 # Extract and return the country code (everything after 'country:')
                 tmp_country = match.group(1).strip()
-                tmp_country_code = cc.get_country(tmp_country)
+                tmp_country_code = cc.get_country(tmp_country).strip()
                 return tmp_country_code
             else:
                 # Return None if no country line is found
@@ -332,6 +332,8 @@ cc = f3b_CountryCodes.CountryCodes()
 sjs = f3b_ShortenJournalString.ShortenJournalString()
 # and our database
 db = f3b_sqlite3_db.SQLiteDB()
+db.show_threats()
+exit
 # our whitelist
 wl = f3b_whitelist.WhiteList()
 wl.whitelist_init()
