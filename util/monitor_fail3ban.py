@@ -333,7 +333,7 @@ sjs = f3b_ShortenJournalString.ShortenJournalString()
 # and our database
 db = f3b_sqlite3_db.SQLiteDB()
 db.show_threats()
-exit
+
 # our whitelist
 wl = f3b_whitelist.WhiteList()
 wl.whitelist_init()
