@@ -82,9 +82,28 @@ class SQLiteDB:
             self.logger.error(f"An error occurred while creating threat_table: {e}")
             raise  # Re-raise the exception to notify higher-level code
 
+        
     #
     # Handle threat table
     #
+
+    # a debugging method
+    def reset_hazard_level(self):
+        try:
+            # Update all rows in the threat_table where hazard_level is 'no' and set it to 'unk'
+            update_query = """
+            UPDATE threat_table
+            SET hazard_level = 'unk'
+            WHERE hazard_level = 'no';
+            """
+            self.cursor.execute(update_query)
+            self.conn.commit()
+            print("Hazard levels updated successfully.")
+        
+        except sqlite3.Error as e:
+            print(f"An error occurred: {e}")
+            self.conn.rollback()
+
     def insert_or_update_threat(self, shortened_string, hit_count, hazard_level):
         try:
             cursor = self.connection.cursor()

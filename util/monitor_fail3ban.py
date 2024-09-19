@@ -332,6 +332,7 @@ cc = f3b_CountryCodes.CountryCodes()
 sjs = f3b_ShortenJournalString.ShortenJournalString()
 # and our database
 db = f3b_sqlite3_db.SQLiteDB()
+db.reset_hazard_level()
 db.show_threats()
 
 # our whitelist
@@ -394,33 +395,33 @@ try:
             f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
             f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
             f"BadDude   : {True if bad_dude_status else 'False'}\n"            
-            f"Country   : {country if country is not None else 'n/a'}\n"
+            f"Country   : {country if country is not None else 'n/a'}"
         )
         # and display it
         print(formatted_string)
         print("-" * 50)
         
         # do we have an ip address in res ?
-        threat = "unk"
+        hazard_level = "unk"
         if ip_address is not None:
             # check that this ip is not in the whitelist
             if wl.is_whitelisted(ip_address) is not None:
-                logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng threat to no.")
-                threat = "no"
+                logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng hazard_level to no.")
+                hazard_level = "no"
             # we are finally! ready to mess with the threat_table database
-            tmp_flag, tmp_threat = db.fetch_threat_level(shortened_str)
+            tmp_flag, tmp_hazard_level = db.fetch_threat_level(shortened_str)
             if tmp_flag is True:
-                logging.debug(f"Database returns threat as {tmp_threat}")
-                threat = tmp_threat
+                logging.debug(f"Database returns hazard_level as {tmp_hazard_level}")
+                hazard_level = tmp_hazard_level
             else:
-                logging.debug(f"Database doesn't have a record of this shortened_string, threat = {threat}")
+                logging.debug(f"Database doesn't have a record of this shortened_string, hazard_level = {hazard_level}")
 
             # if we are debugging,
             if logger.getEffectiveLevel() <= FLAG_DEBUG :
-                # at this point, we'd want to check with ChatGPT to ascertain the threat level
+                # at this point, we'd want to check with ChatGPT to ascertain the hazard_level level
                 
                 # then add to our threat database
-                db.insert_or_update_threat(shortened_str, 1, threat)
+                db.insert_or_update_threat(shortened_str, 1, hazard_level)
 
             # done processing this line
             continue
