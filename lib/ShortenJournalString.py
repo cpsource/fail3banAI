@@ -15,7 +15,9 @@ class ShortenJournalString:
 
             "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b",
 
-            "ecdsa": r"\b(ECDSA\s*SHA256:[a-zA-Z0-9_/]*)"
+            "ecdsa": r"(ECDSA SHA256:[a-zA-Z0-9_/]*)",
+
+            "for-user": r"\bfor\s+([a-zA-Z0-9-_]+)"
         }
 
     def shorten_string(self, input_str):
@@ -64,9 +66,14 @@ class ShortenJournalString:
 
         ecdsa_match = re.search(self.patterns["ecdsa"], input_str)
         if ecdsa_match:
-            found_items["ecdsa"] = port_match.group(1).strip()
+            found_items["ecdsa"] = ecdsa_match.group(1).strip()
             input_str = input_str.replace(f"{found_items['ecdsa']}", "<ecdsa>")
-            
+
+        for_user_match = re.search(self.patterns["for-user"], input_str)
+        if for_user_match:
+            found_items["for-user"] = for_user_match.group(1).strip()
+            input_str = input_str.replace(f"{found_items['for-user']}", "<for-user>")
+           
         return found_items, input_str
 
 
