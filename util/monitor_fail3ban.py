@@ -366,10 +366,10 @@ try:
         if 'ip_address' in found_dict:
             ip_address = found_dict['ip_address']
             # debgging info
-            logging.debug(f"ip_address found by shorten_string is {ip_address}")
+            #logging.debug(f"ip_address found by shorten_string is {ip_address}")
         else:
             # debgging info
-            logging.debug(f"no ip_address found, skipping line")
+            #logging.debug(f"no ip_address found, skipping line")
             # we are done if there is not ip_address, on to the next line
             continue
 
@@ -403,15 +403,15 @@ try:
         if ip_address is not None:
             # check that this ip is not in the whitelist
             if wl.is_whitelisted(ip_address) is not None:
-                logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng threat to none.")
+                logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng threat to no.")
                 threat = "no"
             # we are finally! ready to mess with the threat_table database
             tmp_flag, tmp_threat = db.fetch_threat_level(shortened_str)
             if tmp_flag is True:
-                print(f"Database returns threat as {tmp_threat}")
+                logging.debug(f"Database returns threat as {tmp_threat}")
                 threat = tmp_threat
             else:
-                print(f"Database doesn't have a record of this shortened_string, threat = {threat}")
+                logging.debug(f"Database doesn't have a record of this shortened_string, threat = {threat}")
 
             # if we are debugging,
             if logger.getEffectiveLevel() <= FLAG_DEBUG :

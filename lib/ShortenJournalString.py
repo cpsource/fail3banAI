@@ -45,12 +45,12 @@ class ShortenJournalString:
 
         by_match = re.search(self.patterns["by"], input_str)
         if by_match:
-            found_items["by"] = by_match.group(1)  # Extract value
+            found_items["by"] = by_match.group(1).strip()  # Extract value
             input_str = input_str.replace(f"by {found_items['by']}", "<by>")
 
         ip_match = re.search(self.patterns["ip_address"], input_str)
         if ip_match:
-            print(f"ip address found {ip_match.group(0)}")
+            #print(f"ip address found {ip_match.group(0)}")
             found_items["ip_address"] = ip_match.group(0).strip()
             input_str = input_str.replace(found_items["ip_address"], "<ip-address>")
 
