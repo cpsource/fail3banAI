@@ -21,7 +21,7 @@ journalctl_entry = "Sep 19 15:28:58 ip-172-26-10-222 sshd[4254]: Invalid user  f
 
 # The payload to send to the API
 payload = {
-    "model": "o1-preview",
+    "model": "gpt-4o",
     "messages": [
         {
             "role": "system",
