@@ -97,7 +97,7 @@ class SQLiteDB:
             WHERE hazard_level = 'no';
             """
             self.cursor.execute(update_query)
-            self.connecton.commit()
+            self.connection.commit()
             print("Hazard levels updated successfully.")
         
         except sqlite3.Error as e:
