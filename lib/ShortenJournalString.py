@@ -14,6 +14,7 @@ class ShortenJournalString:
             "ip_address" : r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)",
 
             "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b",
+
             "ecdsa": r"\b(ECDSA\s*SHA256:[a-zA-Z0-9_/]*)"
         }
 
@@ -62,10 +63,9 @@ class ShortenJournalString:
             found_items["port"] = found_items["port"].split(':')[0]
 
         ecdsa_match = re.search(self.patterns["ecdsa"], input_str)
-        if port_match:
+        if ecdsa_match:
             found_items["ecdsa"] = port_match.group(1).strip()
             input_str = input_str.replace(f"{found_items['ecdsa']}", "<ecdsa>")
-            found_items["port"] = found_items["port"].split(':')[0]
             
         return found_items, input_str
 
