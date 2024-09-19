@@ -352,19 +352,24 @@ try:
         if result[0]:
             logging.debug(f"Match found: {result[1]}")
             # combine the strings into one
-            res = combine(result[1][3], line)
+            res = combine(result[1][3], line).strip()
             # print the new line
-            logging.info(f"*** Combined line: {res.strip()}")
+            logging.debug(f"*** Combined line: {res.strip()}")
         else:
             # not found, go with the origional line
-            res = line
-        res = res.strip()
-
+            res = line.strip()
+            # print the new line
+            logging.debug(f"Line: {res.strip()}")
+            
         # is there an ip address in a line or the combined line ???
         found_dict, shortened_str = sjs.shorten_string(res.strip())
         if 'ip_address' in found_dict:
             ip_address = found_dict['ip_address']
+            # debgging info
+            logging.debug(f"ip_address found by shorten_string is {ip_address}")
         else:
+            # debgging info
+            logging.debug(f"no ip_address found, skipping line")
             # we are done if there is not ip_address, on to the next line
             continue
 
@@ -383,7 +388,7 @@ try:
 
         # format message to be displayed
         formatted_string = (
-            f"Orig      : {res if res is not None else 'n/a'}\n"
+            f"Line      : {res if res is not None else 'n/a'}\n"
             f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
             f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
             f"BadDude   : {True if bad_dude_status else 'False'}\n"            
@@ -398,7 +403,7 @@ try:
         if ip_address is not None:
             # check that this ip is not in the whitelist
             if wl.is_whitelisted(ip_address) is not None:
-                print(f"Our ip address {ip_address} is in whitelist.ctl.")
+                logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng threat to none.")
                 threat = "no"
             # we are finally! ready to mess with the threat_table database
             tmp_flag, tmp_threat = db.fetch_threat_level(shortened_str)
@@ -406,7 +411,7 @@ try:
                 print(f"Database returns threat as {tmp_threat}")
                 threat = tmp_threat
             else:
-                print(f"ip is not in the threat database")
+                print(f"Database doesn't have a record of this shortened_string, threat = {threat}")
 
             # if we are debugging,
             if logger.getEffectiveLevel() <= FLAG_DEBUG :
