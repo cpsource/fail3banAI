@@ -11,7 +11,7 @@ class ShortenJournalString:
             "by": r"by (\w+\(uid=\d+\)+)",
             #"ip_address": r".*" + r"\w+\[\d+\]:" + r".*" + r"(((\d{1,3}\.){3}\d{1,3})|([a-fA-F0-9:]+:+[a-fA-F0-9]+))",  # IPv4/6 address
             "ip_address" : r"((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})))|((?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::))",
-            "port": r"port (\d+)"
+            "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b"
         }
 
     def shorten_string(self, input_str):
@@ -55,6 +55,7 @@ class ShortenJournalString:
         if port_match:
             found_items["port"] = port_match.group(1)
             input_str = input_str.replace(f"port {found_items['port']}", "<port>")
+            found_items["port"] = found_items["port"].split(':')[0]
 
         return found_items, input_str
 
