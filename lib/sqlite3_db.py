@@ -141,10 +141,10 @@ class SQLiteDB:
             cursor.execute(query)
             results = cursor.fetchall()  # Fetch all results
             if results:
-                print(f"{'ID':<5} {'Shortened String':<25} {'Hit Count':<10} {'Hazard Level':<15}")
+                print(f"{'ID':<5} {'Hit Count':<10} {'Hazard Level':<15} {'Shortened String':<25}")
                 print("-" * 60)
                 for row in results:
-                    print(f"{row[0]:<5} {row[1]:<25} {row[2]:<10} {row[3]:<15}")
+                    print(f"{row[0]:<5} {row[2]:<10} {row[3]:<15} {row[1]:<25} ")
             else:
                 print("No threats found in the table.")
         except sqlite3.Error as e:
