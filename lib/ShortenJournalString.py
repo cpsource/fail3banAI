@@ -9,8 +9,10 @@ class ShortenJournalString:
             "task_name_pid": r"(\w+)\[(\d+)\]",
             "user": r"user ((\w+\(uid=\d+\))|(\w+))",
             "by": r"by (\w+\(uid=\d+\)+)",
+
             #"ip_address": r".*" + r"\w+\[\d+\]:" + r".*" + r"(((\d{1,3}\.){3}\d{1,3})|([a-fA-F0-9:]+:+[a-fA-F0-9]+))",  # IPv4/6 address
-            "ip_address" : r"((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})))|((?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::))",
+            "ip_address" : r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)",
+
             "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b"
         }
 
@@ -48,12 +50,13 @@ class ShortenJournalString:
 
         ip_match = re.search(self.patterns["ip_address"], input_str)
         if ip_match:
-            found_items["ip_address"] = ip_match.group(1)
+            print(f"ip address found {ip_match.group(0)}")
+            found_items["ip_address"] = ip_match.group(0).strip()
             input_str = input_str.replace(found_items["ip_address"], "<ip-address>")
 
         port_match = re.search(self.patterns["port"], input_str)
         if port_match:
-            found_items["port"] = port_match.group(1)
+            found_items["port"] = port_match.group(1).strip()
             input_str = input_str.replace(f"port {found_items['port']}", "<port>")
             found_items["port"] = found_items["port"].split(':')[0]
 
