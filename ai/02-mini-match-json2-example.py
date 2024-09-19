@@ -5,6 +5,8 @@ import os
 import sys
 import re
 
+line = "Sep 19 15:28:58 ip-172-26-10-222 sshd[4254]: Invalid user  from 64.62.156.33 port 45647"
+
 def load_api_key():
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -46,8 +48,8 @@ def generate_json(log_entry):
     """
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
+        response = openai.completions.create(
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that converts journalctl log entries into JSON configurations."},
                 {"role": "user", "content": prompt}
@@ -100,11 +102,12 @@ def save_json(json_data, config_path="config.json"):
         json.dump(config, f, indent=2)
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: ./log_parser.py \"<journalctl_log_entry>\"")
-        sys.exit(1)
+    #if len(sys.argv) != 2:
+    #    print("Usage: ./log_parser.py \"<journalctl_log_entry>\"")
+    #    sys.exit(1)
+    #log_entry = sys.argv[1]
 
-    log_entry = sys.argv[1]
+    log_entry = line
     api_key = load_api_key()
     openai.api_key = api_key
 
@@ -120,4 +123,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
