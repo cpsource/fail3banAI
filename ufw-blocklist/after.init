@@ -1,0 +1,186 @@
+#!/bin/bash
+#
+# after.init: if executable, called by ufw-init. See 'man ufw-framework' for
+#             details. Note that output from these scripts is not seen via the
+#             the ufw command, but instead via ufw-init.
+#
+# Copyright 2013 Canonical Ltd.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License version 3,
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# ufw-blocklist edition: IP blocklist extension for Ubuntu ufw
+#  https://github.com/poddmo/ufw-blocklist
+#
+
+set -e
+
+if true; then
+    if [ "$EUID" -ne 0 ]; then
+	echo "You must run this script as root."
+	exit 1
+    else
+	echo "You are running as root."
+    fi
+fi
+
+export ipsetname=ufw-blocklist-ipsum
+
+# seed file containing the list of IP addresses to be blocked, one per line
+# curl -sS -f --compressed 'https://raw.githubusercontent.com/stamparm/ipsum/master/levels/4.txt' > /etc/ipsum.4.txt
+# ipset is updated daily by /etc/cron.daily/ufw-blocklist-ipsum
+export seedlist=/etc/ipsum.4.txt
+
+export IPSET_EXE=`which ipset`
+# check ipset exists and is executable
+[ -x "$IPSET_EXE" ] || {
+    echo "$IPSET_EXE is not executable"
+    exit 1
+    }
+
+
+# Function to check if a chain exists (chain_exists ufw_blocklist_input && action if true || action if false)
+chain_exists()
+{   
+    [ $# -lt 1 -o $# -gt 2 ] && { 
+        echo "Usage: chain_exists <chain_name> [table]" >&2
+        return 1
+    }
+    local chain_name="$1" ; shift
+    [ $# -eq 1 ] && local table="--table $1"
+    iptables $table -n --list "$chain_name" >/dev/null 2>&1
+}
+
+# Function to check if an set exists (set_exists setname && action if true || action if false)
+set_exists()
+{   
+    [ $# -ne 1 ] && { 
+        echo "Usage: set_exists <set_name>" >&2
+        return 1
+    }
+    local set_name="$1"
+    ipset list "$set_name" -name >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+	if false; then	
+	    # check that blocklist seed file exists
+	    if [ ! -f "$seedlist" ]; then
+    		echo "ufw after.init: $seedlist does not exist."
+		exit 1
+	    fi
+	fi
+
+    # create an empty ipset
+    $IPSET_EXE create  $ipsetname hash:net -exist
+    $IPSET_EXE flush   $ipsetname
+    
+    ## Insert firewall rules to take precedence, removing them and adding them back if they already existed
+    # Block inbound to localhost from blocklist
+    if chain_exists ufw-blocklist-input; then
+        iptables -D INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input || true
+        iptables -F ufw-blocklist-input
+        iptables -X ufw-blocklist-input
+    fi
+    iptables -N ufw-blocklist-input
+    iptables -A ufw-blocklist-input -j DROP -m comment --comment "ufw-blocklist-input"
+    iptables -I INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input
+
+    # Log and drop outbound to blocklist. Hits here may indicate compromised localhost
+    if chain_exists ufw-blocklist-output; then
+        iptables -D OUTPUT -m set --match-set $ipsetname dst -j ufw-blocklist-output || true
+        iptables -F ufw-blocklist-output
+        iptables -X ufw-blocklist-output
+    fi
+    iptables -N ufw-blocklist-output
+    iptables -A ufw-blocklist-output -j LOG --log-level 3 --log-prefix "[UFW BLOCKLIST OUTPUT] " -m limit --limit 3/minute --limit-burst 10
+    iptables -A ufw-blocklist-output -j DROP -m comment --comment "ufw-blocklist-output"
+    iptables -I OUTPUT -m set --match-set $ipsetname dst -j ufw-blocklist-output
+
+    # Log and drop forwarding to blocklist. Hits here may indicate compromised internal hosts
+    if chain_exists ufw-blocklist-forward; then
+        iptables -D FORWARD -m set --match-set $ipsetname dst -j ufw-blocklist-forward || true
+        iptables -F ufw-blocklist-forward
+        iptables -X ufw-blocklist-forward
+    fi
+    iptables -N ufw-blocklist-forward
+    iptables -A ufw-blocklist-forward -j LOG --log-level 3 --log-prefix "[UFW BLOCKLIST FORWARD] " -m limit --limit 3/minute --limit-burst 10
+    iptables -A ufw-blocklist-forward -j DROP -m comment --comment "ufw-blocklist-forward"
+    iptables -I FORWARD -m set --match-set $ipsetname dst -j ufw-blocklist-forward
+
+    # lets not load the seedlist
+    if false; then
+	# add members to the ipset
+	# start this in a subshell and then disown the job so we return quickly.
+	(
+	    cat "$seedlist" | while read ip
+            do
+    		$IPSET_EXE add "$ipsetname" "$ip"
+            done
+	) < /dev/null &> /dev/null & disown -h
+    fi
+    ;;
+
+stop)
+    # delete resources created above
+    if chain_exists ufw-blocklist-input; then
+        iptables -D INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input || true
+        iptables -F ufw-blocklist-input
+        iptables -X ufw-blocklist-input
+    fi
+    if chain_exists ufw-blocklist-output; then
+        iptables -D OUTPUT -m set --match-set $ipsetname dst -j ufw-blocklist-output || true
+        iptables -F ufw-blocklist-output
+        iptables -X ufw-blocklist-output
+    fi
+    if chain_exists ufw-blocklist-forward; then
+        iptables -D FORWARD -m set --match-set $ipsetname dst -j ufw-blocklist-forward || true
+        iptables -F ufw-blocklist-forward
+        iptables -X ufw-blocklist-forward
+    fi
+    if set_exists $ipsetname; then
+	$IPSET_EXE flush   $ipsetname
+	$IPSET_EXE destroy $ipsetname
+    fi
+    ;;
+
+status)
+    # display details of the ipset
+    $IPSET_EXE list "$ipsetname" -t
+    # show iptables hit/byte counts
+    iptables -L -nvx | grep "$ipsetname" | grep 'match-set'
+    # show the last 10 lines from the logs
+    journalctl | grep -i blocklist | tail
+    ;;
+
+flush-all)
+    # flush sets created above. Use /etc/cron.daily/ufw-blocklist-ipsum to repopulate
+    $IPSET_EXE flush  $ipsetname
+    # reset iptables accounting
+    ipz=$( iptables -L INPUT -nvx --line-numbers | grep ufw-blocklist-input | awk '{print $1}')
+    iptables -Z INPUT "$ipz"
+    iptables -Z ufw-blocklist-input
+
+    ipz=$( iptables -L OUTPUT -nvx --line-numbers | grep ufw-blocklist-output | awk '{print $1}')
+    iptables -Z OUTPUT "$ipz"
+    iptables -Z ufw-blocklist-output
+
+    ipz=$( iptables -L FORWARD -nvx --line-numbers | grep ufw-blocklist-forward | awk '{print $1}')
+    iptables -Z FORWARD "$ipz"
+    iptables -Z ufw-blocklist-forward
+    ;;
+*)
+    echo "'$1' not supported"
+    echo "Usage: /etc/ufw/after.init {start|stop|flush-all|status}"
+    ;;
+esac
