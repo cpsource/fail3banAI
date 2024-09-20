@@ -83,7 +83,8 @@ case "$1" in
     $IPSET_EXE create  $ipsetname hash:net -exist
     $IPSET_EXE flush   $ipsetname
     
-    ## Insert firewall rules to take precedence, removing them and adding them back if they already existed
+    ## Insert firewall rules to fall behind my whitelist precedence,
+    ##  removing them and adding them back if they already existed
     # Block inbound to localhost from blocklist
     if chain_exists ufw-blocklist-input; then
         iptables -D INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input || true
@@ -92,7 +93,8 @@ case "$1" in
     fi
     iptables -N ufw-blocklist-input
     iptables -A ufw-blocklist-input -j DROP -m comment --comment "ufw-blocklist-input"
-    iptables -I INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input
+    #iptables -I INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input
+    iptables -A -m set --match-set $ipsetname src -j ufw-blocklist-input
 
     # Log and drop outbound to blocklist. Hits here may indicate compromised localhost
     if chain_exists ufw-blocklist-output; then
