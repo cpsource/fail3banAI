@@ -6,6 +6,7 @@ import tempfile
 #import re
 import ipaddress
 import sys
+from dotenv import dotenv_values
 
 # Configure logging
 import logging
@@ -37,6 +38,15 @@ setup_logging()
 
 # Create a named logger consistent with the log file name
 logger = logging.getLogger("fail3ban")
+
+# load dotenv (contains ChatGPT Keys)
+try:
+    # Attempt to load dotenv file using the environment variable
+    dotenv_config = dotenv_values(f"{os.getenv('FAIL3BAN_PROJECT_ROOT')}/.env")
+    logger.info("dotenv file loaded successfully.")
+except Exception as e:
+    # Handle any exceptions that may occur
+    logger.error(f"An error occurred while loading dotenv: {e}")
 
 #
 # Load our python3 paths
