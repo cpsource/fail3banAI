@@ -1,3 +1,9 @@
+#
+# This example uses a plain old https request, and returns
+# a json object. See https://platform.openai.com/docs/api-reference/chat/create for
+# details
+#
+
 import requests
 import json
 import os

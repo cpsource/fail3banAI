@@ -4,3 +4,4 @@ bans.db
 zz
 *.log
 fail3ban_server
+.env
