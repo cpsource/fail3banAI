@@ -94,7 +94,7 @@ case "$1" in
     iptables -N ufw-blocklist-input
     iptables -A ufw-blocklist-input -j DROP -m comment --comment "ufw-blocklist-input"
     #iptables -I INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input
-    iptables -A -m set --match-set $ipsetname src -j ufw-blocklist-input
+    iptables -A INPUT -m set --match-set $ipsetname src -j ufw-blocklist-input
 
     # Log and drop outbound to blocklist. Hits here may indicate compromised localhost
     if chain_exists ufw-blocklist-output; then
