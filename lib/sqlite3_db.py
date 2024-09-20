@@ -29,10 +29,9 @@ class SQLiteDB:
         # register a cleanup
         atexit.register(self.cleanup)
         # adjust path for db_name
-        db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + db_name
-
+        self.db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + db_name
+        
         try:
-            self.db_name = db_name
             self.connection = sqlite3.connect(db_name, check_same_thread=False)
             self.cursor = self.connection.cursor()
             # Create tables if they don't exist
@@ -394,6 +393,44 @@ class SQLiteDB:
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while showing the database: {e}")
             raise  # Re-raise to notify higher-level code
+
+    def check_db_integrity(self,db_path=self.db_name):
+        """
+        Check the integrity of the SQLite database.
+
+        Raises:
+        DatabaseIntegrityError: If corruption is detected in the database.
+        """
+        try:
+            # Connect to the SQLite database
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            # Run the integrity check
+            cursor.execute("PRAGMA integrity_check;")
+            result = cursor.fetchone()
+
+            # Check if the integrity check passed
+            if result[0] == "ok":
+                print("Database is consistent.")
+            else:
+                raise DatabaseIntegrityError(f"Database corruption detected: {result[0]}")
+
+        except sqlite3.Error as e:
+            raise sqlite3.Error(f"SQLite error occurred: {e}")
+        finally:
+            # Close the connection
+            if conn:
+                conn.close()
+
+# Example usage
+try:
+    check_db_integrity("/path/to/your-database.db")
+except DatabaseIntegrityError as e:
+    print(f"Integrity check failed: {e}")
+except sqlite3.Error as e:
+    print(f"SQLite error: {e}")
+
 
     def close(self):
         """Close the database connection and cursor."""
