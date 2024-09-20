@@ -17,7 +17,7 @@ LOG_ID = "fail3ban"
 
 class SQLiteDB:
 
-    def __init__(self, db_name="fail3ban_server", log_id=LOG_ID):
+    def __init__(self, db_name="fail3ban_server.db", log_id=LOG_ID):
         """
         Initializes the database connection.
 
