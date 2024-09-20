@@ -6,6 +6,7 @@ set -e
 if [ "$EUID" -ne 0 ]; then
     echo "You must run this script as root."
     exit 1
+fi
 
 export ipsetname=ufw-blocklist-ipsum
 export IPSET_EXE=$(which ipset)
