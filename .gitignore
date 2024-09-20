@@ -3,5 +3,5 @@ bans.db
 *#
 zz
 *.log
-fail3ban_server
+fail3ban_server.db
 .env
