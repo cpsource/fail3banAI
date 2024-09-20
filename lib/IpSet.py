@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 class IpSet:
     def __init__(self, ipsetname='ufw-blocklist-ipsum'):
@@ -7,7 +8,7 @@ class IpSet:
         project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
         if not project_root:
             raise EnvironmentError("Environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
-        
+        self.ipset = "/usr/sbin/ipset"
         self.after_init = os.path.join(project_root, 'ufw-blocklist', 'after.init')
         self.ipsetname = ipsetname  # Set ipsetname with the optional argument
 
@@ -20,7 +21,7 @@ class IpSet:
 
         # Try to run 'ipset -h' and handle errors if 'ipset' is not found
         try:
-            result = subprocess.run(['ipset', '-h'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.run([self.ipset, '-h'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print("IpSet initialized successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: ipset command failed with error code: {e.returncode}")
@@ -49,9 +50,10 @@ class IpSet:
 
     def add(self, ip_address):
         """Adds an IP address to the ipset"""
+        print(f"cmd: ipset add {self.ipsetname} {ip_address}")
         try:
             # Run the ipset add command
-            subprocess.run(['ipset', 'add', self.ipsetname, ip_address], check=True)
+            subprocess.run([self.ipset, 'add', self.ipsetname, ip_address], check=True)
             print(f"IP address {ip_address} added to ipset {self.ipsetname} successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to add IP address {ip_address} to ipset {self.ipsetname}. Exit code: {e.returncode}")
@@ -62,7 +64,7 @@ class IpSet:
         """Deletes an IP address from the ipset"""
         try:
             # Run the ipset del command
-            subprocess.run(['ipset', 'del', self.ipsetname, ip_address], check=True)
+            subprocess.run([self.ipset, 'del', self.ipsetname, ip_address], check=True)
             print(f"IP address {ip_address} deleted from ipset {self.ipsetname} successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to delete IP address {ip_address} from ipset {self.ipsetname}. Exit code: {e.returncode}")
@@ -73,7 +75,7 @@ class IpSet:
         """Tests if an IP address is present in the ipset"""
         try:
             # Run the ipset test command
-            subprocess.run(['ipset', 'test', self.ipsetname, ip_address], check=True)
+            subprocess.run([self.ipset, 'test', self.ipsetname, ip_address], check=True)
             print(f"IP address {ip_address} is present in ipset {self.ipsetname}.")
             return True
         except subprocess.CalledProcessError as e:
@@ -87,9 +89,10 @@ class IpSet:
 if __name__ == "__main__":
     try:
         # Initialize IpSet with a custom ipsetname (optional)
-        ipset_manager = IpSet(ipsetname="custom-ipset")
+        ipset_manager = IpSet()
         print(f"after_init set to: {ipset_manager.after_init}")
         print(f"ipsetname set to: {ipset_manager.ipsetname}")
+        print(f"ipsetname ipset to: {ipset_manager.ipset}")
 
         # Start the ipset
         ipset_manager.start()
@@ -97,6 +100,8 @@ if __name__ == "__main__":
         # Add an IP address to the ipset
         ipset_manager.add("192.168.1.100")
 
+        #sys.exit(0)
+        
         # Test if an IP address is present in the ipset
         if ipset_manager.test("192.168.1.100"):
             print("Test passed: IP is present.")

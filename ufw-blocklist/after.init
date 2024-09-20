@@ -28,8 +28,6 @@ if true; then
     if [ "$EUID" -ne 0 ]; then
 	echo "You must run this script as root."
 	exit 1
-    else
-	echo "You are running as root."
     fi
 fi
 
