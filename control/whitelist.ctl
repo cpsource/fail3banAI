@@ -1,5 +1,9 @@
-# Whitelisted ip addresses
+#
+# Permantly Whitelisted Sites
+#
 
-# Me
+# Thee
 98.97.16.30
+# And Thyne
+127.0.0.1
 

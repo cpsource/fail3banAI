@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Modifed by page.cal@gmail.com to support ipv6 as well
+
 #
 # after.init: if executable, called by ufw-init. See 'man ufw-framework' for
 #             details. Note that output from these scripts is not seen via the
@@ -24,6 +27,7 @@
 
 set -e
 
+# better be root
 if true; then
     if [ "$EUID" -ne 0 ]; then
 	echo "You must run this script as root."
