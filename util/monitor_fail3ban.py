@@ -6,7 +6,7 @@ import tempfile
 #import re
 import ipaddress
 import sys
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 
 # Configure logging
 import logging
@@ -42,7 +42,7 @@ logger = logging.getLogger("fail3ban")
 # load dotenv
 try:
     # Attempt to load dotenv file using the environment variable
-    dotenv_config = dotenv_values(f"{os.getenv('FAIL3BAN_PROJECT_ROOT')}/.env")
+    dotenv_config = load_dotenv(f"{os.getenv('HOME')}/.env")
     logger.info("dotenv file loaded successfully.")
 except Exception as e:
     # Handle any exceptions that may occur
