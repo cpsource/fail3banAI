@@ -97,7 +97,33 @@ class AbuseIPDB:
         except Exception as e:
             self.logger.error(f"An error occurred while checking IP {ip_address}: {e}")
             return None
-            
+
+    def blacklist_endpoint(self, confidence_minimum=100):
+        """Retrieve a blacklist of IP addresses with a minimum confidence score"""
+        url = 'https://api.abuseipdb.com/api/v2/blacklist'
+
+        querystring = {
+            'confidenceMinimum': str(confidence_minimum)
+        }
+
+        headers = {
+            'Accept': 'application/json',
+            'Key': self.api_key
+        }
+
+        try:
+            response = requests.get(url, headers=headers, params=querystring)
+            if response.status_code == 200:
+                decoded_response = json.loads(response.text)
+                # Return the full decoded JSON response
+                return decoded_response
+            else:
+                self.logger.error(f"Failed to fetch blacklist data: {response.status_code}")
+                return None
+        except Exception as e:
+            self.logger.error(f"An error occurred while retrieving blacklist: {e}")
+            return None
+        
 def main():
     if len(sys.argv) != 2:
         print("Usage: python script_name.py <ip-address>")
@@ -122,6 +148,13 @@ def main():
     else:
         print(f"Failed to retrieve abuse confidence score for {ip_address}")
 
+    # test blacklist_endpoint
+    response = abuse_ipdb.blacklist_endpoint()
+    if response is not None:
+        print(response)
+    else:
+        print("Failed to retrieve blacklist_endpoint report")
+    
 # Run the main function if this script is executed directly
 if __name__ == "__main__":
     main()
