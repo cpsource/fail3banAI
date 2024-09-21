@@ -39,7 +39,7 @@ setup_logging()
 # Create a named logger consistent with the log file name
 logger = logging.getLogger("fail3ban")
 
-# load dotenv (contains ChatGPT Keys)
+# load dotenv
 try:
     # Attempt to load dotenv file using the environment variable
     dotenv_config = dotenv_values(f"{os.getenv('FAIL3BAN_PROJECT_ROOT')}/.env")

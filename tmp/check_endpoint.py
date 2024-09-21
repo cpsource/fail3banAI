@@ -3,6 +3,10 @@ import os
 import requests
 import json
 import sys
+from dotenv import load_dotenv
+
+#from dotenv import dotenv_values
+#from dotenv load load_dotenv
 
 class CheckEndpoint:
     def __init__(self, api_key):
@@ -30,7 +34,20 @@ class CheckEndpoint:
         else:
             raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
-def main():
+def main(): 
+    # Get the FAIL3BAN_PROJECT_ROOT environment variable
+    home = os.getenv('HOME')
+    project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
+    # load dotenv
+    try:
+        # Attempt to load dotenv file using the environment variable
+        file = f"{home}/.env"
+        dotenv_config = load_dotenv(file)
+        print("dotenv file loaded successfully.")
+    except Exception as e:
+        # Handle any exceptions that may occur
+        print(f"An error occurred while loading dotenv: {e}")
+
     # Get API key from environment variable
     api_key = os.getenv('ABUSEIPDB_KEY')
     
