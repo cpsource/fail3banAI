@@ -81,12 +81,13 @@ class AbuseIPDB:
             self.logger.error(f"An error occurred while checking IP {ip_address}: {e}")
             return None
 
-    def blacklist_endpoint(self, confidence_minimum=100):
+    def blacklist_endpoint(self, ip_version="4", confidence_minimum=100):
         """Retrieve a blacklist of IP addresses with a minimum confidence score"""
         url = 'https://api.abuseipdb.com/api/v2/blacklist'
 
         querystring = {
-            'confidenceMinimum': str(confidence_minimum)
+            'confidenceMinimum': str(confidence_minimum),
+            'ipVersion': f"{ip_version}"
         }
 
         headers = {
@@ -132,7 +133,7 @@ def main():
         print(f"Failed to retrieve abuse confidence score for {ip_address}")
 
     # test blacklist_endpoint
-    response = abuse_ipdb.blacklist_endpoint()
+    response = abuse_ipdb.blacklist_endpoint(ip_version="6")
     if response is not None:
         print(response)
     else:
