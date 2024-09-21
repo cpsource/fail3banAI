@@ -1,0 +1,9 @@
+curl -sS -f --compressed 'https://iplists.firehol.org/files/firehol_level1.netset' > firehol_level1.netset
+
+#curl -G https://api.abuseipdb.com/api/v2/blacklist -d countMinimum=10 -H "Key: YOUR_API_KEY" -H "Accept: application/json"
+
+curl -sS -f --compressed 'https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt' > emerging_block_ips.txt
+
+#curl -sS -f --compressed 'https://www.spamhaus.org/drop/edrop.lasso' > spamhaus_drop.txt
+
+
