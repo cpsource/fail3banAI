@@ -57,5 +57,5 @@ class CheckIpsum:
 # Example usage
 # Assuming 'file1.txt' and 'file2.txt' contain lists of IP addresses
 check_ipsum = CheckIpsum()
-check_ipsum.check('ipsum.3.txt', 'ipsum.4.txt')
+check_ipsum.check('ipsum-new.4.txt', '/etc/ipsum.4.txt')
 
