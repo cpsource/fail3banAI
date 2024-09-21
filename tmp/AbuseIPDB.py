@@ -18,22 +18,16 @@ class AbuseIPDB:
         self.home = os.getenv('HOME')
         self.project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
 
-        # Set up logger
-        # Extracted constants for log file name and format
-        self.LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
-        # Set up the logging format to include file name and line number
-        self.LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
-        # do the deed
-        self.setup_logging()
-        self.logger = logging.getLogger('fail3ban')
-        
+        # Create a named logger consistent with the log file name
+        self.logger = logging.getLogger("fail3ban")
+
         # Check that project_root exists
         if self.project_root:
             self.logger.info(f"Project root is set to: {self.project_root}")
         else:
             self.logger.error("FAIL3BAN_PROJECT_ROOT is not set.")
             sys.exit(1)
-            
+        
         # Load dotenv
         try:
             # Attempt to load the .env file from the user's home directory
@@ -51,17 +45,6 @@ class AbuseIPDB:
         if not self.api_key:
             self.logger.error("Error: ABUSEIPDB_KEY environment variable is not set.")
             sys.exit(1)
-
-    # Extracted function to set up logging configuration
-    def setup_logging(self):
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format=self.LOG_FORMAT,
-            handlers=[
-                logging.FileHandler(self.LOG_FILE_NAME),
-                logging.StreamHandler()
-            ]
-        )
 
     def check_endpoint(self, ip_address):
         """Check an IP address with AbuseIPDB and return the abuseConfidenceScore"""
@@ -154,7 +137,26 @@ def main():
         print(response)
     else:
         print("Failed to retrieve blacklist_endpoint report")
-    
+
+# Extracted function to set up logging configuration
+def setup_logging(LOG_FORMAT, LOG_FILE_NAME):
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format=LOG_FORMAT,
+        handlers=[
+            logging.FileHandler(LOG_FILE_NAME),
+            logging.StreamHandler()
+        ]
+    )
+        
 # Run the main function if this script is executed directly
 if __name__ == "__main__":
+    # Set up logger
+    # Extracted constants for log file name and format
+    LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
+    # Set up the logging format to include file name and line number
+    LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
+    # do the deed
+    setup_logging(LOG_FORMAT, LOG_FILE_NAME)
+    
     main()
