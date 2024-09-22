@@ -426,12 +426,12 @@ try:
             else:
                 logging.debug(f"Database doesn't have a record of this shortened_string, hazard_level = {hazard_level}")
 
-            # if we are debugging,
-            if logger.getEffectiveLevel() <= FLAG_DEBUG :
-                # at this point, we'd want to check with ChatGPT to ascertain the hazard_level level
-                
-                # then add to our threat database
-                db.insert_or_update_threat(shortened_str, 1, hazard_level)
+            if False:
+                # if we are debugging,
+                if logger.getEffectiveLevel() <= FLAG_DEBUG :
+                    # at this point, we'd want to check with ChatGPT to ascertain the hazard_level level
+                    # then add to our threat database
+                    db.insert_or_update_threat(shortened_str, 1, hazard_level)
 
             # done processing this line
             continue
