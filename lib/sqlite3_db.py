@@ -394,13 +394,15 @@ class SQLiteDB:
             self.logger.error(f"An error occurred while showing the database: {e}")
             raise  # Re-raise to notify higher-level code
 
-    def check_db_integrity(self,db_path=self.db_name):
+
+    def check_db_integrity(self):
         """
         Check the integrity of the SQLite database.
-
+        
         Raises:
         DatabaseIntegrityError: If corruption is detected in the database.
         """
+        db_path = self.db_name
         try:
             # Connect to the SQLite database
             conn = sqlite3.connect(db_path)
@@ -424,13 +426,12 @@ class SQLiteDB:
                 conn.close()
 
 # Example usage
-try:
-    check_db_integrity("/path/to/your-database.db")
-except DatabaseIntegrityError as e:
-    print(f"Integrity check failed: {e}")
-except sqlite3.Error as e:
-    print(f"SQLite error: {e}")
-
+#try:
+#    check_db_integrity("/path/to/your-database.db")
+#except DatabaseIntegrityError as e:
+#    print(f"Integrity check failed: {e}")
+#except sqlite3.Error as e:
+#    print(f"SQLite error: {e}")
 
     def close(self):
         """Close the database connection and cursor."""
