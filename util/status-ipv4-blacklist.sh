@@ -29,5 +29,5 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-echo "IPv6 status complete."
+echo "IPv4 status complete."
 
