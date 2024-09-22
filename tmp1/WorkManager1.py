@@ -86,7 +86,7 @@ class WorkController:
         # Wait for worker threads to finish
         for worker in self.workers:
             worker.join()
-            print("All worker threads have been shut down.")
+        print("All worker threads have been shut down.")
         
 def sample_task(data):
     print(f"Processing {data}")
