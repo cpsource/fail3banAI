@@ -11,7 +11,7 @@ class ManageIpset4:
         self.project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
         if not self.project_root:
             raise EnvironmentError("Environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
-        self.seedlist = self.project_root + "/control/" + "ipsum.7.txt"
+        self.seedlist = self.project_root + "/control/" + "blacklist-4.ctl"
 
         # Check if ipset exists
         if not self.is_executable(self.ipset_exe):

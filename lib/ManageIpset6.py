@@ -16,7 +16,7 @@ class ManageIpset6:
         if not self.is_executable(self.ipset_exe):
             errmsg = f"{self.ipset_exe} is not executable"
             raise RuntimeError(errmsg)
-        self.seedlist = self.project_root + "/control/blacklist.ctl"
+        self.seedlist = self.project_root + "/control/blacklist-6.ctl"
 
     def is_executable(self, path):
         """Check if a file is executable"""
