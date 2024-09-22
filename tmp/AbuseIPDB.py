@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import logging
-# and some magic numbers for logging
+# and some magic numbers from logging showing their log levels
 FLAG_CRITICAL = 50
 FLAG_ERROR = 40
 FLAG_WARNING = 30
@@ -11,6 +11,7 @@ FLAG_DEBUG = 10
 FLAG_NOSET = 0
 from dotenv import load_dotenv
 import requests
+from datetime import datetime, timedelta, timezone
 
 class AbuseIPDB:
     def __init__(self):
@@ -46,6 +47,24 @@ class AbuseIPDB:
             self.logger.error("Error: ABUSEIPDB_KEY environment variable is not set.")
             sys.exit(1)
 
+    def ensure_iso_format(self, timestamp=None):
+        """Ensure the timestamp is in ISO 8601 format, or generate the current time in ISO 8601."""
+        # Define a timezone with a UTC offset of -04:00
+        tz_offset = timezone(timedelta(hours=-4))
+
+        if timestamp:
+            try:
+                # Attempt to parse the provided timestamp
+                # Assuming timestamp is already in a compatible format, return it
+                datetime.fromisoformat(timestamp)
+                return timestamp
+            except ValueError:
+                # If the format is incorrect, generate the current time in ISO 8601 format
+                self.logger.warning(f"Invalid timestamp format provided: {timestamp}, generating a new timestamp.")
+        # Generate the current time in the specified time zone with ISO 8601 format
+        current_time_with_offset = datetime.now(tz_offset)
+        return current_time_with_offset.isoformat()
+    
     def check_endpoint(self, ip_address):
         """Check an IP address with AbuseIPDB and return the abuseConfidenceScore"""
         url = 'https://api.abuseipdb.com/api/v2/check'
@@ -107,10 +126,47 @@ class AbuseIPDB:
         except Exception as e:
             self.logger.error(f"An error occurred while retrieving blacklist: {e}")
             return None
+
+    def report_endpoint(self, ip_address, categories, comment, timestamp=None):
+        """Report an IP address for abusive behavior to AbuseIPDB."""
+        url = 'https://api.abuseipdb.com/api/v2/report'
+
+        # Ensure the timestamp is in ISO 8601 format
+        iso_timestamp = self.ensure_iso_format(timestamp)
         
+        # Prepare the parameters for the report
+        params = {
+            'ip': ip_address,
+            'categories': categories,  # Comma-separated list of category IDs
+            'comment': comment,
+            'timestamp': timestamp
+        }
+
+        headers = {
+            'Accept': 'application/json',
+            'Key': self.api_key
+        }
+
+        try:
+            response = requests.post(url, headers=headers, data=params)
+            if response.status_code == 200:
+                decoded_response = json.loads(response.text)
+                
+                # Print formatted output
+                print(json.dumps(decoded_response, sort_keys=True, indent=4))
+                
+                # Return the response data for further processing
+                return decoded_response.get('data', {})
+            else:
+                self.logger.error(f"Failed to report IP {ip_address}: {response.status_code}")
+                return None
+        except Exception as e:
+            self.logger.error(f"An error occurred while reporting IP {ip_address}: {e}")
+            return None
+
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python script_name.py <ip-address>")
+        print("Usage: python {sys.argv[0]} <ip-address>")
         sys.exit(1)
 
     # Get the IP address from command-line arguments
@@ -120,6 +176,7 @@ def main():
     abuse_ipdb = AbuseIPDB()
 
     # Check the IP address and get the abuse confidence score
+    print("Test check_endpoint")
     is_whitelisted, abuse_confidence_score = abuse_ipdb.check_endpoint(ip_address)
 
     if is_whitelisted is not None:
@@ -132,7 +189,19 @@ def main():
     else:
         print(f"Failed to retrieve abuse confidence score for {ip_address}")
 
+    # Example usage of report_endpoint
+    print("Test report_endpoint")    
+    categories = "18,20"
+    comment = "SSH login attempts with user root."
+    timestamp = "2023-10-18T11:25:11-04:00"  # Example ISO 8601 timestamp
+    report_response = abuse_ipdb.report_endpoint(ip_address, categories, comment, timestamp)
+    if report_response is not None:
+        print(f"IP {ip_address} reported successfully: {report_response}")
+    else:
+        print(f"Failed to report IP {ip_address}")        
+        
     # test blacklist_endpoint
+    print("Test blacklist_endpoint")
     response = abuse_ipdb.blacklist_endpoint(ip_version="6")
     if response is not None:
         print(response)
