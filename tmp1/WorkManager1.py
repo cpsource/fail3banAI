@@ -18,6 +18,7 @@ class WorkManager:
         self.queue = []
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
+        self.shutdown_flag = False
 
     def enqueue(self, work_unit):
         with self.condition:
@@ -26,10 +27,17 @@ class WorkManager:
 
     def dequeue(self):
         with self.condition:
-            while not self.queue:
+            while not self.queue and not self.shutdown_flag:
                 self.condition.wait()
+            if self.shutdown_flag and not self.queue:
+                return None
             return self.queue.pop(0)
 
+    def shutdown(self):
+        with self.condition:
+            self.shutdown_flag = True
+            self.condition.notify_all()
+        
 def sample_task(data):
     print(f"Processing {data}")
     time.sleep(1)  # Simulate some work being done
