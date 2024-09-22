@@ -1,0 +1,17 @@
+2024-09-22 16:08:55,628 - monitor_fail3ban.py:375 - DEBUG - Line: Sep 22 16:08:55 ip-172-26-10-222 sshd[58915]: error: kex_exchange_identification: Connection closed by remote host
+2024-09-22 16:08:55,629 - monitor_fail3ban.py:375 - DEBUG - Line: Sep 22 16:08:55 ip-172-26-10-222 sshd[58915]: Connection closed by 45.148.10.240 port 36886
+Line      : Sep 22 16:08:55 ip-172-26-10-222 sshd[58915]: Connection closed by 45.148.10.240 port 36886
+Dictionary: {'datetime': 'Sep 22 16:08:55', 'destination_ip': 'ip-172-26-10-222', 'task_name': 'sshd', 'pid': '58915', 'ip_address': '45.148.10.240', 'port': '36886'}
+Shortened : <date-time> <destination-ip> <task-name>[<pid>]: Connection closed by <ip-address> <port>
+BadDude   : False
+Country   : Andorra
+--------------------------------------------------
+
+These two lines should be presented combined from jornalctl
+
+2) why is 45.148.10.240 in whitelist ???
+
+3) load ipsum.7.txt as well into bads
+
+4) and reload it along with blacklist-xxx
+
