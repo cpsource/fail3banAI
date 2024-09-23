@@ -410,7 +410,7 @@ signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
 
 try:
-    while not stop_event.is_set() or not gs.is_shutdown():
+    while not stop_event.is_set() and not gs.is_shutdown():
         # Process each line from journalctl -f
         for line in journalctl_proc.stdout:
             # Clean up previous temporary files
