@@ -10,77 +10,100 @@ import os
 import sys
 import atexit
 
-if __name__ != "__main__":
-    import f3b_iptables
-
 # Constants for log file name and format
-LOG_FILE_NAME = "fail3ban.log"
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
+# Set up the logging format to include file name and line number
+LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
 LOG_ID = "fail3ban"
 
-TEST_IP = "192.168.211.34"
-#LOCAL_IP = "127.0.0.1"
+#
+# Load our python3 paths
+#
+# Get the FAIL3BAN_PROJECT_ROOT environment variable
+project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
+# Check if FAIL3BAN_PROJECT_ROOT is not set
+if project_root is None:
+    print("Error: The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
+    sys.exit(1)  # Exit the program with an error code
+# Construct the lib path
+lib_path = os.path.join(project_root, 'lib')
+# Add the constructed path to sys.path only if it's not already in sys.path
+if lib_path not in sys.path:
+    sys.path.append(lib_path)
+    print(f"Added {lib_path} to the system path.")
+else:
+    print(f"{lib_path} is already in the system path.")
+
+import f3b_whitelist
 
 class BlackList:
-    configData = None
 
     def __init__(self, configData=None, logger_id=LOG_ID):
+        # ip_count
+        self.ip_count_loaded = 0
+        # our config data
+        self.configData = None
+        # init and load whitelist
+        self.wl = f3b_whitelist.WhiteList()
+        self.wl.whitelist_init()
         # Initialize an empty list to store blacklisted IPs
-        self.blacklist = []
+        self.blacklist = set()
         # Keep a pointer to our configuration dictionary
         self.configData = configData
         # Obtain logger
         self.logger = logging.getLogger(logger_id)
-        # Get our public IP address
-        self.my_public_ip = self.get_my_public_ip()
         # register a cleanup
         atexit.register(self.cleanup)
-        
-    # Initialize the class by reading blacklist.ctl into a list
-    def blacklist_init(self):
-        # We need iptables
-        self.ipt = f3b_iptables.Iptables()
-        # Open the blacklist.ctl file
-        BLACKLIST_FILE = self.get_blacklist_path()
+
+    def load_blacklist(self, filespec):
+        """
+            Loads IP addresses from a file and adds them to the blacklist if not already present.
+    
+            Args:
+            filespec (str): The path to the file containing the list of IP addresses.
+            blacklist (set): A set containing currently blacklisted IPs to avoid duplicates.
+        """
+        local_count = 0
         try:
-            with open(BLACKLIST_FILE, 'r') as file:
+            with open(filespec, 'r') as file:
                 for line in file:
                     # Remove any comment after # and strip whitespace
                     clean_line = line.split('#')[0].strip()
 
-                    # If the line contains an IP address, add it to the blacklist
+                    # skip if in whitelist
                     if clean_line:
-                        # Do not add our own IP address
-                        if clean_line == self.my_public_ip:
-                            self.logger.info(f"Skipping own IP address {clean_line} in blacklist.")
-                            continue
-                        self.blacklist.append(clean_line)
+                        if not self.wl.is_whitelisted(clean_line):
+                            # If the line contains an IP address and is not already blacklisted
+                            if clean_line not in self.blacklist:
+                                self.blacklist.add(clean_line)
+                                self.ip_count_loaded += 1
+                                local_count += 1
+                                #print(f"Adding {clean_line} to blacklist.")
+                            else:
+                                pass
+                        else:
+                            print(f"Skipping {clean_line} as it's whitelisted")
+                        
         except FileNotFoundError:
-            self.logger.error("blacklist.ctl file not found.")
+            print(f"Error: File {filespec} not found.")
         except Exception as e:
-            self.logger.error(f"An error occurred: {e}")
-        finally:
-            self.logger.debug(f"blacklist = {self.blacklist}")
+            print(f"An error occurred: {e}")
 
-        # Add LOCAL_IP if not already in blacklist
-        #if LOCAL_IP not in self.blacklist:
-            #self.blacklist.append(LOCAL_IP)
+        self.logger.debug(f"blacklist {filespec} loaded {local_count} new ip addresses")
+                
+    # Initialize the class by reading blacklist.ctl into a list
+    def blacklist_init(self):
 
-        # Add TEST_IP for testing if called from main
-        if self.called_from_main() and TEST_IP not in self.blacklist:
-            self.blacklist.append(TEST_IP)
-
-        # Test of scope (obsolete form)
-        if self.configData is not None:
-            debug = self.configData.get('debug')
-            if debug:
-                self.logger.debug(f"At blacklist_init, debug = {debug}")
-        else:
-            debug = False
-
-    def called_from_main(self):
-        # Check if the method is being called from the main program
-        return __name__ == "__main__"
+        # get a list of blacklist files
+        blacklist_files = [ f"{project_root}" + "/control/blacklist.ctl",
+                            f"{project_root}" + "/control/ipsum.7.ctl",
+                            f"{project_root}" + "/control/blacklist-4.ctl",
+                            f"{project_root}" + "/control/blacklist-6.ctl" ]
+        # do the load
+        for file in blacklist_files:
+            self.load_blacklist(file)
+            
+        self.logger.debug(f"blacklists loaded {self.ip_count_loaded} ip addresses")
 
     # Fetch the blacklist list from the class
     def get_blacklist(self):
@@ -91,111 +114,22 @@ class BlackList:
         # Return True if the ip_address is in the blacklist, False otherwise
         return ip_address in self.blacklist
 
-    def get_my_public_ip(self):
-        if not self._is_called_within_class():
-            self.logger.warning("get_my_public_ip called from outside the class")
-
-        url = 'https://api.ipify.org?format=json'
-        max_retries = 3
-        timeout = 5  # seconds
-
-        for attempt in range(1, max_retries + 1):
-            try:
-                # Fetch the public IP using a public API with timeout
-                response = requests.get(url, timeout=timeout)
-                response.raise_for_status()  # Raise an error for bad status codes
-                ip_info = response.json()
-                ip_address = ip_info['ip']
-                self.logger.debug(f"Attempt {attempt}: Obtained public IP address {ip_address}")
-                return ip_address
-
-            except requests.Timeout:
-                self.logger.warning(f"Attempt {attempt}: Timeout occurred after {timeout} seconds.")
-            except requests.RequestException as e:
-                self.logger.error(f"Attempt {attempt}: Error fetching IP address: {e}")
-
-        self.logger.error(f"Failed to get public IP address after {max_retries} attempts.")
-        return None
-    
-    def get_blacklist_path(self):
-        # Get the current working directory
-        current_dir = os.getcwd()
-
-        # Check if the current directory ends with '/lib'
-        if re.search(r'.*/lib\Z', current_dir):
-            # Return path for lib context
-            return os.path.join('..', 'control', 'blacklist.ctl')
-        # Check if the current directory ends with '/fail3banAI'
-        elif re.search(r'.*/fail3banAI\Z', current_dir):
-            # Return path for fail3banAI context
-            return os.path.join('control', 'blacklist.ctl')
-        else:
-            # Handle other cases (optional)
-            return None
-
-    # A utility method
-    def _is_called_within_class(self):
-        """Check the call stack to see if the caller is from within the class."""
-        # Get the current call stack
-        stack = inspect.stack()
-        # The frame at index 2 should be the caller
-        caller_frame = stack[2]
-        # Get the class (if any) of the caller
-        caller_class = caller_frame.frame.f_locals.get('self', None)
-        # Return True if the caller is from the same instance
-        return isinstance(caller_class, self.__class__)
-
-    # Add blacklisted IPs to iptables
-    def add_blacklist_to_iptables(self, extra="blacklist"):
-        for ip_address in self.blacklist:
-            if ip_address == self.my_public_ip:
-                self.logger.info(f"Skipping own IP address {ip_address} in blacklist.")
-                continue
-            self.ipt.add_deny_ip_to_back_of_input_chain(ip_address, extra)
-
-    # Show iptables
-    def show_iptables(self):
-        self.ipt.show_input_chain()
-
-    # Remove blacklisted IPs from INPUT chain
-    def remove_blacklisted_ip_tables_from_input(self, extra="blacklist"):
-        for ip_address in self.blacklist:
-            # Delete it
-            self.ipt.remove_ip_from_input_chain(ip_address, extra)
-
     def cleanup(self):
-        try:
-            self.remove_blacklisted_ip_tables_from_input()
-        except Exception as e:
-            self.logger.error(f"Exception during cleanup: {e}")
-            
-#    def __del__(self):
-#        try:
-#            # Destructor to clean up iptables rules
-#            self.remove_blacklisted_ip_tables_from_input()
-#        except Exception as e:
-#            # Attempt to log the exception if logger is available
-#            try:
-#                self.logger.error(f"Exception in __del__: {e}")
-#            except Exception:
-#                # If logger is not available, silently pass
-#                pass
-            
-# Extracted function to set up logging configuration
-def setup_logging():
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format=LOG_FORMAT,
-        handlers=[
-            logging.FileHandler(LOG_FILE_NAME),
-            logging.StreamHandler()
-        ]
-    )
-
+        pass
+    
 # Example usage
 if __name__ == "__main__":
 
-    import f3b_iptables
+    # Extracted function to set up logging configuration
+    def setup_logging():
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format=LOG_FORMAT,
+            handlers=[
+                logging.FileHandler(LOG_FILE_NAME),
+                logging.StreamHandler()
+            ]
+        )
 
     # Setup logging
     setup_logging()
@@ -206,20 +140,9 @@ if __name__ == "__main__":
 
     # Instantiate the BlackList class
     bl = BlackList()
+    # and Initialize it
     bl.blacklist_init()
-    print("Blacklisted IPs:", bl.get_blacklist())
+    #print("Blacklisted IPs:", bl.get_blacklist())
 
-    # Add them into INPUT table
-    bl.add_blacklist_to_iptables()
-
-    # Show iptables
-    bl.show_iptables()
-
-    # Remove them
-    bl.remove_blacklisted_ip_tables_from_input()
-
-    # Show iptables again
-    bl.show_iptables()
-
-    # Done for now
+    # Done
     sys.exit(0)

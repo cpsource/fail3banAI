@@ -34,7 +34,7 @@ LOCAL_IP = "127.0.0.1"
 class WhiteList:
     def __init__(self, configData=None, logger_id=LOG_ID):
         # Initialize an empty array to store whitelisted IPs
-        self.whitelist = []
+        self.whitelist = set()
         # Keep a pointer to our configuration dictionary
         self.configData = configData
         # Obtain logger
@@ -56,7 +56,7 @@ class WhiteList:
                     
                     # If the line contains an IP address, add it to the whitelist
                     if clean_line:
-                        self.whitelist.append(clean_line)
+                        self.whitelist.add(clean_line)
         except FileNotFoundError:
             self.logger.error("whitelist.ctl file not found.")
         except Exception as e:
