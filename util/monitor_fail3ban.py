@@ -481,7 +481,7 @@ try:
             hazard_level = "unk"
             if ip_address is not None:
                 # check that this ip is not in the whitelist
-                if wl.is_whitelisted(ip_address) is not None:
+                if wl.is_whitelisted(ip_address) is True:
                     logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng hazard_level to no.")
                     hazard_level = "no"
 
