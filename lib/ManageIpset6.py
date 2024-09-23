@@ -65,15 +65,21 @@ class ManageIpset6:
         if not self.chain_exists("ufw-blocklist-input"):
             subprocess.run(["ip6tables", "-N", "ufw-blocklist-input"])
             subprocess.run(["ip6tables", "-A", "INPUT", "-m", "set", "--match-set", self.ipsetname, "src", "-j", "ufw-blocklist-input"])
-
+            subprocess.run(["ip6tables", "-A", "ufw-blocklist-input", "-p", "all", "-m", "limit",  "--limit 5/min", "--limit-burst", "10", "-j", "LOG", "--log-prefix", "'DROP ufw-blocklist-input: '", "--log-level", "4"])
+            subprocess.run(["ip6tables", "-I", "ufw-blocklist-input","2","-p", "all", "-s", "::/0", "-d", "::/0", "-j","DROP"])
+                           
         if not self.chain_exists("ufw-blocklist-output"):
             subprocess.run(["ip6tables", "-N", "ufw-blocklist-output"])
             subprocess.run(["ip6tables", "-A", "OUTPUT", "-m", "set", "--match-set", self.ipsetname, "dst", "-j", "ufw-blocklist-output"])
+            subprocess.run(["ip6tables", "-A", "ufw-blocklist-output", "-p", "all", "-m", "limit",  "--limit 5/min", "--limit-burst", "10", "-j", "LOG", "--log-prefix", "'DROP ufw-blocklist-output: '", "--log-level", "4"])
+            subprocess.run(["ip6tables", "-I", "ufw-blocklist-output","2","-p", "all", "-s", "::/0", "-d", "::/0", "-j","DROP"])
 
         if not self.chain_exists("ufw-blocklist-forward"):
             subprocess.run(["ip6tables", "-N", "ufw-blocklist-forward"])
             subprocess.run(["ip6tables", "-A", "FORWARD", "-m", "set", "--match-set", self.ipsetname, "dst", "-j", "ufw-blocklist-forward"])
-
+            subprocess.run(["ip6tables", "-A", "ufw-blocklist-forward", "-p", "all", "-m", "limit",  "--limit 5/min", "--limit-burst", "10", "-j", "LOG", "--log-prefix", "'DROP ufw-blocklist-forward: '", "--log-level", "4"])
+            subprocess.run(["ip6tables", "-I", "ufw-blocklist-forward","2","-p", "all", "-s", "::/0", "-d", "::/0", "-j","DROP"])
+            
         # Add IP addresses to ipset
         self.add_ip_addresses_to_ipset()
 
@@ -101,7 +107,7 @@ class ManageIpset6:
     def status(self):
         """Show the current status of the ipset and ip6tables and journalctl"""
         subprocess.run([self.ipset_exe, "list", self.ipsetname, "-t"])
-        subprocess.run(["/usr/sbin/ip6tables", "-L", "-nvx"])
+        subprocess.run(["/usr/sbin/ip6tables", "-L", "--line-numbers", "-nvx"])
 
         # this runs, but it takes too long, so let's skip it
         # The format of the call is different because subprocess.run doesn't handle pipes the same a bash shell
