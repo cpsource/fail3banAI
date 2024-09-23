@@ -7,6 +7,9 @@ import tempfile
 import ipaddress
 import sys
 from dotenv import load_dotenv
+import subprocess
+import signal
+import threading
 
 # Configure logging
 import logging
@@ -88,6 +91,9 @@ import f3b_sqlite3_db
 
 # get whitelist
 import f3b_whitelist
+
+# get GlobalShutdown
+import f3b_GlobalShutdown
 
 #
 # Here's a double line that needs to be combined
@@ -344,80 +350,139 @@ sjs = f3b_ShortenJournalString.ShortenJournalString()
 db = f3b_sqlite3_db.SQLiteDB()
 db.reset_hazard_level()
 db.show_threats()
+# and GlobalShutdown
+gs = f3b_GlobalShutdown.GlobalShutdown()
+# get rid of stale control flag
+gs.cleanup()
 
 # our whitelist
 wl = f3b_whitelist.WhiteList()
 wl.whitelist_init()
 
+def save_pid(pid_file):
+    pid = os.getpid()  # Get the current process ID (PID)
+    
+    # Save the PID to the specified file
+    try:
+        with open(pid_file, 'w') as f:
+            f.write(str(pid))
+        print(f"PID {pid} saved to {pid_file}")
+    except PermissionError:
+        print(f"Permission denied: Unable to write to {pid_file}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def remove_pid(pid_file):
+    # Check if the PID file exists
+    if os.path.exists(pid_file):
+        try:
+            os.remove(pid_file)  # Remove the PID file
+            print(f"PID file {pid_file} removed successfully.")
+        except PermissionError:
+            print(f"Permission denied: Unable to remove {pid_file}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    else:
+        print(f"PID file {pid_file} does not exist.")
+
+# Save our pid
+pid_file = '/tmp/monitor_fail3ban.pid'
+save_pid(pid_file)
+
+#
+# signaling
+#
+
+# Create a global event object to signaling threads to stop
+stop_event = threading.Event()
+
+def handle_signal(signum, frame):
+    print("Received SIGHUP signal.")
+    # Add custom handling here, like reloading configuration
+    # sys.exit(0) # Uncomment if you want the program to exit on SIGHUP
+    stop_event.set() # Set the event, signaling all threads to stop
+    gs.request_shutdown()
+    
+# Register the signal handler for SIGTERM, SIGHUP, etc.
+signal.signal(signal.SIGTERM, handle_signal)
+signal.signal(signal.SIGHUP, handle_signal)
+
 try:
-    # Process each line from journalctl -f
-    for line in journalctl_proc.stdout:
-        # Clean up previous temporary files
-        #clean_temp_files()
+    while not stop_event.is_set() or not gs.is_shutdown():
+        # Process each line from journalctl -f
+        for line in journalctl_proc.stdout:
+            # Clean up previous temporary files
+            #clean_temp_files()
 
-        # Now save
-        prevs.add_entry(line)
+            # should we exit ???
+            if gs.is_shutdown():
+                # yes
+                break
 
-        # Now, call prev_entry and check if it returns the correct match
-        result = prevs.prev_entry()
-        # Was there a previous result to combine with this one ???
-        res = None
-        if result[0]:
-            logging.debug(f"Match found: {result[1]}")
-            # combine the strings into one
-            res = combine(result[1][3], line).strip()
-            # print the new line
-            logging.debug(f"*** Combined line: {res.strip()}")
-        else:
-            # not found, go with the origional line
-            res = line.strip()
-            # print the new line
-            logging.debug(f"Line: {res.strip()}")
-            
-        # is there an ip address in a line or the combined line ???
-        found_dict, shortened_str = sjs.shorten_string(res.strip())
-        if 'ip_address' in found_dict:
-            ip_address = found_dict['ip_address']
-            # debgging info
-            #logging.debug(f"ip_address found by shorten_string is {ip_address}")
-        else:
-            # debgging info
-            #logging.debug(f"no ip_address found, skipping line")
-            # we are done if there is not ip_address, on to the next line
-            continue
+            # Now save
+            prevs.add_entry(line)
 
-        # get country and in HashedSet
-        country = None
-        bad_dude_status = "n/a"
-        if ip_address is not None:
-            country = find_country(ip_address)
-            # is this ip address in HashedSet
-            if hs.is_ip_in_set(ip_address) :
-                # yep, a really bad dude
-                bad_dude_status = True
+            # Now, call prev_entry and check if it returns the correct match
+            result = prevs.prev_entry()
+            # Was there a previous result to combine with this one ???
+            res = None
+            if result[0]:
+                logging.debug(f"Match found: {result[1]}")
+                # combine the strings into one
+                res = combine(result[1][3], line).strip()
+                # print the new line
+                logging.debug(f"*** Combined line: {res.strip()}")
             else:
-                # nope, but a bad dude anyway
-                bad_dude_status = False
+                # not found, go with the origional line
+                res = line.strip()
+                # print the new line
+                logging.debug(f"Line: {res.strip()}")
+            
+            # is there an ip address in a line or the combined line ???
+            found_dict, shortened_str = sjs.shorten_string(res.strip())
+            if 'ip_address' in found_dict:
+                ip_address = found_dict['ip_address']
+                # debgging info
+                #logging.debug(f"ip_address found by shorten_string is {ip_address}")
+            else:
+                # debgging info
+                #logging.debug(f"no ip_address found, skipping line")
+                # we are done if there is not ip_address, on to the next line
+                continue
 
-        # format message to be displayed
-        formatted_string = (
-            f"Line      : {res if res is not None else 'n/a'}\n"
-            f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
-            f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
-            f"BadDude   : {True if bad_dude_status else 'False'}\n"            
-            f"Country   : {country if country is not None else 'n/a'}"
-        )
-        # and display it
-        print(formatted_string)
-        print("-" * 50)
+            # get country and in HashedSet
+            country = None
+            bad_dude_status = "n/a"
+            if ip_address is not None:
+                country = find_country(ip_address)
+                # is this ip address in HashedSet
+                if hs.is_ip_in_set(ip_address) :
+                    # yep, a really bad dude
+                    bad_dude_status = True
+                else:
+                    # nope, but a bad dude anyway
+                    bad_dude_status = False
+
+            # format message to be displayed
+            formatted_string = (
+                f"Line      : {res if res is not None else 'n/a'}\n"
+                f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
+                f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
+                f"BadDude   : {True if bad_dude_status else 'False'}\n"            
+                f"Country   : {country if country is not None else 'n/a'}"
+            )
+            # and display it
+            print(formatted_string)
+            print("-" * 50)
         
-        # do we have an ip address in res ?
-        hazard_level = "unk"
-        if ip_address is not None:
-            # check that this ip is not in the whitelist
-            if wl.is_whitelisted(ip_address) is not None:
-                logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng hazard_level to no.")
-                hazard_level = "no"
+            # do we have an ip address in res ?
+            hazard_level = "unk"
+            if ip_address is not None:
+                # check that this ip is not in the whitelist
+                if wl.is_whitelisted(ip_address) is not None:
+                    logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng hazard_level to no.")
+                    hazard_level = "no"
+
             # we are finally! ready to mess with the threat_table database
             tmp_flag, tmp_hazard_level = db.fetch_threat_level(shortened_str)
             if tmp_flag is True:
@@ -441,7 +506,7 @@ try:
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
 finally:
-    pass
+    remove_pid(pid_file)
     # Cleanup: close the temporary file and delete it
     #if os.path.exists(temp_file.name):
     #    temp_file.close()
