@@ -102,7 +102,16 @@ class BlackList:
         # do the load
         for file in blacklist_files:
             self.load_blacklist(file)
-            
+
+        file_path = f"{project_root}" + "/ufw-blocklist/rules.v4"
+        self.process_rules_vX(file_path)
+        file_path = f"{project_root}" + "/ufw-blocklist/rules.v6"
+        self.process_rules_vX(file_path)
+
+        # now write out
+        file_path = f"{project_root}" + "/ufw-blocklist/master-blacklist.ctl"
+        self.write_blacklist_to_file(file_path)
+
         self.logger.debug(f"blacklists loaded {self.ip_count_loaded} ip addresses")
 
     # Fetch the blacklist list from the class
@@ -114,6 +123,72 @@ class BlackList:
         # Return True if the ip_address is in the blacklist, False otherwise
         return ip_address in self.blacklist
 
+    def process_rules_vX(self, file_path):
+        """
+            Opens the rules.v4 file, skips the first line, and extracts the 3rd column for processing.
+            
+            Args:
+        file_path (str): Path to the rules.v4 file. Defaults to '/etc/iptables/rules.v4'.
+        """
+        new_cnt = 0
+        try:
+            with open(file_path, 'r') as file:
+                # Skip the first line
+                next(file)
+            
+                # Iterate over the remaining lines
+                for line in file:
+                    columns = line.split()  # Split the line into columns by whitespace
+                    if len(columns) >= 3:
+                        third_column = columns[2]
+                        if self.process_third_column(third_column):
+                            new_cnt += 1
+                    else:
+                        self.logger.debug(f"Line skipped: {line.strip()} (less than 3 columns)")
+
+        except FileNotFoundError:
+            self.logger.error(f"File {file_path} not found.")
+        except Exception as e:
+            self.logger.error(f"An error occurred while processing {file_path}: {e}")
+
+        print(f"New Count: {new_cnt}")
+            
+    def process_third_column(self, column_data):
+        """
+        Placeholder for processing the 3rd column.
+        Override or extend this method based on your processing needs.
+
+        Args:
+        column_data (str): Data from the 3rd column of the rules.v4 file.
+        """
+        # Example processing: add to blacklist
+        if column_data not in self.blacklist:
+            self.ip_count_loaded += 1
+            self.blacklist.add(column_data)
+            return True
+            #self.logger.info(f"Added {column_data} to blacklist.")
+        else:
+            return False
+            #self.logger.debug(f"{column_data} already in blacklist.")
+        
+    def write_blacklist_to_file(self, file_path='master-blacklist.ctl'):
+        """
+        Writes the current blacklist set to a file, one IP per line.
+        
+        Args:
+        file_path (str): The path to the output file. Defaults to 'master-blacklist.ctl'.
+        """
+        cnt = 0
+        try:
+            with open(file_path, 'w') as file:
+                for ip in self.blacklist:
+                    file.write(f"{ip}\n")
+                    cnt += 1
+                    #self.logger.info(f"Blacklist written to {file_path}.")
+        except Exception as e:
+            self.logger.error(f"An error occurred while writing to {file_path}: {e}")
+        print(f"total records written {cnt}")
+        
     def cleanup(self):
         pass
     
