@@ -22,9 +22,11 @@ FLAG_DEBUG = 10
 FLAG_NOSET = 0
 
 # Extracted constants for log file name and format
-LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "monitor_fail3ban.log"
+LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
 # Set up the logging format to include file name and line number
 LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
+# And our log id
+LOG_ID = "fail3ban"
 
 # Extracted function to set up logging configuration
 def setup_logging():
@@ -40,7 +42,7 @@ def setup_logging():
 setup_logging()
 
 # Create a named logger consistent with the log file name
-logger = logging.getLogger("fail3ban")
+logger = logging.getLogger(LOG_ID)
 
 # load dotenv
 try:
