@@ -19,9 +19,9 @@ class HashedSet:
             print("Error loading hashed_set from file.")
             return set()
 
-    def is_ip_in_set(self, ip_address):
+    def is_ip_in_set(self, test_ip_address):
         """Check if an IP address is in the hashed set."""
-        return ip_address in self.hashed_set
+        return test_ip_address in self.hashed_set
 
 
 # Example usage (this part can be used in the 'check_ip.py' file or main code):
@@ -46,7 +46,6 @@ if __name__ == "__main__":
         print(f"{ip_address} is NOT in the hashed set.")
 
     # Create another instance of HashedSet
-    hashed_set_instance = None
     hashed_set_instance = HashedSet()
 
     # Get the IP address from the first command-line argument
