@@ -1,6 +1,6 @@
 import os
 import subprocess
-import sys
+#import sys
 
 class IpSet:
     def __init__(self, ipsetname='ufw-blocklist-ipsum'):
