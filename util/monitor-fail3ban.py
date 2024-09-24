@@ -415,16 +415,24 @@ try:
             # Now save on our previous entries list
             prevs.add_entry(line)
 
+            # show line before
+            logger.debug(f"Line: {line}")
+            
             # combine
             result = prevs.combine()
             if result is not None:
                 result = result.strip()
             else:
-                print("result can't be None")
+                logger.fatal("result can't be None")
                 sys.exit(0)
                 
             # is there an ip address in result ???
             found_dict, shortened_str = sjs.shorten_string(result)
+
+            # debug
+
+            logger.debug(f"shortened_str = {shortened_str}")
+            
             if 'ip_address' in found_dict:
                 ip_address = found_dict['ip_address']
                 # debgging info

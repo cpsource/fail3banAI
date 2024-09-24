@@ -20,6 +20,8 @@ class PreviousJournalctl:
         # Regex to match the required components (jail, pid, ip-address)
         pattern = r"\S+\s+\S+\s+\S+\s+ip-\d+-\d+-\d+-\d+\s+(\S+)\[(\d+)\]:.*"
         match = re.search(pattern, string)
+
+        string = string.strip()
         
         if match:
             jail = match.group(1)
@@ -31,7 +33,8 @@ class PreviousJournalctl:
             # Store the extracted values as a tuple (jail, pid, ip-address or None)
             self.free_list[self.next_free_idx] = (jail, pid, ip_address, end, string)
         else:
-            self.logger.debug(f"No match in add_entry for {string}")
+            pass
+            #self.logger.debug(f"No match in add_entry for {string}")
 
             # ip_address ??? or not
             ip_address = self.find_ipaddress(string)
@@ -51,18 +54,20 @@ class PreviousJournalctl:
         # Update next_free_idx using modulus to wrap around
         self.next_free_idx = (self.next_free_idx + 1) % self.radix
 
-    def get_top_ip_address(self):
-        # Initialize top_idx to next_free_idx - 1 modulus radix
-        top_idx = (self.next_free_idx - 1) % self.radix
-        if self.free_list[top_idx] is not None:
-            # Extract tmp_jail and tmp_pid from the entry at prev_idx
-            _, _, ip_address, _ = self.free_list[top_idx]
-            if ip_address is not None:
-                return ip_address
+    # on the way out ???
+    if False:
+        def get_top_ip_address(self):
+            # Initialize top_idx to next_free_idx - 1 modulus radix
+            top_idx = (self.next_free_idx - 1) % self.radix
+            if self.free_list[top_idx] is not None:
+                # Extract tmp_jail and tmp_pid from the entry at prev_idx
+                _, _, ip_address, _ = self.free_list[top_idx]
+                if ip_address is not None:
+                    return ip_address
+                else:
+                    return None
             else:
                 return None
-        else:
-            return None
 
     def combine(self):
         ''' check to see if we can combine the top with prevs and return that or else just the top '''
@@ -73,18 +78,18 @@ class PreviousJournalctl:
         
         # Is there a top at all ???
         if self.free_list[top_idx] is None:
-            self.logger.debug("there is no top at all ???")
+            #self.logger.debug("there is no top at all ???")
             return None
 
         # Yes, extract pid from top
         _, top_pid, _, _, _ = self.free_list[top_idx]
 
-        self.logger.debug(f"top_pid = {top_pid}")
+        #self.logger.debug(f"top_pid = {top_pid}")
         
         # add to matches
         matches = matches + (top_idx,)
 
-        self.logger.debug(f"matches now {matches}")
+        #self.logger.debug(f"matches now {matches}")
         
         # Loop through the list looking for a pid match building up matches
         while True:
@@ -110,7 +115,7 @@ class PreviousJournalctl:
                     continue
 
         # done searching prevs
-        self.logger.debug(f"after searches: matches = {matches}")
+        #self.logger.debug(f"after searches: matches = {matches}")
         
         # can we get out quickly
         if len(matches) == 0:
@@ -120,7 +125,7 @@ class PreviousJournalctl:
             return string
 
         # grr , we have extra work to do. We must combine matches
-        self.logger.debug("grrr - doing combine")
+        #self.logger.debug("grrr - doing combine")
         
         # we will build this string up by walking matches backwards
         resultant_string = ""
@@ -138,52 +143,6 @@ class PreviousJournalctl:
         # and done
         self.logger.debug(f"*** Combined: Matches:{matches} Str: {resultant_string}")
         return resultant_string
-    
-    def prev_entry(self):
-        # Initialize prev_idx to next_free_idx - 1 modulus radix
-        prev_idx = (self.next_free_idx - 1) % self.radix
-
-        # Do we have any previous at all ???
-        if self.free_list[prev_idx] is None:
-            return False, None
-
-        # Extract tmp_jail and tmp_pid from the entry at prev_idx
-        tmp_jail, tmp_pid, initial_ip_address, _ = self.free_list[prev_idx]
-
-        # If this line has an ip address, we don't need to look back because we have
-        # what we need to consider banning.
-        if initial_ip_address is not None:
-            return False, None
-        
-        # If there is no ip_address at this index, looking back will be fruitless
-        #if ip_address is None:
-        #    return (False, None)
-        
-        # Loop through the list looking for a match
-        while True:
-            # Decrement prev_idx by 1 modulus radix
-            prev_idx = (prev_idx - 1) % self.radix
-            
-            # If prev_idx equals next_free_idx, stop and return False
-            if prev_idx == self.next_free_idx:
-                return False, None
-            
-            # Extract jail and pid from the entry at prev_idx
-            if self.free_list[prev_idx] is not None:
-                jail, pid, tmp_ip_address, _ = self.free_list[prev_idx]
-                
-                # Compare the jail and pid values
-                if jail == tmp_jail and pid == tmp_pid:
-                    # one of the two must have an ip_address
-                    if initial_ip_address is None and tmp_ip_address is None:
-                        continue
-                    if initial_ip_address is not None and tmp_ip_address is not None:
-                        if initial_ip_address == tmp_ip_address:
-                            self.logger.debug(f"ip addresses match {initial_ip_address} {tmp_ip_address}")
-                            # it's ok
-                            return True, self.free_list[prev_idx]
-            else:
-                return False, None
     
     def show_entries(self):
         self.logger.info("Current entries in free_list (from newest to oldest):")
@@ -206,6 +165,7 @@ class PreviousJournalctl:
             if count >= self.radix:  # Ensure not to loop indefinitely
                 break
 
+    # Ha, try building this monster pattern by hand !
     def find_ipaddress(self, str):
         pattern = r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)"
         match = re.search(pattern, str)

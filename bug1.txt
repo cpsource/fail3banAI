@@ -75,3 +75,11 @@ Shortened : <date-time> <destination-ip> <task-name>[<pid>]: Connection reset by
 BadDude   : True
 Country   : United States of America
 --------------------------------------------------
+
+2024-09-24 19:24:14,196 - PreviousJournalctl.py:144 - DEBUG - *** Combined: Matches:(3, 2) Str: Sep 24 19:24:13 ip-172-26-10-222 sudo[146439]:   ubuntu : TTY=pts/0 ; PWD=/home/ubuntu/fail3banAI/util ; USER=root ; COMMAND=/home/ubuntu/openai/bin/python3 ./monitor-fail3ban.py pam_unix(sudo:session): session opened for user root(uid=0) by ubuntu(uid=1000)
+2024-09-24 19:24:14,196 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> <task-name>[<pid>]:   ubuntu : TTY=pts/0 ; PWD=/home/ubuntu/fail3banAI/util ; USER=root ; COMMAND=/home/ubuntu/openai/bin/python3 ./monitor-fail3ban.py pam_unix(<task-name>:session): session opened for <user> <by>
+
+Shrink More !!!
+
+------------------------------------------------
+
