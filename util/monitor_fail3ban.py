@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import subprocess
 import signal
 import threading
+import ipaddress; is_ipv6 = lambda addr: isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address)
 
 # Configure logging
 import logging
