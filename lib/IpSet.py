@@ -78,7 +78,7 @@ class IpSet:
             subprocess.run([self.ipset, 'test', self.ipsetname, ip_address], check=True)
             print(f"IP address {ip_address} is present in ipset {self.ipsetname}.")
             return True
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             print(f"IP address {ip_address} is not present in ipset {self.ipsetname}.")
             return False
         except Exception as e:
