@@ -3,7 +3,7 @@ import subprocess
 #import sys
 
 class IpSet6:
-    def __init__(self, ipsetname='ufw-blocklist6-ipset'):
+    def __init__(self, ipsetname='ufw-blocklist6-ipsum'):
         # Set self.after.init based on the environment variable FAIL3BAN_PROJECT_ROOT
         project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
         if not project_root:
@@ -50,11 +50,11 @@ class IpSet6:
 
     def add(self, ip_address):
         """Adds an IPv6 address to the ipset"""
-        print(f"cmd: ipset add {self.ipsetname} {ip_address}")
+        #print(f"cmd: ipset add {self.ipsetname} {ip_address}")
         try:
             # Run the ipset add command
             subprocess.run([self.ipset, 'add', self.ipsetname, ip_address], check=True)
-            print(f"IPv6 address {ip_address} added to ipset {self.ipsetname} successfully.")
+            #print(f"IPv6 address {ip_address} added to ipset {self.ipsetname} successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to add IPv6 address {ip_address} to ipset {self.ipsetname}. Exit code: {e.returncode}")
         except Exception as e:
@@ -65,7 +65,7 @@ class IpSet6:
         try:
             # Run the ipset del command
             subprocess.run([self.ipset, 'del', self.ipsetname, ip_address], check=True)
-            print(f"IPv6 address {ip_address} deleted from ipset {self.ipsetname} successfully.")
+            #print(f"IPv6 address {ip_address} deleted from ipset {self.ipsetname} successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to delete IPv6 address {ip_address} from ipset {self.ipsetname}. Exit code: {e.returncode}")
         except Exception as e:
@@ -75,11 +75,11 @@ class IpSet6:
         """Tests if an IPv6 address is present in the ipset"""
         try:
             # Run the ipset test command
-            subprocess.run([self.ipset, 'test', self.ipsetname, ip_address], check=True)
-            print(f"IPv6 address {ip_address} is present in ipset {self.ipsetname}.")
+            subprocess.run([self.ipset, 'test', self.ipsetname, ip_address], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            #print(f"IPv6 address {ip_address} is present in ipset {self.ipsetname}.")
             return True
         except subprocess.CalledProcessError:
-            print(f"IPv6 address {ip_address} is not present in ipset {self.ipsetname}.")
+            #print(f"IPv6 address {ip_address} is not present in ipset {self.ipsetname}.")
             return False
         except Exception as e:
             print(f"Unexpected error occurred while testing IPv6 address {ip_address}: {e}")

@@ -64,3 +64,14 @@ ipset v7.15: Element cannot be added to the set: it's already added
 34.248.192.181 - - [22/Sep/2024:20:24:10 +0000] "GET / HTTP/1.1" 200 3041 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.21 Safari/537.36 MMS/1.0.2531.0"
 198.235.24.156 - - [22/Sep/2024:20:40:22 +0000] "GET / HTTP/1.1" 200 464 "-" "Expanse, a Palo Alto Networks company, searches across the global IPv4 space multiple times per day to identify customers&#39; presences on the Internet. If you would like to be excluded from our scans, please send IP addresses/domains to: scaninfo@paloaltonetworks.com"
 
+
+----
+2024-09-24 04:05:08,878 - monitor_fail3ban.py:441 - DEBUG - Line: Sep 24 04:05:08 ip-172-26-10-222 systemd[1]: Started snap.canonical-livepatch.canonical-livepatch-da7719ea-cf7b-415e-9942-4e3c250e5d38.scope.
+2024-09-24 04:05:09,378 - monitor_fail3ban.py:441 - DEBUG - Line: Sep 24 04:05:09 ip-172-26-10-222 systemd[1]: snap.canonical-livepatch.canonical-livepatch-da7719ea-cf7b-415e-9942-4e3c250e5d38.scope: Deactivated successfully.
+2024-09-24 04:05:36,628 - monitor_fail3ban.py:441 - DEBUG - Line: Sep 24 04:05:36 ip-172-26-10-222 sshd[84299]: Connection reset by 205.210.31.207 port 59736 [preauth]
+Line      : Sep 24 04:05:36 ip-172-26-10-222 sshd[84299]: Connection reset by 205.210.31.207 port 59736 [preauth]
+Dictionary: {'datetime': 'Sep 24 04:05:36', 'destination_ip': 'ip-172-26-10-222', 'task_name': 'sshd', 'pid': '84299', 'ip_address': '205.210.31.207', 'port': '59736'}
+Shortened : <date-time> <destination-ip> <task-name>[<pid>]: Connection reset by <ip-address> <port> [preauth]
+BadDude   : True
+Country   : United States of America
+--------------------------------------------------

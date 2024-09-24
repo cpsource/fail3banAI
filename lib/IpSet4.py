@@ -50,22 +50,22 @@ class IpSet4:
 
     def add(self, ip_address):
         """Adds an IP address to the ipset"""
-        print(f"cmd: ipset add {self.ipsetname} {ip_address}")
+        #print(f"cmd: ipset add {self.ipsetname} {ip_address}")
         try:
             # Run the ipset add command
             subprocess.run([self.ipset, 'add', self.ipsetname, ip_address], check=True)
-            print(f"IP address {ip_address} added to ipset {self.ipsetname} successfully.")
+            #print(f"IP address {ip_address} added to ipset {self.ipsetname} successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to add IP address {ip_address} to ipset {self.ipsetname}. Exit code: {e.returncode}")
         except Exception as e:
             print(f"Unexpected error occurred while adding IP address {ip_address}: {e}")
-
+        
     def delete(self, ip_address):
         """Deletes an IP address from the ipset"""
         try:
             # Run the ipset del command
             subprocess.run([self.ipset, 'del', self.ipsetname, ip_address], check=True)
-            print(f"IP address {ip_address} deleted from ipset {self.ipsetname} successfully.")
+            #print(f"IP address {ip_address} deleted from ipset {self.ipsetname} successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to delete IP address {ip_address} from ipset {self.ipsetname}. Exit code: {e.returncode}")
         except Exception as e:
@@ -75,14 +75,14 @@ class IpSet4:
         """Tests if an IP address is present in the ipset"""
         try:
             # Run the ipset test command
-            subprocess.run([self.ipset, 'test', self.ipsetname, ip_address], check=True)
-            print(f"IP address {ip_address} is present in ipset {self.ipsetname}.")
+            subprocess.run([self.ipset, 'test', self.ipsetname, ip_address], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            #print(f"IP address {ip_address} is present in ipset {self.ipsetname}.")
             return True
         except subprocess.CalledProcessError:
-            print(f"IP address {ip_address} is not present in ipset {self.ipsetname}.")
+            #print(f"IP address {ip_address} is not present in ipset {self.ipsetname}.")
             return False
         except Exception as e:
-            print(f"Unexpected error occurred while testing IP address {ip_address}: {e}")
+            #print(f"Unexpected error occurred while testing IP address {ip_address}: {e}")
             return False
 
 # Example of using the IpSet4 class
