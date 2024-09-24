@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8b49e915-cf6b-4d4f-8048-80c24c0170bc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/blacklist.py" beforeDir="false" afterPath="$PROJECT_DIR$/lib/blacklist.py" afterDir="false" />
+    <list default="true" id="8b49e915-cf6b-4d4f-8048-80c24c0170bc" name="Changes" comment="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings.">
+      <change beforePath="$PROJECT_DIR$/lib/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/lib/config.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,11 +52,24 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1727159446859</updated>
-      <workItem from="1727159449225" duration="2223000" />
+      <workItem from="1727159449225" duration="4300000" />
     </task>
+    <task id="LOCAL-00001" summary="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings.">
+      <option name="closed" value="true" />
+      <created>1727172712490</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1727172712490</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings." />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings." />
   </component>
 </project>
