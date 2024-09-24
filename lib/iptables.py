@@ -10,7 +10,7 @@ LOG_ID = "fail3ban"
 import subprocess
 import sys
 import os
-import time
+#import time
 # Configure logging
 import logging
 
@@ -124,7 +124,7 @@ class Iptables:
         self.logger.debug(f"Removing rule number {rule_num} from chain {chain}. Executing command: {' '.join(delete_rule_command)}")
         self.run_command(delete_rule_command)
 
-    def add_chain_to_INPUT(self, ip_address, jail_name, extra):
+    def add_chain_to_INPUT(self, ip_address, jail_name, extra=None):
         """Add IP to a custom chain with the jail name, and create the chain if it doesn't exist."""
         chain_name = f"f3b-{jail_name}"
 
@@ -133,8 +133,12 @@ class Iptables:
             result = self.run_command(['sudo', 'iptables', '-L', chain_name, '-n'])
             if not result or "No chain" in result:
                 self.logger.debug(f"Chain {chain_name} does not exist. Creating it.")
-                self.run_command(['sudo', 'iptables', '-N', chain_name,
-                                  '-m', 'comment', '--comment', f'fail3ban {extra}'])
+                if extra is None:
+                    self.run_command(['sudo', 'iptables', '-N', chain_name,
+                                  '-m', 'comment', '--comment', f'fail3ban'])
+                else:
+                    self.run_command(['sudo', 'iptables', '-N', chain_name,
+                                      '-m', 'comment', '--comment', f'fail3ban {extra}'])
 
             # Link chain to INPUT
             result = self.run_command(['sudo', 'iptables', '-L', 'INPUT', '-n'])
