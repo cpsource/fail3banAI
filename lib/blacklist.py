@@ -2,6 +2,9 @@
 
 # Handle everything from blacklist.ctl
 
+# we load all the known rules from control, then we load the previously saved rules
+# from ipset in ufw-blocklist. Then we create a master-blacklist.ctl
+
 #import requests
 #import inspect
 import logging

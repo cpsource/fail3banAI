@@ -49,10 +49,13 @@ add ufw-blocklist6-ipsum 2404:8280:a222:bbbb:bba1:40:ffff:ffff
 add ufw-blocklist6-ipsum 2607:ff10:c8:594::e
 add ufw-blocklist6-ipsum 2a03:6f00:1::5c35:6069
 add ufw-blocklist6-ipsum 2602:fb54:5f4::1
+add ufw-blocklist6-ipsum 2001:19f0:6402:85f:5400:5ff:fe19:b830
 add ufw-blocklist6-ipsum 2a07:e01:2:70::1
 add ufw-blocklist6-ipsum 2001:41d0:203:a47e::
 add ufw-blocklist6-ipsum 2a00:d680:20:50::cdb4
 add ufw-blocklist6-ipsum 2a02:d480:4c0:10b4:42::6
+add ufw-blocklist6-ipsum 2001:bc8:6005:1a:49cc:ae0f:399e:fcdf
+add ufw-blocklist6-ipsum 2600:1f18:2493:1f00:8fa2:6ecd:c311:defc
 add ufw-blocklist6-ipsum 2a06:6440:0:2c6e::1
 add ufw-blocklist6-ipsum 2600:3c02::f03c:93ff:fea3:c6cf
 add ufw-blocklist6-ipsum 240e:c2:1800:84:0:1:3:2

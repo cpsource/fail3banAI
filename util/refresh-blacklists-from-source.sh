@@ -13,3 +13,6 @@ python3 ./build-blacklist-6.py
 # load master-blacklist.ctl into ipset
 
 ./sudoIt.sh ./load-master-blacklist.py
+
+# save
+sudo ./ipset-save.sh
