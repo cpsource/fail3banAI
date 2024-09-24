@@ -2,10 +2,10 @@
 
 # Handle everything from blacklist.ctl
 
-import requests
-import inspect
+#import requests
+#import inspect
 import logging
-import re
+#import re
 import os
 import sys
 import atexit
@@ -38,7 +38,7 @@ import f3b_whitelist
 
 class BlackList:
 
-    def __init__(self, configData=None, logger_id=LOG_ID):
+    def __init__(self, config_data=None, logger_id=LOG_ID):
         # ip_count
         self.ip_count_loaded = 0
         # our config data
@@ -49,7 +49,7 @@ class BlackList:
         # Initialize an empty list to store blacklisted IPs
         self.blacklist = set()
         # Keep a pointer to our configuration dictionary
-        self.configData = configData
+        self.configData = config_data
         # Obtain logger
         self.logger = logging.getLogger(logger_id)
         # register a cleanup
@@ -104,9 +104,9 @@ class BlackList:
             self.load_blacklist(file)
 
         file_path = f"{project_root}" + "/ufw-blocklist/rules.v4"
-        self.process_rules_vX(file_path)
+        self.process_rules_vx(file_path)
         file_path = f"{project_root}" + "/ufw-blocklist/rules.v6"
-        self.process_rules_vX(file_path)
+        self.process_rules_vx(file_path)
 
         # now write out
         file_path = f"{project_root}" + "/ufw-blocklist/master-blacklist.ctl"
@@ -123,7 +123,7 @@ class BlackList:
         # Return True if the ip_address is in the blacklist, False otherwise
         return ip_address in self.blacklist
 
-    def process_rules_vX(self, file_path):
+    def process_rules_vx(self, file_path):
         """
             Opens the rules.v4 file, skips the first line, and extracts the 3rd column for processing.
             
