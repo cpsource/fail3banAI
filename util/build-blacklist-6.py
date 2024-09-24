@@ -35,7 +35,7 @@ if lib_path not in sys.path:
 else:
     print(f"{lib_path} is already in the system path.")
 
-import f3b_AbuseIPDB
+import AbuseIPDB
 
 #
 # Set up logger
@@ -61,7 +61,7 @@ setup_logging(LOG_FORMAT, LOG_FILE_NAME)
 logger = logging.getLogger("fail3ban")
 
 # Initialize the class
-abuse_ipdb = f3b_AbuseIPDB.AbuseIPDB()
+abuse_ipdb = AbuseIPDB.AbuseIPDB()
 
 # Build the output file name
 OUTPUT_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/" + "blacklist-6.ctl"
