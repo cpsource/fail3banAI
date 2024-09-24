@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo -E $(which python3) ./monitor_fail3ban.py
+sudo -E $(which python3) ./monitor-fail3ban.py
 
 # or
 

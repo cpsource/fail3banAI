@@ -1,3 +1,7 @@
+# PreviousJournalctl.py
+
+# we keep track of the last N journalctl entires, and combine them into one to present for further processing
+
 import re
 import logging
 
@@ -14,19 +18,36 @@ class PreviousJournalctl:
 
     def add_entry(self, string):
         # Regex to match the required components (jail, pid, ip-address)
-        pattern = r"\S+\s+\S+\s+\S+\s+ip-\d+-\d+-\d+-\d+\s+(\S+)\[(\d+)\]:.*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+        pattern = r"\S+\s+\S+\s+\S+\s+ip-\d+-\d+-\d+-\d+\s+(\S+)\[(\d+)\]:.*"
         match = re.search(pattern, string)
         
         if match:
             jail = match.group(1)
             pid = match.group(2)
-            ip_address = match.group(3) if match.group(3) else None
+            end = match.end(2)+3 # save for later if we have to combine, the 3 skips '\]: '
+            
+            #ip_address = match.group(3) if match.group(3) else None
+            ip_address = self.find_ipaddress(string[end:])
             # Store the extracted values as a tuple (jail, pid, ip-address or None)
-            self.free_list[self.next_free_idx] = (jail, pid, ip_address, string)
+            self.free_list[self.next_free_idx] = (jail, pid, ip_address, end, string)
         else:
-            # In case the string does not match the expected format, store None
-            self.free_list[self.next_free_idx] = None
-        
+            self.logger.debug(f"No match in add_entry for {string}")
+
+            # ip_address ??? or not
+            ip_address = self.find_ipaddress(string)
+            
+            # just try for pid
+            
+            pattern = r"\s+(\S+)\[(\d+)\]:"
+            match = re.search(pattern, string)
+            if match:
+                jail = match.group(1)
+                pid = match.group(2)
+                end = match.end(2)+3 # save for later if we have to combine, the 3 skips the space after the '\]: '
+                self.free_list[self.next_free_idx] = (jail, pid, ip_address, end, string)
+            else:
+                self.free_list[self.next_free_idx] = (None, None, ip_address, None, string)                
+
         # Update next_free_idx using modulus to wrap around
         self.next_free_idx = (self.next_free_idx + 1) % self.radix
 
@@ -43,6 +64,81 @@ class PreviousJournalctl:
         else:
             return None
 
+    def combine(self):
+        ''' check to see if we can combine the top with prevs and return that or else just the top '''
+        # Initialize prev_idx to next_free_idx - 1 modulus radix
+        prev_idx = (self.next_free_idx - 1) % self.radix
+        top_idx = prev_idx
+        matches = ()
+        
+        # Is there a top at all ???
+        if self.free_list[top_idx] is None:
+            self.logger.debug("there is no top at all ???")
+            return None
+
+        # Yes, extract pid from top
+        _, top_pid, _, _, _ = self.free_list[top_idx]
+
+        self.logger.debug(f"top_pid = {top_pid}")
+        
+        # add to matches
+        matches = matches + (top_idx,)
+
+        self.logger.debug(f"matches now {matches}")
+        
+        # Loop through the list looking for a pid match building up matches
+        while True:
+            # Decrement prev_idx by 1 modulus radix
+            prev_idx = (prev_idx - 1) % self.radix
+
+            # Is there an entry ???
+            if self.free_list[prev_idx] is None:
+                # No
+                break
+            
+            # If prev_idx equals next_free_idx, done searching
+            if prev_idx == self.next_free_idx:
+                # No
+                break
+
+            # do pids match ???
+            _, tmp_pid, _, _, _ = self.free_list[prev_idx]
+            if top_pid is not None and tmp_pid is not None:
+                if tmp_pid == top_pid:
+                    # add to our matches
+                    matches = matches + (prev_idx,)
+                    continue
+
+        # done searching prevs
+        self.logger.debug(f"after searches: matches = {matches}")
+        
+        # can we get out quickly
+        if len(matches) == 0:
+            return None
+        if len(matches) == 1:
+            _, _, _, _, string = self.free_list[matches[0]]
+            return string
+
+        # grr , we have extra work to do. We must combine matches
+        self.logger.debug("grrr - doing combine")
+        
+        # we will build this string up by walking matches backwards
+        resultant_string = ""
+        
+        # Walk backwards through the tuple
+        first_flag = True
+        for value in reversed(matches):
+            if first_flag:
+                _, _, _, _, resultant_string = self.free_list[value]
+                first_flag = False
+            else:
+                _, _, _, pos, tmp_string = self.free_list[value]
+                resultant_string = resultant_string + " " + tmp_string[pos:]
+
+        # and done
+        self.logger.debug(f"*** Combined: Matches:{matches} Str: {resultant_string}")
+        return resultant_string
+    
     def prev_entry(self):
         # Initialize prev_idx to next_free_idx - 1 modulus radix
         prev_idx = (self.next_free_idx - 1) % self.radix
@@ -109,10 +205,17 @@ class PreviousJournalctl:
             count += 1
             if count >= self.radix:  # Ensure not to loop indefinitely
                 break
-    
+
+    def find_ipaddress(self, str):
+        pattern = r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)"
+        match = re.search(pattern, str)
+        if match:
+            ip_address = match.group(1)
+            return ip_address
+        return None
+
     def __del__(self):
         self.free_list = None
-
 
 # Main entry point for testing
 if __name__ == "__main__":

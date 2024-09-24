@@ -78,7 +78,7 @@ else:
 #subdirectory_path = os.path.join(current_dir, '../lib')
 #sys.path.append(subdirectory_path)
 
-import f3b_previousJournalctl
+from PreviousJournalctl import PreviousJournalctl
 
 # get HashedSet
 import f3b_HashedSet
@@ -244,16 +244,6 @@ def cut(string):
         # If no match, return the original string
         return string
 
-def combine(prev_str, cur_str):
-    """
-    :param prev_str: The previous string to be combined.
-    :param cur_str: The current string from which a portion will be extracted and combined with prev_str.
-    :return: A new string which is a combination of prev_str and a portion of cur_str starting from the found index.
-    """
-    idx = cur_str.find(']: ')
-    combined_str = prev_str + " " + cut(cur_str[idx+3:])
-    return combined_str
-
 # Function to delete temporary files created by the script
 def clean_temp_files():
     if os.path.exists(temp_file.name):
@@ -342,7 +332,7 @@ journalctl_proc = subprocess.Popen(['journalctl', '-f'], stdout=subprocess.PIPE,
 #previous_line = None
 
 # use new PreviousJournalctl class
-prevs = f3b_previousJournalctl.PreviousJournalctl()
+prevs = PreviousJournalctl()
 # and our HashedSet class
 hs = f3b_HashedSet.HashedSet()
 # and our country codes class
@@ -422,27 +412,19 @@ try:
                 # yes
                 break
 
-            # Now save
+            # Now save on our previous entries list
             prevs.add_entry(line)
 
-            # Now, call prev_entry and check if it returns the correct match
-            result = prevs.prev_entry()
-            # Was there a previous result to combine with this one ???
-            res = None
-            if result[0]:
-                logging.debug(f"Match found: {result[1]}")
-                # combine the strings into one
-                res = combine(result[1][3], line).strip()
-                # print the new line
-                logging.debug(f"*** Combined line: {res.strip()}")
+            # combine
+            result = prevs.combine()
+            if result is not None:
+                result = result.strip()
             else:
-                # not found, go with the origional line
-                res = line.strip()
-                # print the new line
-                logging.debug(f"Line: {res.strip()}")
-            
-            # is there an ip address in a line or the combined line ???
-            found_dict, shortened_str = sjs.shorten_string(res.strip())
+                print("result can't be None")
+                sys.exit(0)
+                
+            # is there an ip address in result ???
+            found_dict, shortened_str = sjs.shorten_string(result)
             if 'ip_address' in found_dict:
                 ip_address = found_dict['ip_address']
                 # debgging info
@@ -453,7 +435,7 @@ try:
                 # we are done if there is not ip_address, on to the next line
                 continue
 
-            # get country and in HashedSet
+            # get country and bad_dude_status
             country = None
             bad_dude_status = "n/a"
             if ip_address is not None:
@@ -466,34 +448,39 @@ try:
                     # nope, but a bad dude anyway
                     bad_dude_status = False
 
+            #  is ip_address in our whitelist ???
+            ip_address_in_whitelist = None
+            if ip_address is not None:
+                # check that this ip is not in the whitelist
+                if wl.is_whitelisted(ip_address) is True:
+                    ip_address_in_whitelist = True
+                else:
+                    ip_address_in_whitelist = False                    
+
+            # check hazard level from table threat_table in database
+            hazard_level = "unk"
+            tmp_flag, tmp_hazard_level = db.fetch_threat_level(shortened_str)
+            # was the record found in the database ???
+            if tmp_flag is True:
+                # yes
+                hazard_level = tmp_hazard_level
+            else:
+                pass
+
             # format message to be displayed
             formatted_string = (
-                f"Line      : {res if res is not None else 'n/a'}\n"
+                f"Line      : {result if result is not None else 'n/a'}\n"
                 f"Dictionary: {found_dict if found_dict is not None else 'n/a'}\n"
                 f"Shortened : {shortened_str if shortened_str is not None else 'n/a'}\n"
                 f"BadDude   : {True if bad_dude_status else 'False'}\n"            
                 f"Country   : {country if country is not None else 'n/a'}"
+                f"InWhiteLst: {ip_address_in_whitelist if ip_address_in_whitelist is not None else 'n/a'}"
+                f"InDB      : In DB: {tmp_flag} Hazard Level: {hazard_level}"
             )
             # and display it
             print(formatted_string)
             print("-" * 50)
         
-            # do we have an ip address in res ?
-            hazard_level = "unk"
-            if ip_address is not None:
-                # check that this ip is not in the whitelist
-                if wl.is_whitelisted(ip_address) is True:
-                    logging.debug(f"Our ip address {ip_address} is in whitelist.ctl. Settng hazard_level to no.")
-                    hazard_level = "no"
-
-            # we are finally! ready to mess with the threat_table database
-            tmp_flag, tmp_hazard_level = db.fetch_threat_level(shortened_str)
-            if tmp_flag is True:
-                logging.debug(f"Database returns hazard_level as {tmp_hazard_level}")
-                hazard_level = tmp_hazard_level
-            else:
-                logging.debug(f"Database doesn't have a record of this shortened_string, hazard_level = {hazard_level}")
-
             if False:
                 # if we are debugging,
                 if logger.getEffectiveLevel() <= FLAG_DEBUG :
