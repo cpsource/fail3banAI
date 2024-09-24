@@ -1,5 +1,8 @@
 import os
 import subprocess
+#from xxlimited_35 import error
+
+
 #import sys
 
 class IpSet6:
@@ -21,10 +24,10 @@ class IpSet6:
 
         # Try to run 'ipset -h' and handle errors if 'ipset' is not found
         try:
-            result = subprocess.run([self.ipset, '-h'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run([self.ipset, '-h'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print("IpSet6 initialized successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error: ipset command failed with error code: {e.returncode}")
+        except subprocess.CalledProcessError as err:
+            print(f"Error: ipset command failed with error code: {err.returncode}")
         except FileNotFoundError:
             print("Error: Command 'ipset' not found. You can install it with 'sudo apt install ipset'.")
 
@@ -33,10 +36,10 @@ class IpSet6:
         try:
             subprocess.run([self.after_init, 'start'], check=True)
             print(f"{self.after_init} started successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error: Failed to start {self.after_init}. Exit code: {e.returncode}")
-        except Exception as e:
-            print(f"Unexpected error occurred while starting {self.after_init}: {e}")
+        except subprocess.CalledProcessError as err:
+            print(f"Error: Failed to start {self.after_init}. Exit code: {err.returncode}")
+        except Exception as err:
+            print(f"Unexpected error occurred while starting {self.after_init}: {err}")
 
     def stop(self):
         """Stops the ipset using after.init stop"""
