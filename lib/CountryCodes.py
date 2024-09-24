@@ -205,10 +205,10 @@ class CountryCodes:
             "ZW": "Zimbabwe"
         }
 
-    def get_country(self, code):
+    def get_country(self, country_code):
         """Return the country name given a country code."""
         #print(f"get_country: entry, searching for code {code}")
-        return self.country_code_to_country_name.get(code, "Unknown country code")
+        return self.country_code_to_country_name.get(country_code, "Unknown country code")
 
 if __name__ == "__main__":
     # Create an instance of the class
