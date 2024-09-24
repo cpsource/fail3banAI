@@ -139,7 +139,7 @@ class AbuseIPDB:
             'ip': ip_address,
             'categories': categories,  # Comma-separated list of category IDs
             'comment': comment,
-            'timestamp': timestamp
+            'timestamp': iso_timestamp
         }
 
         headers = {
@@ -182,7 +182,7 @@ def main():
     if is_whitelisted is not None:
         print(f"Whitelisted for {ip_address}: {is_whitelisted}")
     else:
-        print(f"Failed to retrieve whitelist informaton for {ip_address}")
+        print(f"Failed to retrieve whitelist information for {ip_address}")
 
     if abuse_confidence_score is not None:
         print(f"Abuse Confidence Score for {ip_address}: {abuse_confidence_score}")
@@ -209,13 +209,12 @@ def main():
         print("Failed to retrieve blacklist_endpoint report")
 
 # Extracted function to set up logging configuration
-def setup_logging(LOG_FORMAT, LOG_FILE_NAME):
+def setup_logging(log_format, log_file_name):
     logging.basicConfig(
         level=logging.DEBUG,
-        format=LOG_FORMAT,
+        format=log_format,
         handlers=[
-            logging.FileHandler(LOG_FILE_NAME),
-            logging.StreamHandler()
+            logging.FileHandler(log_file_name, mode='a'),
         ]
     )
         

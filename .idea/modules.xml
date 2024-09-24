@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/fail3ban.iml" filepath="$PROJECT_DIR$/.idea/fail3ban.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fail3banAI.iml" filepath="$PROJECT_DIR$/.idea/fail3banAI.iml" />
     </modules>
   </component>
 </project>
