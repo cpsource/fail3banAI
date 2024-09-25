@@ -2,14 +2,17 @@ import os
 import sys
 import threading
 import time
+from datetime import datetime
 import WorkManager2
 
 cmd_str = "2024-09-25 14:22:01,379 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <datetime> <destination-ip> kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=200.192.212.59 DST=172.26.10.222 LEN=52 TOS=0x00 PREC=0x00 TTL=48 ID=32242 DF PROTO=TCP SPT=55308 DPT=22 WINDOW=14520 RES=0x00 SYN URGP=0"
 
-ip_address = "200.192.212.59"
-categories = "18,22"
+ip_address = "104.40.75.134"
+categories = "18,20"
 comment    = "iptables detected a banned ip on port 22"
-timestamp  = "2024-09-25 14:22:01"
+timestamp  = "2024-09-25 14:22:01,379"
+
+#2023-10-18T11:25:11-04:00
 
 if False:
     #

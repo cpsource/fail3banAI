@@ -132,14 +132,20 @@ class AbuseIPDB:
         url = 'https://api.abuseipdb.com/api/v2/report'
 
         # Ensure the timestamp is in ISO 8601 format
-        iso_timestamp = self.ensure_iso_format(timestamp)
+
+        # Parse the string into a datetime object, ignoring the milliseconds part
+        dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S,%f')
+        # Convert to ISO 8601 format with UTC 'Z' (ignoring milliseconds)
+        iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        print(f"iso_timestamp= {iso_timestamp}")
         
         # Prepare the parameters for the report
         params = {
-            'ip': ip_address,
-            'categories': categories,  # Comma-separated list of category IDs
-            'comment': comment,
-            'timestamp': iso_timestamp
+            'ip':ip_address,
+            'categories':categories,
+            'comment':comment,
+            'timestamp':iso_timestamp
         }
 
         headers = {
@@ -147,8 +153,14 @@ class AbuseIPDB:
             'Key': self.api_key
         }
 
+        #print(f"api_key = {self.api_key}")
+        #print(f"params = {params}")
+        
         try:
-            response = requests.post(url, headers=headers, data=params)
+            response = requests.request(method="POST", url=url, headers=headers, params=params)
+            decodedResponse = json.loads(response.text)
+            print(json.dumps(decodedResponse, sort_keys=True, indent=4))
+            
             if response.status_code == 200:
                 decoded_response = json.loads(response.text)
                 

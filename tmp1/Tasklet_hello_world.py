@@ -68,8 +68,12 @@ def Tasklet_hello_world(data, **kwargs):
     for key, value in kwargs.items():
         print(f"{key} = {value}")
         
-    print("Ok to notify AbuseIPDB")
+    print("Notifying AbuseIPDB ...")
 
+    abi.report_endpoint(ip_address, categories, comment, timestamp)
+
+    print("Notifying AbuseIPDB Complete")
+    
     sleep_time = int(random.uniform(2,5))
     print(f"{data} Sleeping for {sleep_time} seconds ...")
     time.sleep(sleep_time)
