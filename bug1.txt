@@ -102,3 +102,21 @@ Shrink More !!!
 2024-09-25 01:52:28,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:52:28 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32045 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
 
 2024-09-25 01:52:28,629 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32045 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+
+------------------------------
+
+2024-09-25 14:53:52,879 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <datetime> <destination-ip> kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
+2024-09-25 14:58:01,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 14:58:01 ip-172-26-10-222 sshd[158850]: Invalid user  from 2001:470:1:fb5:bd83:ca64:d950:e816 port 29992
+
+PID file /tmp/monitor_fail3ban.pid removed successfully.
+Traceback (most recent call last):
+  File "/home/ubuntu/fail3banAI/util/./monitor-fail3ban.py", line 430, in <module>
+    found_dict, shortened_str = sjs.shorten_string(result)
+  File "/home/ubuntu/fail3banAI/lib/ShortenJournalString.py", line 35, in shorten_string
+    condensed_str = condensed_str.replace(found_items[key], "<" + key + ">")
+TypeError: replace() argument 1 must be str, not None
+2024-09-25 14:58:01,741 - f3b_whitelist.py:135 - DEBUG - WhiteList cleanup ...
+2024-09-25 14:58:01,754 - f3b_sqlite3_db.py:441 - INFO - Database cursor closed.
+2024-09-25 14:58:01,828 - f3b_sqlite3_db.py:452 - INFO - Database connection closed.
+(openai) ubuntu@ip-172-26-10-222:~/fail3banAI/util$ ^C
+(openai) ubuntu@ip-172-26-10-222:~/fail3banAI/util$

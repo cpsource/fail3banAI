@@ -1,5 +1,11 @@
 import re
 
+#
+# We'll get lines of this sort from journalctl.
+#
+
+# Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
+
 class ZDrop:
     def __init__(self):
         # Regex patterns for the optional fields
@@ -18,50 +24,39 @@ class ZDrop:
             "COMMAND" : r"(COMMAND\=[A-Za-z\/\.]+)",
         }
 
-    def shorten_string(self, input_str):
-        found_items = {}
-        condensed_str = input_str
-        for key in self.patterns:
-            #print(f"{key}")
-            #print(f"{self.patterns[key]}")
+    # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
+    # then return True, else we return False
+    def is_zdrop(self, input_str):
+        # look for this: " zDROP ufw-blocklist-XXX: "
+        pattern = r"\szDROP\sufw-blocklist-([A-Za-z]+):\s"
+        match = re.search(pattern, input_str)
+        if not match:
+            # sombody elses problem
+            return False
+        else:
+            chain = match.group(1) # input, output, forward
 
-            pos = key.find("*")
-            if pos < 0:
-                #print("No Star")
-                # Extract data
-                match = re.search(self.patterns[key], condensed_str)
-                if match:
-                    found_items[key] = match.group(1)
-                    condensed_str = condensed_str.replace(found_items[key], "<" + key + ">")
-            else:
-                # double the fun, TODO, support N *'s ???
-                rkey = key[pos+1:]
-                lkey = key[0:pos]
-                # Extract data
-                match = re.search(self.patterns[key], condensed_str)
-                if match:
-                    found_items[lkey] = match.group(1)
-                    found_items[rkey] = match.group(2)
-                    if True:
-                        condensed_str = condensed_str.replace(found_items[lkey], "<" + lkey + ">")
-                        condensed_str = condensed_str.replace(found_items[rkey], "<" + rkey + ">")
-                    else:
-                        found = match.group(0)
-                        condensed_str = condensed_str.replace(found, "<" + key + ">")
+        # we need the date and time
+        # we need SRC=<ip_address> - 4 and 6, set a six flag for later
+        # we need PROTO=(TCP/UDP/???) - protocol
+        # we need DPT=<port> - the destination port
 
-        return found_items, condensed_str
+        # we should come up with a comment
+        # convert the date/time to ISO/GMT
+        # we need to estimate categories
+        # comment = "iptables detected banned TCP traffic on port 22" ???
+
+        # say we handled it for the caller
+        return True
         
 if __name__ == "__main__":
     # Input strings
     input_strings = [
-        "Sep 17 10:18:36 ip-172-26-10-222 sshd[237963]: Disconnected from user ubuntu 98.97.20.85 port 49305",
-        "Sep 17 10:18:36 ip-172-26-10-222 systemd[1]: session-2011.scope: Deactivated successfully.",
-        "Sep 17 10:20:27 ip-172-26-10-222 sshd[237998]: Accepted publickey for ubuntu from 98.97.20.85 port 4067",
-        "Sep 17 10:20:41 ip-172-26-10-222 sudo-special[238085]: pam_unix(sudo:session): session opened for user root(uid=0) by ubuntu(uid=1000)"
+        "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
     ]
 
     # Create an instance of the class
-    sjs = ShortenJournalString()
+    zdro = ZDrop()
 
     # Process each input string and display the results
     for input_str in input_strings:
