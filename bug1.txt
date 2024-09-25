@@ -83,3 +83,22 @@ Shrink More !!!
 
 ------------------------------------------------
 
+2024-09-25 01:47:47,379 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=185.191.126.213 DST=172.26.10.222 LEN=40 TOS=0x00 PREC=0x00 TTL=243 ID=54321 PROTO=TCP SPT=45346 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+2024-09-25 01:51:40,128 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:51:39 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=185.242.226.20 DST=172.26.10.222 LEN=40 TOS=0x00 PREC=0x00 TTL=240 ID=54321 PROTO=TCP SPT=55140 DPT=22 WINDOW=65535 RES=0x00 SYN URGP=0
+
+2024-09-25 01:51:40,129 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=185.242.226.20 DST=172.26.10.222 LEN=40 TOS=0x00 PREC=0x00 TTL=240 ID=54321 PROTO=TCP SPT=55140 DPT=22 WINDOW=65535 RES=0x00 SYN URGP=0
+2024-09-25 01:52:24,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:52:24 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32041 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 CWR ECE SYN URGP=0
+
+2024-09-25 01:52:24,629 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32041 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 CWR ECE SYN URGP=0
+2024-09-25 01:52:25,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:52:25 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32042 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+
+2024-09-25 01:52:25,629 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32042 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+2024-09-25 01:52:26,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:52:26 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32043 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+
+2024-09-25 01:52:26,629 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32043 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+2024-09-25 01:52:27,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:52:27 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32044 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+
+2024-09-25 01:52:27,629 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32044 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+2024-09-25 01:52:28,628 - monitor-fail3ban.py:419 - DEBUG - Line: Sep 25 01:52:28 ip-172-26-10-222 kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32045 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
+
+2024-09-25 01:52:28,629 - monitor-fail3ban.py:434 - DEBUG - shortened_str = <date-time> <destination-ip> kernel: DROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=51.222.253.4 DST=172.26.10.222 LEN=60 TOS=0x00 PREC=0x00 TTL=53 ID=32045 DF PROTO=TCP SPT=59696 DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0
