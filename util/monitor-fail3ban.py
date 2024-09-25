@@ -87,7 +87,7 @@ import f3b_HashedSet
 import f3b_CountryCodes
 
 # get ShortenJournalString
-import f3b_ShortenJournalString
+import ShortenJournalString
 
 # get database
 import f3b_sqlite3_db
@@ -338,7 +338,7 @@ hs = f3b_HashedSet.HashedSet()
 # and our country codes class
 cc = f3b_CountryCodes.CountryCodes()
 # and our ShortenJournalString
-sjs = f3b_ShortenJournalString.ShortenJournalString()
+sjs = ShortenJournalString.ShortenJournalString()
 # and our database
 db = f3b_sqlite3_db.SQLiteDB()
 db.reset_hazard_level()

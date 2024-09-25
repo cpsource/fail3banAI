@@ -15,6 +15,7 @@ class ShortenJournalString:
             "ecdsa": r"(ECDSA SHA256:[a-zA-Z0-9_/]*)",
             "for-user": r".+\sfor\suser\s+([a-zA-Z0-9-_]+)",
             "user": r"user ((\w+\(uid=\d+\))|(\w+))",
+            "COMMAND" : r"(COMMAND\=[A-Za-z\/\.]+)",
         }
 
     def shorten_string(self, input_str):
