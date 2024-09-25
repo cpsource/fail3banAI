@@ -1,0 +1,8 @@
+class Tasklet_hello_world:
+    def __init__(self):
+        pass
+
+    def execute(self):
+        print("Hello World")
+
+

@@ -38,10 +38,14 @@ class WorkManager:
             self.shutdown_flag = True
             self.condition.notify_all()
 
-def sample_task(data):
-    print(f"Processing {data}")
+def sample_task(**kwargs):
+    if 'data' in kwargs:
+        print(f"data is {kwargs['data']}")
+    if 'test-string' in kwargs:
+        print(f"test-string is {kwargs['test-string']}")
+
     time.sleep(1)  # Simulate some work being done
-    return f"Result of {data}"
+    return f"OK"
 
 def task_callback(result):
     print(f"Task completed with result: {result}")
@@ -72,7 +76,7 @@ def main():
         data = f"data_{i}"
         work_unit = WorkUnit(
             function=sample_task,
-            kwargs={'data': data},  # Using kwargs to pass arguments
+            kwargs={'data': data, 'test-string' : 'Hello World'},  # Using kwargs to pass arguments
             callback=task_callback
         )
         work_manager.enqueue(work_unit)
