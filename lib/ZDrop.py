@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timedelta, timezone
 
 #
 # We'll get lines of this sort from journalctl.
@@ -8,22 +9,8 @@ import re
 
 class ZDrop:
     def __init__(self):
-        # Regex patterns for the optional fields
-        # The order is important. More complex rules should come first. For example,
-        # for-user should come before user
-        self.patterns = {
-            "task-name*pid": r"([A-Za-z\-\.]+)\[(\d+)\]",
-            "destination-ip": r"(\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b)",
-            "datetime": r"^(\w{3} \d{1,2} \d{2}:\d{2}:\d{2})",
-            "by": r"by (\w+\(uid=\d+\)+)",
-            "ip-address" : r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)",
-            "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b",
-            "ecdsa": r"(ECDSA SHA256:[a-zA-Z0-9_/]*)",
-            "for-user": r".+\sfor\suser\s+([a-zA-Z0-9-_]+)",
-            "user": r"user ((\w+\(uid=\d+\))|(\w+))",
-            "COMMAND" : r"(COMMAND\=[A-Za-z\/\.]+)",
-        }
-
+        pass
+    
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False
     def is_zdrop(self, input_str):
@@ -37,15 +24,78 @@ class ZDrop:
             chain = match.group(1) # input, output, forward
 
         # we need the date and time
+        pattern = r"^(\w{3} \d{1,2} \d{2}:\d{2}:\d{2})"
+        match = re.search(pattern, input_str)
+        if not match:
+            # sombody elses problem
+            return False
+        else:
+            timestamp = match.group(1) # input, output, forward
+            pos = match.end(1)
+            tmp_str = input_str[pos:]
+            
         # we need SRC=<ip_address> - 4 and 6, set a six flag for later
+        pattern = r"\sSRC=((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)"
+        match = re.search(pattern, tmp_str)
+        if not match:
+            # sombody elses problem
+            return False
+        else:
+            ip_address = match.group(1) # input, output, forward
+            pos = match.end(1)
+            tmp_str = tmp_str[pos:]
+
+        # set ipv6_flag to True if ip_address is of type IPv6, else False
+        ipv6_flag = ':' in ip_address
+        
         # we need PROTO=(TCP/UDP/???) - protocol
+        pattern = r"\sPROTO=([A-Za-z0-9\.]+)\s"
+        match = re.search(pattern, tmp_str)
+        if not match:
+            # sombody elses problem
+            return False
+        else:
+            protocol = match.group(1) # TCP, UDP, etc
+            pos = match.end(1)
+            tmp_str = tmp_str[pos:]
+        
         # we need DPT=<port> - the destination port
+        pattern = r"\sDPORT=([0-9]+)\s"
+        match = re.search(pattern, tmp_str)
+        if not match:
+            # sombody elses problem
+            return False
+        else:
+            port = match.group(1) # 22, 80, 443, etc
+            pos = match.end(1)
+            tmp_str = tmp_str[pos:]
 
-        # we should come up with a comment
+
         # convert the date/time to ISO/GMT
-        # we need to estimate categories
-        # comment = "iptables detected banned TCP traffic on port 22" ???
+        # Parse the string into a datetime object, ignoring the milliseconds part
+        dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S,%f')
+        # Convert to ISO 8601 format with UTC 'Z' (ignoring milliseconds)
+        iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
+        # we need to estimate categories. See https://www.abuseipdb.com/categories for details
+        if port == 22:
+            categories = "18,20,22"
+        else:
+            if port = 80 or port = 443:
+                categories = "10,18"
+            else:
+                if port = 3606:
+                    categories = "16"
+                else:
+                    categories = "14"
+
+        # get comment
+        comment  = f"iptables detected banned {protocol} traffic on port {port}"
+
+        #
+        # lets display for now
+        #
+        
         # say we handled it for the caller
         return True
         
@@ -60,8 +110,5 @@ if __name__ == "__main__":
 
     # Process each input string and display the results
     for input_str in input_strings:
-        found, shortened_str = sjs.shorten_string(input_str)
-        print(f"Original: {input_str}")
-        print(f"Found Items: {found}")
-        print(f"Shortened: {shortened_str}")
+        found = zdro.is_zdrop(input_str)
         print("-" * 50)
