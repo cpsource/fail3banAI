@@ -3,80 +3,53 @@ import re
 class ShortenJournalString:
     def __init__(self):
         # Regex patterns for the optional fields
+        # The order is important. More complex rules should come first. For example,
+        # for-user should come before user
         self.patterns = {
+            "task-name*pid": r"([A-Za-z\-\.]+)\[(\d+)\]",
+            "destination-ip": r"(\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b)",
             "datetime": r"^(\w{3} \d{1,2} \d{2}:\d{2}:\d{2})",
-            "destination_ip": r"(\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b)",
-            "task_name_pid": r"(\w+)\[(\d+)\]",
-            "user": r"user ((\w+\(uid=\d+\))|(\w+))",
             "by": r"by (\w+\(uid=\d+\)+)",
-
-            #"ip_address": r".*" + r"\w+\[\d+\]:" + r".*" + r"(((\d{1,3}\.){3}\d{1,3})|([a-fA-F0-9:]+:+[a-fA-F0-9]+))",  # IPv4/6 address
-            "ip_address" : r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)",
-
+            "ip-address" : r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)",
             "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b",
-
             "ecdsa": r"(ECDSA SHA256:[a-zA-Z0-9_/]*)",
-
-            "for-user": r"\bfor\s+([a-zA-Z0-9-_]+)"
+            "for-user": r".+\sfor\suser\s+([a-zA-Z0-9-_]+)",
+            "user": r"user ((\w+\(uid=\d+\))|(\w+))",
         }
 
     def shorten_string(self, input_str):
         found_items = {}
+        condensed_str = input_str
+        for key in self.patterns:
+            #print(f"{key}")
+            #print(f"{self.patterns[key]}")
 
-        # Extract datetime, destination-ip, and task-name[pid] from the front
-        datetime_match = re.search(self.patterns["datetime"], input_str)
-        if datetime_match:
-            found_items["datetime"] = datetime_match.group(1)
-            input_str = input_str.replace(found_items["datetime"], "<date-time>")
+            pos = key.find("*")
+            if pos < 0:
+                #print("No Star")
+                # Extract data
+                match = re.search(self.patterns[key], condensed_str)
+                if match:
+                    found_items[key] = match.group(1)
+                    condensed_str = condensed_str.replace(found_items[key], "<" + key + ">")
+            else:
+                # double the fun, TODO, support N *'s ???
+                rkey = key[pos+1:]
+                lkey = key[0:pos]
+                # Extract data
+                match = re.search(self.patterns[key], condensed_str)
+                if match:
+                    found_items[lkey] = match.group(1)
+                    found_items[rkey] = match.group(2)
+                    if True:
+                        condensed_str = condensed_str.replace(found_items[lkey], "<" + lkey + ">")
+                        condensed_str = condensed_str.replace(found_items[rkey], "<" + rkey + ">")
+                    else:
+                        found = match.group(0)
+                        condensed_str = condensed_str.replace(found, "<" + key + ">")
 
-        dest_ip_match = re.search(self.patterns["destination_ip"], input_str)
-        if dest_ip_match:
-            found_items["destination_ip"] = dest_ip_match.group(1)
-            input_str = input_str.replace(found_items["destination_ip"], "<destination-ip>")
-
-        task_name_pid_match = re.search(self.patterns["task_name_pid"], input_str)
-        if task_name_pid_match:
-            found_items["task_name"] = task_name_pid_match.group(1)
-            found_items["pid"] = task_name_pid_match.group(2)
-            input_str = input_str.replace(found_items["pid"], "<pid>")
-            input_str = input_str.replace(found_items["task_name"], "<task-name>")
-
-        # Check for optional fields
-        user_match = re.search(self.patterns["user"], input_str)
-        if user_match:
-            found_items["user"] = user_match.group(1)  # Extract value
-            input_str = input_str.replace(f"user {found_items['user']}", "<user>")
-
-        by_match = re.search(self.patterns["by"], input_str)
-        if by_match:
-            found_items["by"] = by_match.group(1).strip()  # Extract value
-            input_str = input_str.replace(f"by {found_items['by']}", "<by>")
-
-        ip_match = re.search(self.patterns["ip_address"], input_str)
-        if ip_match:
-            #print(f"ip address found {ip_match.group(0)}")
-            found_items["ip_address"] = ip_match.group(0).strip()
-            input_str = input_str.replace(found_items["ip_address"], "<ip-address>")
-
-        port_match = re.search(self.patterns["port"], input_str)
-        if port_match:
-            found_items["port"] = port_match.group(1).strip()
-            input_str = input_str.replace(f"port {found_items['port']}", "<port>")
-            found_items["port"] = found_items["port"].split(':')[0]
-
-        ecdsa_match = re.search(self.patterns["ecdsa"], input_str)
-        if ecdsa_match:
-            found_items["ecdsa"] = ecdsa_match.group(1).strip()
-            input_str = input_str.replace(f"{found_items['ecdsa']}", "<ecdsa>")
-
-        for_user_match = re.search(self.patterns["for-user"], input_str)
-        if for_user_match:
-            found_items["for-user"] = for_user_match.group(1).strip()
-            input_str = input_str.replace(f"{found_items['for-user']}", "<for-user>")
-           
-        return found_items, input_str
-
-
+        return found_items, condensed_str
+        
 if __name__ == "__main__":
     # Input strings
     input_strings = [
@@ -96,4 +69,3 @@ if __name__ == "__main__":
         print(f"Found Items: {found}")
         print(f"Shortened: {shortened_str}")
         print("-" * 50)
-

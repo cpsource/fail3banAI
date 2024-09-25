@@ -1,1 +1,0 @@
-ShortenJournalString.py
