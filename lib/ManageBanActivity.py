@@ -110,16 +110,19 @@ class ManageBanActivity:
         self.conn.commit()
 
     def show(self):
-        """Display all records from the activity_table."""
+        """Display all records from the activity_table along with the age in days."""
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM activity_table")
         records = cursor.fetchall()
-        
+
         if records:
-            print(f"{'ID':<5} {'IP Address':<40} {'Usage Count':<12} {'Last Ban Time'}")
-            print("=" * 70)
+            print(f"{'ID':<5} {'IP Address':<40} {'Usage Count':<12} {'Last Ban Time':<20} {'Age (days)'}")
+            print("=" * 90)
             for row in records:
-                print(f"{row[0]:<5} {row[1]:<40} {row[2]:<12} {row[3]}")
+                # Calculate the age of the record in days
+                last_ban_time = datetime.strptime(row[3], '%Y-%m-%d %H:%M:%S')
+                age_in_days = (datetime.now() - last_ban_time).days
+                print(f"{row[0]:<5} {row[1]:<40} {row[2]:<12} {row[3]:<20} {age_in_days}")
         else:
             print("No records found in the activity table.")
 
