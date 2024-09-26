@@ -1,6 +1,7 @@
 import threading
 import time
 import sys
+import logging
 
 class WorkUnit:
     def __init__(self, function, args=None, kwargs=None, callback=None):
@@ -41,6 +42,8 @@ class WorkManager:
 
 class WorkController:
     def __init__(self, num_workers=3):
+        # Create a named logger consistent with the log file name
+        self.logger = logging.getLogger("fail3ban")
         # Create a WorkManager instance
         self.work_manager = WorkManager()
         # Start worker threads
@@ -49,25 +52,20 @@ class WorkController:
             t = threading.Thread(target=self.worker_thread, args=(self.work_manager,i+1))
             t.start()
             self.workers.append(t)
-            print(f"Worker thread {i+1} started.")
+            self.logger.debug(f"Worker thread {i+1} started.")
 
     def worker_thread(self, work_manager, thread_id):
         print(f"Worker thread {thread_id} starting. Checking work queue.")
         while True:
             work_unit = work_manager.dequeue()
             if work_unit is None:
-                print(f"Worker thread {thread_id} shutting down.")
+                self.logger.debug(f"Worker thread {thread_id} shutting down.")
                 break
             work_unit.execute()
 
-    def enqueue(self, sample_task, data, task_callback):
-        work_unit = WorkUnit(
-            function=sample_task,
-            kwargs={'data': data},  # Using kwargs to pass arguments
-            callback=task_callback
-        )
+    def enqueue(self, work_unit):
         self.work_manager.enqueue(work_unit)
-        print(f"Enqueued work unit with {data}")
+        self.logger.debug(f"Enqueued work unit with {data}")
 
     def wait_for_all_tasks_to_complete(self):
         # Wait for all tasks to be processed
@@ -79,25 +77,26 @@ class WorkController:
 
     def initiate_shutdown(self):
         # Initiate shutdown
-        print("Initiating shutdown.")
+        self.logger.debug("Initiating shutdown.")
         self.work_manager.shutdown()
 
     def wait_for_worker_threads_to_finish(self):
         # Wait for worker threads to finish
         for worker in self.workers:
             worker.join()
-        print("All worker threads have been shut down.")
-        
+        self.logger.debug("All worker threads have been shut down.")
+
+# used for debugging        
+def task_callback(result):
+    print(f"Task completed with result: {result}")
+
+# used for debugging
 def sample_task(data):
     print(f"Processing {data}")
     time.sleep(1)  # Simulate some work being done
     return f"Result of {data}"
 
-def task_callback(result):
-    print(f"Task completed with result: {result}")
-
 def main():
-
     # Create work controller
     wc = WorkController()
 

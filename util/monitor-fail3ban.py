@@ -11,6 +11,7 @@ import subprocess
 import signal
 import threading
 import ipaddress; is_ipv6 = lambda addr: isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address)
+import ZDrop
 
 # Configure logging
 import logging
@@ -400,6 +401,10 @@ def handle_signal(signum, frame):
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
 
+# Get a ZDROP instance
+zdr = ZDrop.ZDrop()
+
+# Our Main Loop
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
         # Process each line from journalctl -f
@@ -412,6 +417,11 @@ try:
                 # yes
                 break
 
+            # zDROP check
+            if zdr.is_zdrop(line) is True:
+                # zdr handled the line, we are done with the line, so continue to the next line
+                continue
+            
             # Now save on our previous entries list
             prevs.add_entry(line)
 

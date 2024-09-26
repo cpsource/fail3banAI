@@ -1,16 +1,25 @@
 import re
 from datetime import datetime, timedelta, timezone
+import logging
+import WorkManager
+from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 
 #
 # We'll get lines of this sort from journalctl.
 #
 
+def task_callback(result):
+    print(f"Task completed with result: {result}")
+
 # Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
 
 class ZDrop:
     def __init__(self):
-        pass
-    
+        # Create a named logger consistent with the log file name
+        self.logger = logging.getLogger("fail3ban")
+        # and a work manager
+        self.wmgr = WorkManager(num_workers=1)
+
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False
     def is_zdrop(self, input_str):
@@ -23,6 +32,13 @@ class ZDrop:
         else:
             chain = match.group(1) # input, output, forward
 
+        # log that we've entered
+        self.logger.debug("entering is_zdrop")
+
+        #
+        # lets now collect the various bits of data from the input_str
+        #
+        
         # we need the date and time
         pattern = r"^(\w{3} \d{1,2} \d{2}:\d{2}:\d{2})"
         match = re.search(pattern, input_str)
@@ -70,7 +86,6 @@ class ZDrop:
             pos = match.end(1)
             tmp_str = tmp_str[pos:]
 
-
         # convert the date/time to ISO/GMT
         # Parse the string into a datetime object, ignoring the milliseconds part
         dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S,%f')
@@ -95,8 +110,27 @@ class ZDrop:
         #
         # lets display for now
         #
-        
-        # say we handled it for the caller
+
+        #
+        # send it off to Tasklet
+        #
+
+        # build a work unit
+        data = f"Tasklet_notify_abuseIPDB"
+        work_unit = WorkManager.WorkUnit(
+            function=Tasklet_notify_abuseIPDB,
+            kwargs={'data'       : data,
+                    'ip_address' : ip_address,
+                    'categories' : categories,
+                    'comment'    : comment,
+                    'timestamp'  : timestamp
+                    },  # Using kwargs to pass arguments
+            callback=task_callback
+        )
+        self.wmgr.enqueue(work_unit)
+
+        #
+        # say we handled the zDRO{ for the caller
         return True
         
 if __name__ == "__main__":
