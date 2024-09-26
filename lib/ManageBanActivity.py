@@ -154,6 +154,25 @@ class ManageBanActivity:
             print(f"Deleted record ID {record_id}")
         except sqlite3.Error as e:
             print(f"Error deleting record: {e}")
+
+    def is_in_window(self, ip_addr, N=15):
+        """Check if the record for the given IP address exists and is within N minutes old."""
+        cursor = self.conn.cursor()
+    
+        # Query the record for the given IP address
+        cursor.execute("SELECT datetime_of_last_ban FROM activity_table WHERE ip_address = ?", (ip_addr,))
+        record = cursor.fetchone()
+
+        if record:
+            # Convert the datetime_of_last_ban to a datetime object
+            last_ban_time = datetime.strptime(record[0], '%Y-%m-%d %H:%M:%S')
+            time_difference = datetime.now() - last_ban_time
+        
+            # Check if the difference is less than or equal to N minutes
+            if time_difference.total_seconds() <= N * 60:
+                return True
+
+        return False
             
     # do any cleanup
     def cleanup(self):
