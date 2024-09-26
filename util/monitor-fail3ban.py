@@ -419,11 +419,15 @@ try:
                 # yes
                 break
 
+            # debugging
+            logger.debug(f"before zDROP chk: {line}")
             # zDROP check
             if zdr.is_zdrop(line) is True:
+                logger.debug("after zDROP - continuing ...")
                 # zdr handled the line, we are done with the line, so continue to the next line
                 continue
-            
+
+            logger.debug("after zDROP - processing normally ...")            
             # Now save on our previous entries list
             prevs.add_entry(line)
 

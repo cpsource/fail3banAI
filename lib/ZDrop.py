@@ -80,8 +80,19 @@ class ZDrop:
         # set ipv6_flag to True if ip_address is of type IPv6, else False
         ipv6_flag = ':' in ip_address
 
+        # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
+        window_size = 15
+        window_flag = self.mba.is_in_window(ip_address,window_size)
+        
         # track it in our database
         self.mba.insert_or_update_activity(ip_address)
+
+        # do so after the database update
+        if window_flag is True:
+            self.logger.debug(f"Within {window_size} minute window, skipping AbuseIPDB notification")
+            # we are within the 15 minute reporting window for AbuseIPDB
+            # say we handled the zDROP for the caller
+            return True
         
         # we need PROTO=(TCP/UDP/???) - protocol
         pattern = r"\sPROTO=([A-Za-z0-9\.]+)\s"

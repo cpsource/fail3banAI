@@ -125,3 +125,25 @@ TypeError: replace() argument 1 must be str, not None
 
 2024-09-26 19:06:05,142 - PreviousJournalctl.py:144 - DEBUG - *** Combined: Matches:(3, 2, 1, 0) Str: Sep 26 19:06:04 ip-172-26-10-222 amazon-ssm-agent.amazon-ssm-agent[463]: 2024-09-26 19:06:04 WARN EC2RoleProvider Failed to connect to Systems Manager with instance profile role credentials. Err: retrieved credentials failed to report to ssm. RequestId: a083508f-2dee-46a8-83a1-d808dcd74498 Error: AccessDeniedException: User: arn:aws:sts::230858838317:assumed-role/AmazonLightsailInstanceRole/i-074053a9ee2ed2380 is not authorized to perform: ssm:UpdateInstanceInformation on resource: arn:aws:ec2:us-east-1:230858838317:instance/i-074053a9ee2ed2380 because no identity-based policy allows the ssm:UpdateInstanceInformation action         status code: 400, request id: a083508f-2dee-46a8-83a1-d808dcd74498 2024-09-26 19:06:04 ERROR EC2RoleProvider Failed to connect to Systems Manager with SSM role credentials. error calling RequestManagedInstanceRoleToken: AccessDeniedException: Systems Manager's instance management role is not configured for account: 230858838317         status code: 400, request id: 9790529a-4eb7-4644-a167-594241390d3e
 2024-09-26 19:06:05,149 - monitor-fail3ban.py:446 - DEBUG - shortened_str = <datetime> <destination-ip> <task-name>[<pid>]: 2024-09-26 19:06:04 WARN EC2RoleProvider Failed to connect to Systems Manager with instance profile role credentials. Err: retrieved credentials failed to report to ssm. RequestId: a083508f-2dee-46a8-83a1-d808dcd74498 Error: AccessDeniedException: User: arn:aws:sts::230858838317:assumed-role/AmazonLightsailInstanceRole/i-074053a9ee2ed2380 is not authorized to perform: ssm:UpdateInstanceInformation on resource: arn:aws:ec2:us-east-1:230858838317:instance/i-074053a9ee2ed2380 because no identity-based policy allows the ssm:UpdateInstanceInformation action         status code: 400, request id: a083508f-2dee-46a8-83a1-d808dcd74498 2024-09-26 19:06:04 ERROR EC2RoleProvider Failed to connect to Systems Manager with SSM role credentials. error calling RequestManagedInstanceRoleToken: AccessDeniedException: Systems Manager's instance management role is not configured for account: 230858838317         status code: 400, request id: 9790529a-4eb7-4644-a167-594241390d3e
+
+----
+
+2024-09-26 23:41:45,158 - connectionpool.py:1051 - DEBUG - Starting new HTTPS connection (1): api.abuseipdb.com:443
+2024-09-26 23:41:45,366 - connectionpool.py:546 - DEBUG - https://api.abuseipdb.com:443 "POST /api/v2/report?ip=85.209.11.27&categories=14&comment=iptables+detected+banned+TCP+traffic+on+port+22&timestamp=2024-09-26T23%3A41%3A44Z HTTP/11" 200 None
+2024-09-26 23:41:45,367 - AbuseIPDB.py:137 - DEBUG - status_code returned is 200
+{
+    "data": {
+        "abuseConfidenceScore": 100,
+        "ipAddress": "85.209.11.27"
+    }
+}
+2024-09-26 23:41:45,368 - Tasklet_notify_abuseIPDB.py:98 - INFO - Notifying AbuseIPDB Complete
+2024-09-26 23:41:45,368 - Tasklet_notify_abuseIPDB.py:105 - DEBUG - resp = 200
+ZDrop: Task completed with result: 200, OK
+2024-09-26 23:41:46,128 - ManageBanActivity.py:99 - DEBUG - Updated record for 85.209.11.27, usage_count incremented to 10
+2024-09-26 23:41:46,133 - ZDrop.py:92 - DEBUG - Within 15 minute window, skipping AbuseIPDB notification
+2024-09-26 23:41:48,128 - ManageBanActivity.py:99 - DEBUG - Updated record for 85.209.11.27, usage_count incremented to 11
+2024-09-26 23:41:48,133 - ZDrop.py:92 - DEBUG - Within 15 minute window, skipping AbuseIPDB notification
+2024-09-26 23:41:52,128 - ManageBanActivity.py:99 - DEBUG - Updated record for 85.209.11.27, usage_count incremented to 12
+2024-09-26 23:41:52,132 - ZDrop.py:92 - DEBUG - Within 15 minute window, skipping AbuseIPDB notification
+^C2024-09-26 23:42:07,525 - monitor-fail3ban.py:517 - ERROR - Script interrupted. Exiting...
