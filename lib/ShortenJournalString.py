@@ -31,7 +31,16 @@ class ShortenJournalString:
                 # Extract data
                 match = re.search(self.patterns[key], condensed_str)
                 if match:
-                    found_items[key] = match.group(1)
+                    # fufu for IPv6 address matches
+                    if match.group(1) is None:
+                        str = match.group(0)
+                    else:
+                        str = match.group(1)
+                    str = str.strip()
+                    #for i, group in enumerate(match.groups(), 1):
+                    #    print(f"Group {i}: {group}")
+                    #print(f"str = {str}")
+                    found_items[key] = str
                     condensed_str = condensed_str.replace(found_items[key], "<" + key + ">")
             else:
                 # double the fun, TODO, support N *'s ???
@@ -54,6 +63,7 @@ class ShortenJournalString:
 if __name__ == "__main__":
     # Input strings
     input_strings = [
+        "Sep 26 03:01:27 ip-172-26-10-222 sshd[165207]: Invalid user  from 2001:470:1:c84::17 port 55680",
         "Sep 17 10:18:36 ip-172-26-10-222 sshd[237963]: Disconnected from user ubuntu 98.97.20.85 port 49305",
         "Sep 17 10:18:36 ip-172-26-10-222 systemd[1]: session-2011.scope: Deactivated successfully.",
         "Sep 17 10:20:27 ip-172-26-10-222 sshd[237998]: Accepted publickey for ubuntu from 98.97.20.85 port 4067",
