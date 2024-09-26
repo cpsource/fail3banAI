@@ -4,6 +4,7 @@ import logging
 import WorkManager
 from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 from http import HTTPStatus
+from ManageBanActivity import ManageBanActivity
 
 #
 # We'll get lines of this sort from journalctl.
@@ -17,7 +18,9 @@ class ZDrop:
         self.logger = logging.getLogger("fail3ban")
         # and a work manager
         self.wctlr = WorkManager.WorkController(num_workers=1)
-
+        # and a ManageBanActivity
+        self.mba = ManageBanActivity()
+        
     def shutdown(self):
         self.wctlr.shutdown()
         
@@ -77,6 +80,9 @@ class ZDrop:
         # set ipv6_flag to True if ip_address is of type IPv6, else False
         ipv6_flag = ':' in ip_address
 
+        # track it in our database
+        self.mba.insert_or_update_activity(ip_address)
+        
         # we need PROTO=(TCP/UDP/???) - protocol
         pattern = r"\sPROTO=([A-Za-z0-9\.]+)\s"
         match = re.search(pattern, tmp_str)
