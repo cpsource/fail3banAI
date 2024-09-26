@@ -15,9 +15,12 @@ class ShortenJournalString:
             "ecdsa": r"(ECDSA SHA256:[a-zA-Z0-9_/]*)",
             "for-user": r".+\sfor\suser\s+([a-zA-Z0-9-_]+)",
             "user": r"user ((\w+\(uid=\d+\))|(\w+))",
-            "COMMAND" : r"(COMMAND\=[A-Za-z\/\.]+)",
+            "COMMAND" : r'\s(COMMAND=[^\s]+ .*?)\s',
+            "PWD" : r'\s(PWD=[^\s]+)\s',
+            "TTY" : r'\s(TTY=[^\s]+)\s',
         }
-
+        #  COMMAND=/home/ubuntu/openai/bin/python3 ./monitor-fail3ban.py
+        
     def shorten_string(self, input_str):
         found_items = {}
         condensed_str = input_str
@@ -67,7 +70,8 @@ if __name__ == "__main__":
         "Sep 17 10:18:36 ip-172-26-10-222 sshd[237963]: Disconnected from user ubuntu 98.97.20.85 port 49305",
         "Sep 17 10:18:36 ip-172-26-10-222 systemd[1]: session-2011.scope: Deactivated successfully.",
         "Sep 17 10:20:27 ip-172-26-10-222 sshd[237998]: Accepted publickey for ubuntu from 98.97.20.85 port 4067",
-        "Sep 17 10:20:41 ip-172-26-10-222 sudo-special[238085]: pam_unix(sudo:session): session opened for user root(uid=0) by ubuntu(uid=1000)"
+        "Sep 17 10:20:41 ip-172-26-10-222 sudo-special[238085]: pam_unix(sudo:session): session opened for user root(uid=0) by ubuntu(uid=1000)",
+        "Sep 26 03:41:45 ip-172-26-10-222 sudo[165717]:   ubuntu : TTY=pts/0 ; PWD=/home/ubuntu/fail3banAI/util ; USER=root ; COMMAND=/home/ubuntu/openai/bin/python3 ./monitor-fail3ban.py pam_unix(sudo:session): session opened for user root(uid=0) by ubuntu(uid=1000)",
     ]
 
     # Create an instance of the class
