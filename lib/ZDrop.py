@@ -18,7 +18,7 @@ class ZDrop:
         # Create a named logger consistent with the log file name
         self.logger = logging.getLogger("fail3ban")
         # and a work manager
-        self.wmgr = WorkManager(num_workers=1)
+        self.wctlr = WorkManager.WorkController(num_workers=1)
 
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False
@@ -139,11 +139,11 @@ class ZDrop:
                     'ip_address' : ip_address,
                     'categories' : categories,
                     'comment'    : comment,
-                    'timestamp'  : timestamp
+                    'timestamp'  : iso_timestamp
                     },  # Using kwargs to pass arguments
             callback=task_callback
         )
-        self.wmgr.enqueue(work_unit)
+        self.wctlr.enqueue(work_unit)
 
         # say we handled the zDROP for the caller
         return True

@@ -14,7 +14,15 @@ class WorkUnit:
         result = self.function(*self.args, **self.kwargs)
         if self.callback:
             self.callback(result)
-
+            
+    def show(self):
+        print(f"WorkUnit: function = {function}")
+        if callback is not None:
+            print(f"WorkUnit: callback = {callback}")
+        if kwargs is not None:
+            for key, value in kwargs.items():
+                print(f"{key} = {value}")
+        
 class WorkManager:
     def __init__(self):
         self.queue = []
@@ -40,6 +48,15 @@ class WorkManager:
             self.shutdown_flag = True
             self.condition.notify_all()
 
+def worker_thread(work_manager, thread_id):
+    print(f"Worker thread {thread_id} starting. Checking work queue.")
+    while True:
+        work_unit = work_manager.dequeue()
+        if work_unit is None:
+            self.logger.debug(f"Worker thread {thread_id} shutting down.")
+            break
+        work_unit.execute()
+            
 class WorkController:
     def __init__(self, num_workers=3):
         # Create a named logger consistent with the log file name
@@ -49,23 +66,14 @@ class WorkController:
         # Start worker threads
         self.workers = []
         for i in range(num_workers):
-            t = threading.Thread(target=self.worker_thread, args=(self.work_manager,i+1))
+            t = threading.Thread(target=worker_thread, args=(self.work_manager,i+1))
             t.start()
             self.workers.append(t)
             self.logger.debug(f"Worker thread {i+1} started.")
 
-    def worker_thread(self, work_manager, thread_id):
-        print(f"Worker thread {thread_id} starting. Checking work queue.")
-        while True:
-            work_unit = work_manager.dequeue()
-            if work_unit is None:
-                self.logger.debug(f"Worker thread {thread_id} shutting down.")
-                break
-            work_unit.execute()
-
     def enqueue(self, work_unit):
         self.work_manager.enqueue(work_unit)
-        self.logger.debug(f"Enqueued work unit with {data}")
+        self.logger.debug(f"Enqueued work")
 
     def wait_for_all_tasks_to_complete(self):
         # Wait for all tasks to be processed

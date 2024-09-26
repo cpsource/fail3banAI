@@ -47,24 +47,6 @@ class AbuseIPDB:
             self.logger.error("Error: ABUSEIPDB_KEY environment variable is not set.")
             sys.exit(1)
 
-    def ensure_iso_format(self, timestamp=None):
-        """Ensure the timestamp is in ISO 8601 format, or generate the current time in ISO 8601."""
-        # Define a timezone with a UTC offset of -04:00
-        tz_offset = timezone(timedelta(hours=-4))
-
-        if timestamp:
-            try:
-                # Attempt to parse the provided timestamp
-                # Assuming timestamp is already in a compatible format, return it
-                datetime.fromisoformat(timestamp)
-                return timestamp
-            except ValueError:
-                # If the format is incorrect, generate the current time in ISO 8601 format
-                self.logger.warning(f"Invalid timestamp format provided: {timestamp}, generating a new timestamp.")
-        # Generate the current time in the specified time zone with ISO 8601 format
-        current_time_with_offset = datetime.now(tz_offset)
-        return current_time_with_offset.isoformat()
-    
     def check_endpoint(self, ip_address):
         """Check an IP address with AbuseIPDB and return the abuseConfidenceScore"""
         url = 'https://api.abuseipdb.com/api/v2/check'
@@ -127,19 +109,12 @@ class AbuseIPDB:
             self.logger.error(f"An error occurred while retrieving blacklist: {e}")
             return None
 
-    def report_endpoint(self, ip_address, categories, comment, timestamp=None):
+    def report_endpoint(self, ip_address, categories, comment, iso_timestamp=None):
         """Report an IP address for abusive behavior to AbuseIPDB."""
         url = 'https://api.abuseipdb.com/api/v2/report'
 
         # Ensure the timestamp is in ISO 8601 format
 
-        # Parse the string into a datetime object, ignoring the milliseconds part
-        dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S,%f')
-        # Convert to ISO 8601 format with UTC 'Z' (ignoring milliseconds)
-        iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        print(f"iso_timestamp= {iso_timestamp}")
-        
         # Prepare the parameters for the report
         params = {
             'ip':ip_address,

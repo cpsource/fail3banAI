@@ -11,7 +11,6 @@ import subprocess
 import signal
 import threading
 import ipaddress; is_ipv6 = lambda addr: isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address)
-import ZDrop
 
 # Configure logging
 import logging
@@ -78,6 +77,8 @@ else:
 # Add the subdirectory to the system path
 #subdirectory_path = os.path.join(current_dir, '../lib')
 #sys.path.append(subdirectory_path)
+
+import ZDrop
 
 from PreviousJournalctl import PreviousJournalctl
 

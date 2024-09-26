@@ -17,6 +17,8 @@ import random
 import os
 import sys
 import logging
+# This class does the actual notification work
+import AbuseIPDB
 
 #
 # Tasklets are small routines that are kicked off from our thread pool, because
@@ -39,14 +41,6 @@ def Tasklet_notify_abuseIPDB(data, **kwargs):
     if project_root is None:
         logger.error("The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set. Exiting ...")
         sys.exit(1)  # Exit the program with an error code
-    # Construct thelib path
-    lib_path = os.path.join(project_root, 'lib')
-    # Add the constructed path to sys.path only if it's not already in sys.path
-    if lib_path not in sys.path:
-        sys.path.append(lib_path)
-        logger.debug(f"Added {lib_path} to the system path.")
-    else:
-        logger.debug(f"{lib_path} is already in the system path.")
 
     # This class does the actual notification work
     import AbuseIPDB
@@ -91,9 +85,14 @@ def Tasklet_notify_abuseIPDB(data, **kwargs):
         
     logger.info("Notifying AbuseIPDB ...")
 
+    # one last chance to log
+    logger.debug(f"ip_address: {ip_address}")
+    logger.debug(f"categories: {categories}")
+    logger.debug(f"comment   : {comment}")
+    logger.debug(f"timestamp : {timestamp}")
+    
     # uncomment to do it for real
-    #abi.report_endpoint(ip_address, categories, comment, timestamp)
-
+    abi.report_endpoint(ip_address, categories, comment, timestamp)
     logger.info("Notifying AbuseIPDB Complete")
 
     if False:
