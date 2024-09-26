@@ -34,37 +34,47 @@ class ManageBanActivity:
             print(f"Connected to database {self.db_name}")
         except sqlite3.Error as e:
             print(f"Error connecting to database: {e}")
-    
+
     def create_activity_table(self):
-        """Create the activity_table if it doesn't exist."""
-        create_table_query = '''
-        CREATE TABLE IF NOT EXISTS activity_table (
+        """Create the activity_table and the index on ip_address if they don't exist."""
+        cursor = self.conn.cursor()
+    
+        # Check if the table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='activity_table';")
+        if cursor.fetchone():
+            pass
+            #print("Table 'activity_table' already exists.")
+        else:
+            # Create the table if it does not exist
+            create_table_query = '''
+            CREATE TABLE activity_table (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip_address CHAR(40) NOT NULL UNIQUE,
-             usage_count INTEGER DEFAULT 1,
-             datetime_of_last_ban TEXT
-        );
-        '''
-        
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(create_table_query)
-            self.conn.commit()
-            print("Activity table created or already exists.")
-        except sqlite3.Error as e:
-            print(f"Error creating table: {e}")
+            usage_count INTEGER DEFAULT 1,
+            datetime_of_last_ban TEXT
+            );
+            '''
+            try:
+                cursor.execute(create_table_query)
+                self.conn.commit()
+                print("Activity table created.")
+            except sqlite3.Error as e:
+                print(f"Error creating table: {e}")
 
-        create_index = '''
-        CREATE INDEX idx_ip_address ON activity_table (ip_address);
-        '''
-            
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(create_index)
-            self.conn.commit()
-            print("Activity table created or already exists.")
-        except sqlite3.Error as e:
-            print(f"Error creating table: {e}")
+        # Check if the index exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_ip_address';")
+        if cursor.fetchone():
+            pass
+            #print("Index 'idx_ip_address' already exists.")
+        else:
+            # Create the index if it does not exist
+            create_index_query = "CREATE INDEX idx_ip_address ON activity_table (ip_address);"
+            try:
+                cursor.execute(create_index_query)
+                self.conn.commit()
+                print("Index 'idx_ip_address' created.")
+            except sqlite3.Error as er:
+                print(f"Error creating index: {er}")
             
     def insert_or_update_activity(self, ip_address):
         """Insert a new record or update the existing record for the given IP address."""
