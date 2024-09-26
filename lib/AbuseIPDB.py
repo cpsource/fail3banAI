@@ -133,24 +133,25 @@ class AbuseIPDB:
         
         try:
             response = requests.request(method="POST", url=url, headers=headers, params=params)
-            decodedResponse = json.loads(response.text)
-            print(json.dumps(decodedResponse, sort_keys=True, indent=4))
-            
+
+            self.logger.debug(f"status_code returned is {response.status_code}")
+
+            decoded_response = json.loads(response.text)
             if response.status_code == 200:
-                decoded_response = json.loads(response.text)
-                
                 # Print formatted output
                 print(json.dumps(decoded_response, sort_keys=True, indent=4))
-                
                 # Return the response data for further processing
-                return decoded_response.get('data', {})
+                return response.status_code
             else:
+                print(json.dumps(decoded_response, sort_keys=True, indent=4))
                 self.logger.error(f"Failed to report IP {ip_address}: {response.status_code}")
-                return None
+                return response.status_code
         except Exception as e:
             self.logger.error(f"An error occurred while reporting IP {ip_address}: {e}")
             return None
 
+        return response.status_code
+        
 def main():
     if len(sys.argv) != 2:
         print("Usage: python {sys.argv[0]} <ip-address>")

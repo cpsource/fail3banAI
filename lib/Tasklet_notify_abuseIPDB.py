@@ -78,21 +78,23 @@ def Tasklet_notify_abuseIPDB(data, **kwargs):
         if 'test-string' in kwargs:
             print(f"test-string is {kwargs['test-string']}")
 
-    if True:
+    if False:
         # for debug, lets display these
         for key, value in kwargs.items():
             logger.debug(f"{key} = {value}")
         
     logger.info("Notifying AbuseIPDB ...")
 
-    # one last chance to log
-    logger.debug(f"ip_address: {ip_address}")
-    logger.debug(f"categories: {categories}")
-    logger.debug(f"comment   : {comment}")
-    logger.debug(f"timestamp : {timestamp}")
+    if True:
+        # one last chance to log
+        logger.debug(f"ip_address: {ip_address}")
+        logger.debug(f"categories: {categories}")
+        logger.debug(f"comment   : {comment}")
+        logger.debug(f"timestamp : {timestamp}")
     
-    # uncomment to do it for real
-    abi.report_endpoint(ip_address, categories, comment, timestamp)
+    # uncomment to do it for real, resp should be the HTTPS error code
+    resp = abi.report_endpoint(ip_address, categories, comment, timestamp)
+
     logger.info("Notifying AbuseIPDB Complete")
 
     if False:
@@ -100,4 +102,5 @@ def Tasklet_notify_abuseIPDB(data, **kwargs):
         print(f"{data} Sleeping for {sleep_time} seconds ...")
         time.sleep(sleep_time)
 
-    print(f"{data} Done")
+    logger.debug(f"resp = {resp}")
+    return resp

@@ -8,9 +8,6 @@ from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 # We'll get lines of this sort from journalctl.
 #
 
-def task_callback(result):
-    print(f"Task completed with result: {result}")
-
 # Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
 
 class ZDrop:
@@ -20,6 +17,9 @@ class ZDrop:
         # and a work manager
         self.wctlr = WorkManager.WorkController(num_workers=1)
 
+    def task_callback(self,result):
+        print(f"ZDrop: Task completed with result: {result}")
+        
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False
     def is_zdrop(self, input_str):
@@ -37,7 +37,7 @@ class ZDrop:
             chain = match.group(1) # input, output, forward
 
         # log that we've entered
-        self.logger.debug("entering is_zdrop")
+        #self.logger.debug("entering is_zdrop")
 
         #
         # lets now collect the various bits of data from the input_str
@@ -120,16 +120,17 @@ class ZDrop:
         # get comment
         comment  = f"iptables detected banned {protocol} traffic on port {port}"
 
-        #
-        # lets display
-        #
-        self.logger.debug(f"Comment   : {comment}")
-        self.logger.debug(f"Port      : {port}")
-        self.logger.debug(f"Categories: {categories}")
-        self.logger.debug(f"Protocol  : {protocol}")
-        self.logger.debug(f"ip_address: {ip_address}")
-        self.logger.debug(f"time      : {iso_timestamp}")
-        self.logger.debug(f"IPv6      : {ipv6_flag}")
+        if False:
+            #
+            # lets display
+            #
+            self.logger.debug(f"Comment   : {comment}")
+            self.logger.debug(f"Port      : {port}")
+            self.logger.debug(f"Categories: {categories}")
+            self.logger.debug(f"Protocol  : {protocol}")
+            self.logger.debug(f"ip_address: {ip_address}")
+            self.logger.debug(f"time      : {iso_timestamp}")
+            self.logger.debug(f"IPv6      : {ipv6_flag}")
 
         # build a work unit
         data = f"Tasklet_notify_abuseIPDB"
@@ -141,7 +142,7 @@ class ZDrop:
                     'comment'    : comment,
                     'timestamp'  : iso_timestamp
                     },  # Using kwargs to pass arguments
-            callback=task_callback
+            callback=self.task_callback
         )
         self.wctlr.enqueue(work_unit)
 

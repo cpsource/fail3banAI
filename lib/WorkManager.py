@@ -48,14 +48,6 @@ class WorkManager:
             self.shutdown_flag = True
             self.condition.notify_all()
 
-def worker_thread(work_manager, thread_id):
-    print(f"Worker thread {thread_id} starting. Checking work queue.")
-    while True:
-        work_unit = work_manager.dequeue()
-        if work_unit is None:
-            self.logger.debug(f"Worker thread {thread_id} shutting down.")
-            break
-        work_unit.execute()
             
 class WorkController:
     def __init__(self, num_workers=3):
@@ -66,11 +58,20 @@ class WorkController:
         # Start worker threads
         self.workers = []
         for i in range(num_workers):
-            t = threading.Thread(target=worker_thread, args=(self.work_manager,i+1))
+            t = threading.Thread(target=self.worker_thread, args=(self.work_manager,i+1))
             t.start()
             self.workers.append(t)
             self.logger.debug(f"Worker thread {i+1} started.")
 
+    def worker_thread(self, work_manager, thread_id):
+        print(f"Worker thread {thread_id} starting. Checking work queue.")
+        while True:
+            work_unit = work_manager.dequeue()
+            if work_unit is None:
+                self.logger.debug(f"Worker thread {thread_id} shutting down.")
+                break
+            work_unit.execute()
+            
     def enqueue(self, work_unit):
         self.work_manager.enqueue(work_unit)
         self.logger.debug(f"Enqueued work")
