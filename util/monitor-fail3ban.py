@@ -514,6 +514,8 @@ try:
         
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
+    stop_event.set()
+    zdr.shutdown()
 finally:
     remove_pid(pid_file)
     # Cleanup: close the temporary file and delete it

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 import WorkManager
 from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
+from http import HTTPStatus
 
 #
 # We'll get lines of this sort from journalctl.
@@ -17,8 +18,11 @@ class ZDrop:
         # and a work manager
         self.wctlr = WorkManager.WorkController(num_workers=1)
 
+    def shutdown(self):
+        self.wctlr.shutdown()
+        
     def task_callback(self,result):
-        print(f"ZDrop: Task completed with result: {result}")
+        print(f"ZDrop: Task completed with result: {result}, {HTTPStatus(result).phrase}")
         
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False

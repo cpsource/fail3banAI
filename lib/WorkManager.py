@@ -2,6 +2,7 @@ import threading
 import time
 import sys
 import logging
+import atexit
 
 class WorkUnit:
     def __init__(self, function, args=None, kwargs=None, callback=None):
@@ -9,7 +10,7 @@ class WorkUnit:
         self.args = args if args is not None else ()
         self.kwargs = kwargs if kwargs is not None else {}
         self.callback = callback
-
+        
     def execute(self):
         result = self.function(*self.args, **self.kwargs)
         if self.callback:
@@ -22,7 +23,7 @@ class WorkUnit:
         if kwargs is not None:
             for key, value in kwargs.items():
                 print(f"{key} = {value}")
-        
+
 class WorkManager:
     def __init__(self):
         self.queue = []
@@ -55,6 +56,10 @@ class WorkController:
         self.logger = logging.getLogger("fail3ban")
         # Create a WorkManager instance
         self.work_manager = WorkManager()
+        # Cleanup at exit
+        atexit.register(self.shutdown)
+        # Create a stop flag
+        self.stop_flag = threading.Event()
         # Start worker threads
         self.workers = []
         for i in range(num_workers):
@@ -63,9 +68,13 @@ class WorkController:
             self.workers.append(t)
             self.logger.debug(f"Worker thread {i+1} started.")
 
+    def shutdown(self):
+        self.stop_flag.set()
+        self.work_manager.shutdown()
+        
     def worker_thread(self, work_manager, thread_id):
         print(f"Worker thread {thread_id} starting. Checking work queue.")
-        while True:
+        while not self.stop_flag.is_set():
             work_unit = work_manager.dequeue()
             if work_unit is None:
                 self.logger.debug(f"Worker thread {thread_id} shutting down.")
