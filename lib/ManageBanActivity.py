@@ -2,7 +2,7 @@ import os
 import sys
 import sqlite3
 import atexit
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 LOG_ID = "fail3ban"
