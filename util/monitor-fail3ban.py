@@ -391,19 +391,20 @@ save_pid(pid_file)
 # Create a global event object to signaling threads to stop
 stop_event = threading.Event()
 
+# Get a ZDROP instance
+zdr = ZDrop.ZDrop()
+
 def handle_signal(signum, frame):
     print("Received SIGHUP signal.")
     # Add custom handling here, like reloading configuration
     # sys.exit(0) # Uncomment if you want the program to exit on SIGHUP
     stop_event.set() # Set the event, signaling all threads to stop
     gs.request_shutdown()
-    
+    zdr.shutdown()
+
 # Register the signal handler for SIGTERM, SIGHUP, etc.
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
-
-# Get a ZDROP instance
-zdr = ZDrop.ZDrop()
 
 # Our Main Loop
 try:
