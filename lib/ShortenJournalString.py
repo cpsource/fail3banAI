@@ -8,7 +8,6 @@ class ShortenJournalString:
         self.patterns = {
             "task-name*pid": r"([A-Za-z\-\.]+)\[(\d+)\]",
             "destination-ip": r"(\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b)",
-            "datetime": r"^(\w{3} \d{1,2} \d{2}:\d{2}:\d{2})",
             "by": r"by (\w+\(uid=\d+\)+)",
             "ip-address" : r"\s+((?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\s+)|(\s+(?:(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,7}:|(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}|(?:[A-Fa-f0-9]{1,4}:){1,5}(?::[A-Fa-f0-9]{1,4}){1,2}|(?:[A-Fa-f0-9]{1,4}:){1,4}(?::[A-Fa-f0-9]{1,4}){1,3}|(?:[A-Fa-f0-9]{1,4}:){1,3}(?::[A-Fa-f0-9]{1,4}){1,4}|(?:[A-Fa-f0-9]{1,4}:){1,2}(?::[A-Fa-f0-9]{1,4}){1,5}|[A-Fa-f0-9]{1,4}:(?::[A-Fa-f0-9]{1,4}){1,6}|:(?::[A-Fa-f0-9]{1,4}){1,7}|::)\s+)",
             "port": r"port\s+([1-9][0-9]{0,4}(:\d+)?)\b",
@@ -60,9 +59,39 @@ class ShortenJournalString:
                     else:
                         found = match.group(0)
                         condensed_str = condensed_str.replace(found, "<" + key + ">")
+        # managing date should have a special place in heck in Python3
+        date_time = self.getdatetime(condensed_str)
+        if date_time is not None:
+            found_items['datetime'] = date_time
+            condensed_str = condensed_str.replace(date_time, "<datetime>>")
 
+        # return
         return found_items, condensed_str
+
+    # Sep 27 07:41:16 - etc
+    # Returns date as a <str>
+    def get_datetime(s):
+        pattern = r"^([A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
+        match = re.search(pattern, s)
+        if match:
+            m = match.group(1)
+            #print(f"get_datetime, m = {m}")
         
+            # Get the current year and append it to the date string
+            current_year = datetime.now().year
+            full_date_str = f"{current_year} {m}"
+        
+            # Parse the date string with the year included
+            parsed_date = datetime.strptime(full_date_str, '%Y %b %d %H:%M:%S')
+        
+            # Convert the datetime object back to a string
+            res = parsed_date.strftime('%Y-%m-%d %H:%M:%S')
+            #print(f"get_datetime, match, {res}")
+        else:
+            #print(f"get_datetime, no match, {s}")
+            res = None
+    return res
+    
 if __name__ == "__main__":
     # Input strings
     input_strings = [
