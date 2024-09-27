@@ -155,104 +155,6 @@ def find_country(ip_address_string):
                 print(f"Error after {attempts} attempts: {e}")
                 return None
 
-def has_ip_address(input_string):
-    """
-    Checks if the input string contains an IPv4 or IPv6 address.
-    
-    Parameters:
-        input_string (str): The string to check for IP addresses.
-        
-    Returns:
-        bool: True if an IP address is found, False otherwise.
-    """
-    # Regular expression for IPv4 and IPv6 addresses
-    ip_pattern = r"\[[0-9]+\]:.*\b((?:(?:\d{1,3}\.){3}\d{1,3})|(?:[a-fA-F0-9:]+))\b"
-    
-    # Search for the pattern in the input string
-    rex = re.search(ip_pattern, input_string)
-    if rex:
-        #print(f"has_ip_address returns True {rex.group()}")
-        return True
-    #print("has_ip_address returns False")
-    return False
-
-def extract_log_info(log_line):
-    """
-    Extracts jail name, sequence number, and IP address from a log entry in the given order:
-    jail -> sequence number -> IP address. Each subsequent search starts after the previous match.
-
-    Parameters:
-        log_line (str): The log entry as a string.
-        
-    Returns:
-        tuple: (jail, sequence_number, [ip_type, ip_address])
-            - jail: The jail name (e.g., sshd).
-            - sequence_number: The sequence number from [] (as a string).
-            - ip_info: A list containing the type of IP ('ipv4' or 'ipv6') and the IP address. 
-              If no IP is found, this is None.
-    """
-    # Regex for jail name (word before '\[')
-    jail_pattern = r"(\w+)\s*\["
-    
-    # Regex for sequence number inside []
-    sequence_pattern = r"\[(\d+)\]"
-    
-    # Regex for IP address (IPv4 or IPv6) with word boundaries
-    ip_pattern = r"\b((?:(?:\d{1,3}\.){3}\d{1,3})|(?:[a-fA-F0-9:]+))\b"
-    
-    # Start search from the beginning of the string
-    current_position = 0
-    
-    # Step 1: Extract jail name (match up to the "[" but don't include it)
-    jail_match = re.search(jail_pattern, log_line)
-    jail = jail_match.group(1) if jail_match else None
-    
-    # Update the current position to just after the jail match
-    if jail_match:
-        current_position = jail_match.end() - 1  # Subtract 1 to handle overlap
-    
-    # Step 2: Extract sequence number (search only for digits inside brackets)
-    sequence_match = re.search(sequence_pattern, log_line[current_position:])
-    sequence_number = sequence_match.group(1) if sequence_match else None
-    
-    # Update the current position to just after the sequence number match
-    saved_current_position = current_position
-    if sequence_match:
-        current_position += sequence_match.end() - 1  # Subtract 1 to handle overlap
-        saved_current_position = current_position + 3 # skips the :<space>
-       
-    # Step 3: Extract IP address (start search after sequence number)
-    ip_match = re.search(ip_pattern, log_line[current_position:])
-    ip_info = [None, None, None]
-
-    if ip_match:
-        current_position += ip_match.start()
-        saved_current_position_ip = current_position
-
-        ip_str = ip_match.group(1)
-        try:
-            # Validate if it's a valid IP (IPv4 or IPv6)
-            ip_obj = ipaddress.ip_address(ip_str)
-            ip_type = "ipv6" if isinstance(ip_obj, ipaddress.IPv6Address) else "ipv4"
-            ip_info = [ip_type, ip_str, saved_current_position_ip]
-        except ValueError:
-            # Not a valid IP address
-            ip_info = [None, None, None]
-
-    return jail, sequence_number, ip_info, saved_current_position
-
-def cut(string):
-    # Regex pattern to match [a-z-_]+\[[0-9]+\[
-    pattern = r"[a-z-_\.]+\[[0-9]+\]:\s"
-    match = re.search(pattern, string)
-    
-    if match:
-        # Get the end position of the match and return the substring from there
-        return string[match.end():]
-    else:
-        # If no match, return the original string
-        return string
-
 # Function to delete temporary files created by the script
 def clean_temp_files():
     if os.path.exists(temp_file.name):
@@ -262,49 +164,16 @@ def clean_temp_files():
 # Function to check if a jail is enabled by searching for 'enabled = true' or 'enabled = false'
 import re
 
-# Function to check if a jail is enabled by searching for 'enabled = true' or 'enabled = false'
-def is_jail_enabled(dir_name):
-    jail_conf_file = os.path.join(dir_name, 'jail.d', f'{dir_name}.conf')
-    
-    # Debug: print the file being tested
-    # print(f"Testing file: {jail_conf_file}")
-    
-    if os.path.isfile(jail_conf_file):
-        with open(jail_conf_file, 'r') as conf:
-            for xline in conf:
-                # Remove comments (anything after #) and strip leading/trailing whitespace
-                xline.split('#', 1)[0].strip()
-                
-                # Debug: print the processed line after removing comments and trimming
-                # print(f"Processed line: {line}")
-                
-                # Check for 'enabled = true' with flexible spaces/tabs using regex
-                if re.match(r'.*enabled.*=.*true.*', line):
-                    # print("Found 'enabled = true'. Stopping search.")
-                    return True  # Stop searching and return True
-                
-                # Check for 'enabled = false' and stop if found
-                elif re.match(r'.*enabled.*=.*false.*', line):
-                    # print("Found 'enabled = false'. Stopping search.")
-                    return False  # Stop searching and return False
-                
-    return False  # Default to False if no 'enabled = true' was found
-
-
+# If we have a valid checkpoint, we must tell journalctl
 since_time = checkpoint.get()
 if since_time is None:
     command = ['journalctl', '-f']
 else:
     command = ['journalctl', '-f', f'--since={since_time}']
+#print(f"command = {command}")
 
-print(f"command = {command}")
-
-# Start journalctl -f
-#command = ['journalctl', '-f', '--no-page']
+# Start journalctl
 journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-# track one line behind so we can combine them if necessary
-#previous_line = None
 
 # use new PreviousJournalctl class
 prevs = PreviousJournalctl()
@@ -379,6 +248,7 @@ def handle_signal(signum, frame):
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
 
+$$$
 #  Sep 27 07:41:16 - etc
 def get_datetime(s):
     pattern = r"([A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
