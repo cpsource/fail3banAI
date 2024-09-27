@@ -60,7 +60,7 @@ class ShortenJournalString:
                         found = match.group(0)
                         condensed_str = condensed_str.replace(found, "<" + key + ">")
         # managing date should have a special place in heck in Python3
-        date_time = self.getdatetime(condensed_str)
+        date_time = self.get_datetime(condensed_str)
         if date_time is not None:
             found_items['datetime'] = date_time
             condensed_str = condensed_str.replace(date_time, "<datetime>>")
