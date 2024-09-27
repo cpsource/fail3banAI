@@ -11,6 +11,8 @@ import subprocess
 import signal
 import threading
 import ipaddress; is_ipv6 = lambda addr: isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address)
+import re
+from datetime import datetime
 
 # Configure logging
 import logging
@@ -77,6 +79,11 @@ else:
 # Add the subdirectory to the system path
 #subdirectory_path = os.path.join(current_dir, '../lib')
 #sys.path.append(subdirectory_path)
+
+# Setup Checkpoint
+from Checkpoint import Checkpoint
+CHECKPOINT_PATH = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/checkpoint.ctl"
+checkpoint = Checkpoint(CHECKPOINT_PATH)
 
 import ZDrop
 
@@ -284,51 +291,17 @@ def is_jail_enabled(dir_name):
     return False  # Default to False if no 'enabled = true' was found
 
 
-# Note: Unused
+since_time = checkpoint.get()
+if since_time is None:
+    command = ['journalctl', '-f']
+else:
+    command = ['journalctl', '-f', f'--since={since_time}']
 
-# Function to process each line from journalctl
-def process_journalctl_line(zline):
-    # Write the line to the temporary file
-    with open(temp_file.name, 'a') as tempf:
-        tempf.write(zline)
-    
-    # Flag to track if a match was found
-
-    # Iterate over each subdirectory and run fail3ban-regex
-    for zdir in os.listdir('.'):
-        if os.path.isdir(zdir):
-            # Check if jail is enabled
-            if is_jail_enabled(zdir):
-                # Create a temporary file for fail3ban-regex output
-                with tempfile.NamedTemporaryFile(delete=False, mode='w', prefix='fail3ban_', suffix='.log') as regex_temp_file:
-                    regex_temp_file_path = regex_temp_file.name
-                
-                # Run fail3ban-regex and redirect the output to the temp file
-                try:
-                    subprocess.run(['fail3ban-regex', temp_file.name, zdir],
-                                   stdout=open(regex_temp_file_path, 'w'),
-                                   stderr=subprocess.STDOUT,
-                                   check=True)
-                    
-                    # Check the regex temp file for success (0 ignored, 1 matched)
-                    with open(regex_temp_file_path, 'r') as f:
-                        regex_output = f.read()
-                        if '0 ignored' in regex_output and '1 matched' in regex_output:
-                            print(f"OK: {dir}")
-
-                except subprocess.CalledProcessError:
-                    pass  # Fail silently on failure (no output)
-
-                finally:
-                    # Cleanup: remove the regex output temp file
-                    os.remove(regex_temp_file_path)
-            #else:
-                #print(f"Skipping {dir}: Jail is not enabled")
-    
-    # If no match was found, remain silent as per the request
+print(f"command = {command}")
 
 # Start journalctl -f
-journalctl_proc = subprocess.Popen(['journalctl', '-f'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+#command = ['journalctl', '-f', '--no-page']
+journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
 # track one line behind so we can combine them if necessary
 #previous_line = None
@@ -406,6 +379,31 @@ def handle_signal(signum, frame):
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
 
+#  Sep 27 07:41:16 - etc
+def get_datetime(s):
+    pattern = r"([A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
+    match = re.search(pattern, s)
+    
+    if match:
+        m = match.group(1)
+        #print(f"get_datetime, m = {m}")
+        
+        # Get the current year and append it to the date string
+        current_year = datetime.now().year
+        full_date_str = f"{current_year} {m}"
+        
+        # Parse the date string with the year included
+        parsed_date = datetime.strptime(full_date_str, '%Y %b %d %H:%M:%S')
+        
+        # Convert the datetime object back to a string
+        res = parsed_date.strftime('%Y-%m-%d %H:%M:%S')
+        #print(f"get_datetime, match, {res}")
+    else:
+        #print(f"get_datetime, no match, {s}")
+        res = None
+
+    return res
+
 # Our Main Loop
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
@@ -419,6 +417,10 @@ try:
                 # yes
                 break
 
+            tmp_date = get_datetime(line)
+            if tmp_date is not None:
+                checkpoint.set(tmp_date)
+                
             # zDROP check, make a copy of the line before we pass it in
             line_copy = line[:]
             logger.debug(f"before zDROP chk: {line_copy}")
