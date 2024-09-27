@@ -419,17 +419,18 @@ try:
                 # yes
                 break
 
-            # debugging
-            logger.debug(f"before zDROP chk: {line}")
-            # zDROP check
-            if zdr.is_zdrop(line) is True:
-                logger.debug("after zDROP - continuing ...")
+            # zDROP check, make a copy of the line before we pass it in
+            line_copy = line[:]
+            logger.debug(f"before zDROP chk: {line_copy}")
+            if zdr.is_zdrop(line_copy) is True:
+                logger.debug("after zDROP True - continuing ...")
                 # zdr handled the line, we are done with the line, so continue to the next line
                 continue
+            logger.debug("after zDROP False - normal processing ...")
 
-            logger.debug("after zDROP - processing normally ...")            
             # Now save on our previous entries list
-            prevs.add_entry(line)
+            line_copy = line[:]
+            prevs.add_entry(line_copy)
 
             # show line before
             logger.debug(f"Line: {line}")
@@ -443,7 +444,8 @@ try:
                 sys.exit(0)
                 
             # is there an ip address in result ???
-            found_dict, shortened_str = sjs.shorten_string(result)
+            result_copy = result[:]
+            found_dict, shortened_str = sjs.shorten_string(result_copy)
 
             # debug
 
