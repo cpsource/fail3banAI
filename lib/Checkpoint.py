@@ -11,7 +11,7 @@ class Checkpoint:
         self.file_path = file_path
         self.last_write_time = None
         self.cached_datestr = None
-        self.lock = threading.lock() # Create a lock for thread safety
+        self.lock = threading.Lock() # Create a lock for thread safety
         
     def get(self):
         #print("Checkpoint.get()")
@@ -50,7 +50,7 @@ class Checkpoint:
                 self.cached_datestr = None
                 self.last_write_time = time.time()
 
-   def write_to_file(self, datestr):
+    def write_to_file(self, datestr):
         """Writes the date string to the checkpoint file."""
         with open(self.file_path, 'w') as f:
             f.write(datestr+"\n")

@@ -248,32 +248,6 @@ def handle_signal(signum, frame):
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
 
-$$$
-#  Sep 27 07:41:16 - etc
-def get_datetime(s):
-    pattern = r"([A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
-    match = re.search(pattern, s)
-    
-    if match:
-        m = match.group(1)
-        #print(f"get_datetime, m = {m}")
-        
-        # Get the current year and append it to the date string
-        current_year = datetime.now().year
-        full_date_str = f"{current_year} {m}"
-        
-        # Parse the date string with the year included
-        parsed_date = datetime.strptime(full_date_str, '%Y %b %d %H:%M:%S')
-        
-        # Convert the datetime object back to a string
-        res = parsed_date.strftime('%Y-%m-%d %H:%M:%S')
-        #print(f"get_datetime, match, {res}")
-    else:
-        #print(f"get_datetime, no match, {s}")
-        res = None
-
-    return res
-
 # Our Main Loop
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
@@ -287,7 +261,8 @@ try:
                 # yes
                 break
 
-            tmp_date = get_datetime(line)
+            print(f"mainloop: line = {line}, {type(line)}")
+            tmp_date = sjs.get_datetime(line)
             if tmp_date is not None:
                 checkpoint.set(tmp_date)
                 

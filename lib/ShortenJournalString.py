@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 class ShortenJournalString:
     def __init__(self):
@@ -70,7 +71,7 @@ class ShortenJournalString:
 
     # Sep 27 07:41:16 - etc
     # Returns date as a <str>
-    def get_datetime(s):
+    def get_datetime(self, s):
         pattern = r"^([A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})"
         match = re.search(pattern, s)
         if match:
@@ -90,7 +91,8 @@ class ShortenJournalString:
         else:
             #print(f"get_datetime, no match, {s}")
             res = None
-    return res
+            
+        return res
     
 if __name__ == "__main__":
     # Input strings
