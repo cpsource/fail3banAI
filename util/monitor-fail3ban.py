@@ -233,6 +233,24 @@ save_pid(pid_file)
 # Create a global event object to signaling threads to stop
 stop_event = threading.Event()
 
+# this guy makes sure we flush our checkpoint from time to time
+worker_thread_id = None
+# worker_thread flushes our checkpoint cache ever 15 seconds
+def worker_thread():
+    #print("Thread started.")
+    while not stop_event.is_set():
+        #print("Thread worker_thread is working...")
+        checkpoint.flush_cache()
+        # Instead of a long sleep, break it into shorter intervals
+        for _ in range(10*3):  # Total sleep time = 10 * 3 * 0.5 = 15 seconds
+            if stop_event.is_set():
+                break
+
+            time.sleep(0.5)  # Sleep in shorter intervals to check the event frequently
+
+            
+    print("worker_thread is stopping.")
+    
 # Get a ZDROP instance
 zdr = ZDrop.ZDrop()
 
@@ -241,12 +259,18 @@ def handle_signal(signum, frame):
     # Add custom handling here, like reloading configuration
     # sys.exit(0) # Uncomment if you want the program to exit on SIGHUP
     stop_event.set() # Set the event, signaling all threads to stop
+    if worker_thread_id is not None:
+        worker_thread_id.join()
     gs.request_shutdown()
     zdr.shutdown()
 
 # Register the signal handler for SIGTERM, SIGHUP, etc.
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
+
+# Creaqte and start worker thread
+worker_thread_id = threading.Thread(target=worker_thread)
+worker_thread_id.start()
 
 # Our Main Loop
 try:
@@ -369,6 +393,8 @@ try:
 except KeyboardInterrupt:
     logging.error("Script interrupted. Exiting...")
     stop_event.set()
+    if worker_thread_id is not None:
+        worker_thread_id.join()
     zdr.shutdown()
 finally:
     remove_pid(pid_file)
