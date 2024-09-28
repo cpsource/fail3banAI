@@ -1,0 +1,98 @@
+import os
+import importlib.util
+import sys
+
+class ParseletManager:
+    def __init__(self, root_dir='.'):
+        self.root_dir = root_dir
+        self.parselets = []  # This will store information about all found parselets
+        self.load_parselets()
+
+    def load_parselets(self):
+        """
+        Walk through the directory tree below root_dir and find all parselets 
+        named Parselet_<name>.py, dynamically loading them.
+        """
+        for dirpath, _, filenames in os.walk(self.root_dir):
+            for filename in filenames:
+
+                #print(f"filename = {filename}")
+                
+                if filename.startswith("Parselet_") and filename.endswith(".py") and not filename.endswith(".py~"):
+                    parselet_name = filename[:-3]  # Remove the .py extension
+                    parselet_path = os.path.join(dirpath, filename)
+
+                    #print(f"parslet_name {parselet_name} found at parselet_path = {parselet_path}")
+                    
+                    self.load_parselet(parselet_name, parselet_path)
+
+    def load_parselet(self, parselet_name, parselet_path):
+        """
+        Dynamically load a parselet from its file path.
+        """
+        # Create a module spec from the file
+        spec = importlib.util.spec_from_file_location(parselet_name, parselet_path)
+        if spec is None:
+            print(f"Could not load spec for {parselet_name}")
+            return
+
+        # Create a new module from the spec
+        module = importlib.util.module_from_spec(spec)
+
+        # Load the module
+        try:
+            spec.loader.exec_module(module)
+            # Assume the parselet class has the same name as the file without the extension
+            parselet_class = getattr(module, parselet_name, None)
+            if parselet_class:
+                # Add the parselet to our parselet table (self.parselets)
+                self.parselets.append({
+                    'name': parselet_name,
+                    'path': parselet_path,
+                    'module': module,
+                    'class': parselet_class
+                })
+                print(f"Loaded parselet: {parselet_name}")
+            else:
+                print(f"Parselet class {parselet_name} not found in {parselet_path}")
+        except Exception as e:
+            print(f"Error loading parselet {parselet_name}: {e}")
+
+    def get_parselet_names(self):
+        """
+        Return a list of all loaded parselet names.
+        """
+        return [parselet['name'] for parselet in self.parselets]
+
+    def execute_parselet_method(self, parselet_name, method_name, *args, **kwargs):
+        """
+        Dynamically execute a method on a loaded parselet by its name.
+        """
+        for parselet in self.parselets:
+            if parselet['name'] == parselet_name:
+                parselet_instance = parselet['class']()  # Create an instance of the parselet class
+                if hasattr(parselet_instance, method_name):
+                    method = getattr(parselet_instance, method_name)
+                    return method(*args, **kwargs)
+                else:
+                    print(f"Method {method_name} not found in parselet {parselet_name}")
+                    return None
+        print(f"Parselet {parselet_name} not found")
+        return None
+
+# Example usage:
+if __name__ == "__main__":
+    manager = ParseletManager()
+
+    # List all loaded parselets
+    print("Loaded Parselets:")
+    print(manager.get_parselet_names())
+
+    # Example of executing a method from Parselet_GETenv
+    log_line = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
+    result = manager.execute_parselet_method('Parselet_GETenv', 'compress_line', log_line)
+    
+    if result:
+        print("Result from Parselet_GETENV.compress_line:")
+        print(result)
+
