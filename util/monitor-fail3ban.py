@@ -60,19 +60,39 @@ except Exception as e:
 # Load our python3 paths
 #
 # Get the FAIL3BAN_PROJECT_ROOT environment variable
+
+# Step 1: Get the FAIL3BAN_PROJECT_ROOT environment variable
+
 project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
 # Check if FAIL3BAN_PROJECT_ROOT is not set
 if project_root is None:
     print("Error: The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
     sys.exit(1)  # Exit the program with an error code
 # Construct the lib path
-lib_path = os.path.join(project_root, 'lib')
+
+# Example of loading startup code at the beginning of any script
+#startup_file = os.path.join(os.getenv('FAIL3BAN_PROJECT_ROOT', ''), 'lib', 'startup.py')
+#if os.path.exists(startup_file):
+#    exec(open(startup_file).read())
+# Continue with the rest of your script
+#print("Script is running")
+
 # Add the constructed path to sys.path only if it's not already in sys.path
+# Step 2: Construct the paths for lib and parselets
+lib_path = os.path.join(project_root, 'lib')
+parselets_path = os.path.join(project_root, 'parselets')
+
+# Step 3: Check if lib_path is already in sys.path, if not, prepend it
 if lib_path not in sys.path:
-    sys.path.append(lib_path)
-    print(f"Added {lib_path} to the system path.")
-else:
-    print(f"{lib_path} is already in the system path.")
+    sys.path.insert(0, lib_path)
+    print(f"Prepending {lib_path} to sys.path")
+
+# Step 4: Check if parselets_path is already in sys.path, if not, prepend it
+if parselets_path not in sys.path:
+    sys.path.insert(0, parselets_path)
+    print(f"Prepending {parselets_path} to sys.path")
+
+print(sys.path)
 
 # Get the absolute path of the current directory (the directory containing this script)
 #current_dir = os.path.dirname(os.path.abspath(__file__))
