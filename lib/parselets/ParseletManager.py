@@ -6,6 +6,7 @@ class ParseletManager:
     def __init__(self, root_dir='.'):
         self.root_dir = root_dir
         self.parselets = []  # This will store information about all found parselets
+        self.loaded_parselets = set()  # Track which parselets have already been loaded by name
         self.load_parselets()
 
     def load_parselets(self):
@@ -15,21 +16,18 @@ class ParseletManager:
         """
         for dirpath, _, filenames in os.walk(self.root_dir):
             for filename in filenames:
-
-                #print(f"filename = {filename}")
-                
                 if filename.startswith("Parselet_") and filename.endswith(".py") and not filename.endswith(".py~"):
                     parselet_name = filename[:-3]  # Remove the .py extension
                     parselet_path = os.path.join(dirpath, filename)
-
-                    #print(f"parslet_name {parselet_name} found at parselet_path = {parselet_path}")
-                    
                     self.load_parselet(parselet_name, parselet_path)
 
     def load_parselet(self, parselet_name, parselet_path):
         """
-        Dynamically load a parselet from its file path.
+        Dynamically load a parselet from its file path and add it to the list if not already loaded.
         """
+        if parselet_name in self.loaded_parselets:
+            return  # Skip if already loaded
+
         # Create a module spec from the file
         spec = importlib.util.spec_from_file_location(parselet_name, parselet_path)
         if spec is None:
@@ -52,11 +50,25 @@ class ParseletManager:
                     'module': module,
                     'class': parselet_class
                 })
+                self.loaded_parselets.add(parselet_name)  # Mark as loaded
                 print(f"Loaded parselet: {parselet_name}")
             else:
                 print(f"Parselet class {parselet_name} not found in {parselet_path}")
         except Exception as e:
             print(f"Error loading parselet {parselet_name}: {e}")
+
+    def update_parselets(self):
+        """
+        Rescan the directory tree and load any new parselets that haven't been loaded yet.
+        """
+        for dirpath, _, filenames in os.walk(self.root_dir):
+            for filename in filenames:
+                if filename.startswith("Parselet_") and filename.endswith(".py") and not filename.endswith(".py~"):
+                    parselet_name = filename[:-3]  # Remove the .py extension
+                    parselet_path = os.path.join(dirpath, filename)
+                    if parselet_name not in self.loaded_parselets:
+                        print(f"New parselet found: {parselet_name}, loading...")
+                        self.load_parselet(parselet_name, parselet_path)
 
     def get_parselet_names(self):
         """
@@ -88,11 +100,15 @@ if __name__ == "__main__":
     print("Loaded Parselets:")
     print(manager.get_parselet_names())
 
+    # Update parselets (rescan for new ones)
+    print("Updating Parselets...")
+    manager.update_parselets()
+
     # Example of executing a method from Parselet_GETenv
     log_line = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
     result = manager.execute_parselet_method('Parselet_GETenv', 'compress_line', log_line)
     
     if result:
-        print("Result from Parselet_GETENV.compress_line:")
+        print("Result from Parselet_GETenv.compress_line:")
         print(result)
 
