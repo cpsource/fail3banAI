@@ -97,6 +97,30 @@ class ParseletManager:
             print(f"Parselet {parselet_name} not found")
             return None
 
+    def find_a_match(self, str_to_match, directory_path_of_the_set_of_parselets):
+        """
+        Search the parselets in the given directory for a match.
+        It will return the result from the first parselet that finds a match.
+        """
+        # Lock access to the parselets list
+        with self.lock:
+            # Iterate through the loaded parselets
+            for parselet in self.parselets:
+                # Check if the parselet belongs to the given directory
+                if parselet['path'].startswith(directory_path_of_the_set_of_parselets):
+                    parselet_instance = parselet['class']()  # Create an instance of the parselet class
+                    if hasattr(parselet_instance, 'match'):
+                        # Call the 'match' method of the parselet
+                        result = parselet_instance.match(str_to_match)
+                        if result:
+                            print(f"Match found in {parselet['name']}!")
+                            return result  # Return the result if a match is found
+                    else:
+                        print(f"Parselet {parselet['name']} does not have a 'match' method.")
+        
+        print("No match found.")
+        return None  # Return None if no match is found
+
 # Example usage:
 if __name__ == "__main__":
     manager = ParseletManager()
@@ -109,11 +133,12 @@ if __name__ == "__main__":
     print("Updating Parselets...")
     manager.update_parselets()
 
-    # Example of executing a method from Parselet_GETenv
-    log_line = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
-    result = manager.execute_parselet_method('Parselet_GETenv', 'compress_line', log_line)
+    # Example of searching for a match in a directory
+    result = manager.find_a_match('GET /.env', 'parselets/apache2/access-log')
     
     if result:
-        print("Result from Parselet_GETenv.compress_line:")
+        print("Found a match!")
         print(result)
+    else:
+        print("No match found.")
 
