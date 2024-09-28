@@ -2,10 +2,11 @@ import os
 import importlib.util
 import sys
 import threading
+import json  # To handle JSON parsing
 
 class ParseletManager:
     def __init__(self, root_dir='.'):
-        self.root_dir = root_dir
+        self.root_dir = os.path.abspath(root_dir)  # Ensure root_dir is an absolute path
         self.parselets = []  # This will store information about all found parselets
         self.loaded_parselets = set()  # Track which parselets have already been loaded by name
         self.lock = threading.Lock()  # Add a lock to protect access to self.parselets
@@ -97,29 +98,59 @@ class ParseletManager:
             print(f"Parselet {parselet_name} not found")
             return None
 
-    def find_a_match(self, str_to_match, directory_path_of_the_set_of_parselets):
+    def find_a_match(self, str_to_match, directory_path_of_the_set_of_parselets, index=0):
         """
-        Search the parselets in the given directory for a match.
-        It will return the result from the first parselet that finds a match.
+        Search the parselets in the given directory for a match by calling compress_line.
+        Start from the given index and return the result from the first parselet that finds a match.
+        Returns the index of the parselet that matched.
         """
+        # Normalize the directory path and parselet paths
+        normalized_dir_path = os.path.abspath(directory_path_of_the_set_of_parselets)
+
+        # Debug: Print paths for comparison
+        print(f"Root directory: {self.root_dir}")
+        print(f"Target directory for search: {normalized_dir_path}")
+
         # Lock access to the parselets list
         with self.lock:
-            # Iterate through the loaded parselets
-            for parselet in self.parselets:
+            print(f"Starting find_a_match at index {index} for directory {normalized_dir_path}")
+            # Iterate through the loaded parselets starting from the given index
+            for i, parselet in enumerate(self.parselets[index:], start=index):
+                # Normalize the path of the current parselet
+                normalized_parselet_path = os.path.abspath(os.path.dirname(parselet['path']))
+                
+                # Debug: Print current parselet info
+                print(f"Checking parselet {parselet['name']} at index {i}, path: {normalized_parselet_path}")
+                
                 # Check if the parselet belongs to the given directory
-                if parselet['path'].startswith(directory_path_of_the_set_of_parselets):
+                if normalized_parselet_path == normalized_dir_path:
+                    print(f"Parselet {parselet['name']} belongs to {normalized_dir_path}")
+
                     parselet_instance = parselet['class']()  # Create an instance of the parselet class
-                    if hasattr(parselet_instance, 'match'):
-                        # Call the 'match' method of the parselet
-                        result = parselet_instance.match(str_to_match)
-                        if result:
-                            print(f"Match found in {parselet['name']}!")
-                            return result  # Return the result if a match is found
+                    
+                    if hasattr(parselet_instance, 'compress_line'):
+                        print(f"Parselet {parselet['name']} has a 'compress_line' method. Trying to compress...")
+                        # Call the 'compress_line' method of the parselet
+                        result = parselet_instance.compress_line(str_to_match)
+                        print(f"Compress result: {result}")
+                        
+                        # Parse the result to check for errors in the returned JSON
+                        try:
+                            result_json = json.loads(result)
+                            if "error" in result_json and result_json["error"] == "No match found":
+                                print(f"No match found in {parselet['name']}. Continuing to next parselet.")
+                            else:
+                                print(f"Match found in {parselet['name']} at index {i}!")
+                                return result_json, i  # Return the result and the index if a match is found
+                        except json.JSONDecodeError:
+                            print(f"Error parsing JSON from {parselet['name']}")
                     else:
-                        print(f"Parselet {parselet['name']} does not have a 'match' method.")
+                        print(f"Parselet {parselet['name']} does not have a 'compress_line' method.")
+                else:
+                    print(f"Parselet {parselet['name']} does not belong to {normalized_dir_path}")
         
         print("No match found.")
-        return None  # Return None if no match is found
+        return None, -1  # Return None and -1 if no match is found
 
 # Example usage:
 if __name__ == "__main__":
@@ -133,11 +164,15 @@ if __name__ == "__main__":
     print("Updating Parselets...")
     manager.update_parselets()
 
-    # Example of searching for a match in a directory
-    result = manager.find_a_match('GET /.env', 'parselets/apache2/access-log')
+    # Make sure the path doesn't have an extra "parselets" in the directory structure
+    correct_directory = '/home/ubuntu/fail3banAI/lib/parselets/apache2/access-log'
+
+    log_line = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
+    # Example of searching for a match in a directory using compress_line
+    result, match_index = manager.find_a_match(log_line, correct_directory)
     
     if result:
-        print("Found a match!")
+        print(f"Found a match at index {match_index}!")
         print(result)
     else:
         print("No match found.")
