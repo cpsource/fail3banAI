@@ -1,12 +1,14 @@
 import os
 import importlib.util
 import sys
+import threading
 
 class ParseletManager:
     def __init__(self, root_dir='.'):
         self.root_dir = root_dir
         self.parselets = []  # This will store information about all found parselets
         self.loaded_parselets = set()  # Track which parselets have already been loaded by name
+        self.lock = threading.Lock()  # Add a lock to protect access to self.parselets
         self.load_parselets()
 
     def load_parselets(self):
@@ -43,14 +45,15 @@ class ParseletManager:
             # Assume the parselet class has the same name as the file without the extension
             parselet_class = getattr(module, parselet_name, None)
             if parselet_class:
-                # Add the parselet to our parselet table (self.parselets)
-                self.parselets.append({
-                    'name': parselet_name,
-                    'path': parselet_path,
-                    'module': module,
-                    'class': parselet_class
-                })
-                self.loaded_parselets.add(parselet_name)  # Mark as loaded
+                # Use a lock to safely modify self.parselets
+                with self.lock:
+                    self.parselets.append({
+                        'name': parselet_name,
+                        'path': parselet_path,
+                        'module': module,
+                        'class': parselet_class
+                    })
+                    self.loaded_parselets.add(parselet_name)  # Mark as loaded
                 print(f"Loaded parselet: {parselet_name}")
             else:
                 print(f"Parselet class {parselet_name} not found in {parselet_path}")
@@ -72,25 +75,27 @@ class ParseletManager:
 
     def get_parselet_names(self):
         """
-        Return a list of all loaded parselet names.
+        Return a list of all loaded parselet names. Protect access with a lock.
         """
-        return [parselet['name'] for parselet in self.parselets]
+        with self.lock:
+            return [parselet['name'] for parselet in self.parselets]
 
     def execute_parselet_method(self, parselet_name, method_name, *args, **kwargs):
         """
-        Dynamically execute a method on a loaded parselet by its name.
+        Dynamically execute a method on a loaded parselet by its name. Use a lock during access.
         """
-        for parselet in self.parselets:
-            if parselet['name'] == parselet_name:
-                parselet_instance = parselet['class']()  # Create an instance of the parselet class
-                if hasattr(parselet_instance, method_name):
-                    method = getattr(parselet_instance, method_name)
-                    return method(*args, **kwargs)
-                else:
-                    print(f"Method {method_name} not found in parselet {parselet_name}")
-                    return None
-        print(f"Parselet {parselet_name} not found")
-        return None
+        with self.lock:
+            for parselet in self.parselets:
+                if parselet['name'] == parselet_name:
+                    parselet_instance = parselet['class']()  # Create an instance of the parselet class
+                    if hasattr(parselet_instance, method_name):
+                        method = getattr(parselet_instance, method_name)
+                        return method(*args, **kwargs)
+                    else:
+                        print(f"Method {method_name} not found in parselet {parselet_name}")
+                        return None
+            print(f"Parselet {parselet_name} not found")
+            return None
 
 # Example usage:
 if __name__ == "__main__":
