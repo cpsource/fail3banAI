@@ -58,7 +58,7 @@ if '--daemonize' in sys.argv:
 if status is not None and status == 'parent':
     sys.exit(0)
 # Save our pid - must be done after a possible daemonize
-pid_file = '/tmp/monitor_fail3ban.pid'
+pid_file = '/tmp/monitor-fail3ban.pid'
 save_pid(pid_file)
    
 #import subprocess
