@@ -3,34 +3,49 @@
 import os
 import sys
 
-# get daemonizaton out of the way early
-def daemonize():
+import os
+import sys
+
+def save_pid(pid_file):
+    pid = os.getpid()  # Get the current process ID (PID)
+    
+    # Save the PID to the specified file
     try:
-        # Fork the first time to create a background process
+        with open(pid_file, 'w') as f:
+            f.write(str(pid))
+        print(f"PID {pid} saved to {pid_file}")
+    except PermissionError:
+        print(f"Permission denied: Unable to write to {pid_file}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def daemonize(log_file="/dev/null"):
+    try:
+        # First fork to create a background process
         pid = os.fork()
         if pid > 0:
-            # Exit parent process; the child continues
+            # Parent process, exit
             return "parent"
         
-        # Detach from parent environment (create a new session)
+        # Detach from parent environment
         os.setsid()
 
-        # Fork a second time to fully detach from terminal
+        # Second fork to prevent acquiring a terminal again
         pid = os.fork()
         if pid > 0:
-            # Exit second parent process
             sys.exit(0)
 
-        # Redirect standard file descriptors to /dev/null
+        # Redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
 
-        with open("/dev/null", 'w') as f:
+        with open(log_file, 'a+') as f:
             os.dup2(f.fileno(), sys.stdout.fileno())
             os.dup2(f.fileno(), sys.stderr.fileno())
 
-        # Child process continues running as daemon
+        # Child process continues as daemon
         return "child"
+
     except OSError as e:
         sys.stderr.write(f"fork failed: {e.errno} ({e.strerror})\n")
         sys.exit(1)
@@ -38,7 +53,7 @@ def daemonize():
 # Check if there are command line arguments
 status = None
 if '--daemonize' in sys.argv:
-    status = daemonize()
+    status = daemonize('/tmp/monitor-fail3ban.log')
     
 if status is not None and status == 'parent':
     sys.exit(0)
@@ -261,18 +276,6 @@ gs.cleanup()
 wl = f3b_whitelist.WhiteList()
 wl.whitelist_init()
 
-def save_pid(pid_file):
-    pid = os.getpid()  # Get the current process ID (PID)
-    
-    # Save the PID to the specified file
-    try:
-        with open(pid_file, 'w') as f:
-            f.write(str(pid))
-        print(f"PID {pid} saved to {pid_file}")
-    except PermissionError:
-        print(f"Permission denied: Unable to write to {pid_file}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
 
 def remove_pid(pid_file):
     # Check if the PID file exists
