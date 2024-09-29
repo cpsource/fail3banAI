@@ -1,3 +1,5 @@
+# obsolete - TODO remove
+
 import os
 import sys
 

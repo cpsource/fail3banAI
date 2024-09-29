@@ -139,17 +139,23 @@ if project_root is None:
 # Add the constructed path to sys.path only if it's not already in sys.path
 # Step 2: Construct the paths for lib and parselets
 lib_path = os.path.join(project_root, 'lib')
-parselets_path = os.path.join(project_root, 'parselets')
+parselets_path = os.path.join(project_root, 'lib/parselets')
+tasklets_path = os.path.join(project_root, 'lib/tasklets')
 
-# Step 3: Check if lib_path is already in sys.path, if not, prepend it
-if lib_path not in sys.path:
-    sys.path.insert(0, lib_path)
-    print(f"Prepending {lib_path} to sys.path")
-
-# Step 4: Check if parselets_path is already in sys.path, if not, prepend it
+# Step 3: Check if parselets_path is already in sys.path, if not, prepend it
 if parselets_path not in sys.path:
     sys.path.insert(0, parselets_path)
     print(f"Prepending {parselets_path} to sys.path")
+
+# Step 4: Check if tasklets_path is already in sys.path, if not, prepend it
+if tasklets_path not in sys.path:
+    sys.path.insert(0, tasklets_path)
+    print(f"Prepending {tasklets_path} to sys.path")
+
+# Step 5: Check if lib_path is already in sys.path, if not, prepend it
+if lib_path not in sys.path:
+    sys.path.insert(0, lib_path)
+    print(f"Prepending {lib_path} to sys.path")
 
 print(sys.path)
 
@@ -184,7 +190,7 @@ import f3b_sqlite3_db
 import f3b_whitelist
 
 # get GlobalShutdown
-import f3b_GlobalShutdown
+from GlobalShutdown import GlobalShutdown
 
 #
 # Here's a double line that needs to be combined
@@ -268,7 +274,7 @@ db = f3b_sqlite3_db.SQLiteDB()
 db.reset_hazard_level()
 db.show_threats()
 # and GlobalShutdown
-gs = f3b_GlobalShutdown.GlobalShutdown()
+gs = GlobalShutdown()
 # get rid of stale control flag
 gs.cleanup()
 
@@ -335,8 +341,6 @@ signal.signal(signal.SIGHUP, handle_signal)
 # Creaqte and start worker thread
 worker_thread_id = threading.Thread(target=worker_thread)
 worker_thread_id.start()
-
-
 
 # Our Main Loop
 try:
@@ -464,6 +468,8 @@ except KeyboardInterrupt:
     zdr.shutdown()
 finally:
     remove_pid(pid_file)
+    gs.cleanup()
+    
     # Cleanup: close the temporary file and delete it
     #if os.path.exists(temp_file.name):
     #    temp_file.close()
