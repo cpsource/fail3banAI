@@ -39,7 +39,10 @@ class Parselet_htaccess:
             
             return json.dumps(output, indent=4)  # Return as JSON-formatted string
         else:
-            return None
+            return json.dumps({
+                "class_name": self.__class__.__name__, 
+                "error": "No match found"
+            })
 
 #return json.dumps({"class_name": self.__class__.__name__, "error": "No match found"})
 

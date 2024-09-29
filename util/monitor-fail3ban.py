@@ -336,6 +336,12 @@ signal.signal(signal.SIGHUP, handle_signal)
 worker_thread_id = threading.Thread(target=worker_thread)
 worker_thread_id.start()
 
+# Check if there are command line arguments
+if '--daemonize' in sys.argv:
+    daemonize()
+else:
+    print("Running in console mode...")
+
 # Our Main Loop
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
