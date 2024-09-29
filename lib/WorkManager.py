@@ -28,7 +28,7 @@ class WorkManager:
     def __init__(self):
         self.queue = []
         self.lock = threading.Lock()
-        self.condition = threading.Condition(self.lock)
+        self.condition = threading.Condition(self.lock) # guards self.queue
         self.shutdown_flag = False
 
     def enqueue(self, work_unit):

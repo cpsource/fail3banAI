@@ -4,7 +4,7 @@ import logging
 import WorkManager
 from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 from http import HTTPStatus
-from ManageBanActivity import ManageBanActivity
+from ManageBanActivityDatabase import ManageBanActivityDatabase
 
 #
 # We'll get lines of this sort from journalctl.
@@ -13,16 +13,18 @@ from ManageBanActivity import ManageBanActivity
 # Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
 
 class ZDrop:
-    def __init__(self):
+    def __init__(self, work_controller):
         # Create a named logger consistent with the log file name
         self.logger = logging.getLogger("fail3ban")
         # and a work manager
-        self.wctlr = WorkManager.WorkController(num_workers=1)
-        # and a ManageBanActivity
-        self.mba = ManageBanActivity()
+        #self.wctlr = WorkManager.WorkController(num_workers=1)
+        self.wctlr = work_controller
+        # and a ManageBanActivityDatabase - manages 
+        self.mba = ManageBanActivityDatabase()
         
     def shutdown(self):
-        self.wctlr.shutdown()
+        pass
+        #self.wctlr.shutdown()
         
     def task_callback(self,result):
         print(f"ZDrop: Task completed with result: {result}, {HTTPStatus(result).phrase}")

@@ -7,7 +7,7 @@ import logging
 
 LOG_ID = "fail3ban"
 
-class ManageBanActivity:
+class ManageBanActivityDatabase:
     def __init__(self, db_name='fail3ban_server.db', log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
@@ -193,7 +193,7 @@ class ManageBanActivity:
         
 # Main function to handle command-line arguments
 if __name__ == "__main__":
-    manage_ban = ManageBanActivity()
+    manage_ban = ManageBanActivityDatabase()
 
     # Check if any arguments are passed
     if len(sys.argv) < 2:

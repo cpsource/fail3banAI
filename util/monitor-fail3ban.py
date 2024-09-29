@@ -3,9 +3,6 @@
 import os
 import sys
 
-import os
-import sys
-
 def save_pid(pid_file):
     pid = os.getpid()  # Get the current process ID (PID)
     
@@ -192,6 +189,9 @@ import f3b_whitelist
 # get GlobalShutdown
 from GlobalShutdown import GlobalShutdown
 
+# get our work manager
+import WorkManager
+
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -320,9 +320,11 @@ def worker_thread():
 
             
     print("worker_thread is stopping.")
-    
+
+work_controller = WorkManager.WorkController(num_workers=6)
+
 # Get a ZDROP instance
-zdr = ZDrop.ZDrop()
+zdr = ZDrop.ZDrop(work_controller)
 
 def handle_signal(signum, frame):
     print("Received SIGHUP signal.")
@@ -467,6 +469,7 @@ except KeyboardInterrupt:
         worker_thread_id.join()
     zdr.shutdown()
 finally:
+    work_controller.shutdown()
     remove_pid(pid_file)
     gs.cleanup()
     
