@@ -69,6 +69,7 @@ import threading
 import ipaddress; is_ipv6 = lambda addr: isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address)
 import re
 from datetime import datetime
+import time
 
 # Configure logging
 import logging
@@ -167,8 +168,6 @@ from Checkpoint import Checkpoint
 CHECKPOINT_PATH = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/checkpoint.ctl"
 checkpoint = Checkpoint(CHECKPOINT_PATH)
 
-import ZDrop
-
 from PreviousJournalctl import PreviousJournalctl
 
 # get HashedSet
@@ -193,6 +192,12 @@ from GlobalShutdown import GlobalShutdown
 import WorkManager
 
 # get our message manager
+import MessageManager
+
+# a thread to handle zdrops
+import Tasklet_ZDrop
+
+# our message manager
 import MessageManager
 
 #
@@ -285,7 +290,6 @@ gs.cleanup()
 wl = f3b_whitelist.WhiteList()
 wl.whitelist_init()
 
-
 def remove_pid(pid_file):
     # Check if the PID file exists
     if os.path.exists(pid_file):
@@ -326,9 +330,25 @@ def worker_thread():
 
 work_controller = WorkManager.WorkController(num_workers=6)
 message_manager = MessageManager.MessageManager()
+#tasklet_zdrop = Tasklet_ZDrop.Tasklet_ZDrop(work_controller, message_manager)
+
+def task_callback(msg):
+    print(f"task_callback: {msg}")
+
+# build a work unit
+data = "Tasklet_ZDrop"
+work_unit = WorkManager.WorkUnit(
+    function=Tasklet_ZDrop.wait_and_process,
+    kwargs={'data'       : data,
+            'work_controller' : work_controller,
+            'message_manager' : message_manager
+            },  # Using kwargs to pass arguments
+    callback=task_callback
+)
+work_controller.enqueue(work_unit)
 
 # Get a ZDROP instance
-zdr = ZDrop.ZDrop(work_controller, message_manager)
+#zdr = ZDrop.ZDrop(work_controller, message_manager)
 
 def handle_signal(signum, frame):
     print("Received SIGHUP signal.")
@@ -338,14 +358,14 @@ def handle_signal(signum, frame):
     if worker_thread_id is not None:
         worker_thread_id.join()
     gs.request_shutdown()
-    zdr.shutdown()
+    work_controller.shutdown()
     message_manager.shutdown()
     
 # Register the signal handler for SIGTERM, SIGHUP, etc.
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
 
-# Creaqte and start worker thread
+# Create and start worker thread
 worker_thread_id = threading.Thread(target=worker_thread)
 worker_thread_id.start()
 
@@ -367,15 +387,25 @@ try:
             if tmp_date is not None:
                 checkpoint.set(tmp_date)
                 
-            # zDROP check, make a copy of the line before we pass it in
             line_copy = line[:]
-            logger.debug(f"before zDROP chk: {line_copy}")
-            if zdr.is_zdrop(line_copy) is True:
-                logger.debug("after zDROP True - continuing ...")
-                # zdr handled the line, we are done with the line, so continue to the next line
-                continue
-            logger.debug("after zDROP False - normal processing ...")
 
+            if False:
+                tst = None
+                if tst is None:
+                    line_copy = "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
+                    tst = True
+
+            # zDROP check, make a copy of the line before we pass it in
+            logger.debug(f"before zDROP chk: {line_copy}")
+            if 'zDROP' in line_copy:
+                # send a message to Tasker_ZDROP
+                msg = message_manager.enqueue(line_copy)
+                #time.sleep(10)
+                #sys.exit(0)
+                continue
+            logger.debug("after zDROP chk")
+
+            
             # Now save on our previous entries list
             line_copy = line[:]
             prevs.add_entry(line_copy)
@@ -472,7 +502,6 @@ except KeyboardInterrupt:
     stop_event.set()
     if worker_thread_id is not None:
         worker_thread_id.join()
-    zdr.shutdown()
 finally:
     work_controller.shutdown()
     remove_pid(pid_file)

@@ -186,14 +186,19 @@ class Tasklet_ZDrop:
         # say we handled the zDROP for the caller
         return True
 
-    # wait_and_process
-    def wait_and_process(self):
-        while True:
-            message_unit = self.message_manager.dequeue()
-            if message_unit is None: #shutdown condition
-                print("Shutting down Tasklet_ZDrop")
-                break
-            self.is_zdrop(work_unit.get_message_string())
+# wait_and_process
+def wait_and_process(data, **kwargs):
+    # get args from kwargs
+    work_controller = kwargs.get('work_controller', None)
+    message_manager = kwargs.get('message_manager', None)
+    tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager)
+    
+    while True:
+        message_unit = message_manager.dequeue()
+        if message_unit is None: #shutdown condition
+            print("Shutting down Tasklet_ZDrop")
+            break
+        tasklet_zdrop.is_zdrop(message_unit.get_message_string())
 
 if __name__ == "__main__":
     # Set up logging
