@@ -39,8 +39,7 @@ def daemonize():
 status = None
 if '--daemonize' in sys.argv:
     status = daemonize()
-else:
-    print("Running in console mode...")
+    
 if status is not None and status == 'parent':
     sys.exit(0)
 # Save our pid - must be done after a possible daemonize
