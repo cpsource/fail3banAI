@@ -181,19 +181,43 @@ class Tasklet_ZDrop:
         tasklet_zdrop.is_zdrop(work_unit.get_message_string())
 
 if __name__ == "__main__":
-    # Input strings
+    # Define the FAIL3BAN_PROJECT_ROOT environment variable or path
+    fail3ban_project_root = os.getenv('FAIL3BAN_PROJECT_ROOT', '/path/to/fail3ban/project/root')
+
+    # Add FAIL3BAN_PROJECT_ROOT/lib to Python's module search path
+    lib_path = os.path.join(fail3ban_project_root, 'lib')
+    sys.path.append(lib_path)
+    # Add FAIL3BAN_PROJECT_ROOT/tasklets to Python's module search path
+    tasklet_path = os.path.join(fail3ban_project_root, 'lib/tasklets')
+    sys.path.append(tasklet_path)
+
+    # Set up logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    # Sample input strings
     input_strings = [
         "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0",
         "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=201:18::1 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
-
     ]
 
-    #<Please remove the rest of this code, and add in approprite test code here>
-    
-    # Create an instance of the class
-    zdro = ZDrop()
+    # Initialize the necessary components for Tasklet_ZDrop
+    work_controller = WorkManager.WorkController(num_workers=1)
+    message_manager = WorkManager.MessageManager()
 
-    # Process each input string and display the results
+    # Create an instance of Tasklet_ZDrop
+    tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager)
+
+    # Enqueue the sample input strings into the message manager
     for input_str in input_strings:
-        found = zdro.is_zdrop(input_str)
-        print("-" * 50)
+        message_manager.enqueue(input_str)
+
+    # Start processing messages using Tasklet_ZDrop
+    while True:
+        message_unit = message_manager.dequeue()
+        if message_unit is None:  # Shutdown condition
+            print("Shutting down Tasklet_ZDrop")
+            break
+        tasklet_zdrop.is_zdrop(message_unit.get_message_string())
+
+    # Simulate shutdown (this would typically happen based on some condition)
+    message_manager.shutdown()
