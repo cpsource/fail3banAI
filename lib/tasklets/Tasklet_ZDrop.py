@@ -1,9 +1,22 @@
 import re
+import os
+import sys
 from datetime import datetime, timedelta, timezone
 import logging
-import WorkManager
-from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 from http import HTTPStatus
+
+# Define the FAIL3BAN_PROJECT_ROOT environment variable or path
+fail3ban_project_root = os.getenv('FAIL3BAN_PROJECT_ROOT', '/path/to/fail3ban/project/root')
+# Add FAIL3BAN_PROJECT_ROOT/lib to Python's module search path
+lib_path = os.path.join(fail3ban_project_root, 'lib')
+sys.path.append(lib_path)
+# Add FAIL3BAN_PROJECT_ROOT/tasklets to Python's module search path
+tasklet_path = os.path.join(fail3ban_project_root, 'lib/tasklets')
+sys.path.append(tasklet_path)
+
+import WorkManager
+import MessageManager
+from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 from ManageBanActivityDatabase import ManageBanActivityDatabase
 
 #
@@ -23,7 +36,9 @@ class Tasklet_ZDrop:
         self.mba = ManageBanActivityDatabase()
         # and save message_manager
         self.message_manager = message_manager
-        
+        # a callback
+        self.task_callback = lambda result: print(f"Task completed with result: {result}")
+
     def shutdown(self):
         pass
         #self.wctlr.shutdown()
@@ -171,26 +186,16 @@ class Tasklet_ZDrop:
         # say we handled the zDROP for the caller
         return True
 
-    # create an instance
-    tasklet_zdrop = Tasklet_ZDrop()
-    while True:
-        message_unit = message_manager.dequeue()
-        if message_unit is None: #shutdown condition
-            print("Shutting down Tasklet_ZDrop")
-            break
-        tasklet_zdrop.is_zdrop(work_unit.get_message_string())
+    # wait_and_process
+    def wait_and_process(self):
+        while True:
+            message_unit = self.message_manager.dequeue()
+            if message_unit is None: #shutdown condition
+                print("Shutting down Tasklet_ZDrop")
+                break
+            self.is_zdrop(work_unit.get_message_string())
 
 if __name__ == "__main__":
-    # Define the FAIL3BAN_PROJECT_ROOT environment variable or path
-    fail3ban_project_root = os.getenv('FAIL3BAN_PROJECT_ROOT', '/path/to/fail3ban/project/root')
-
-    # Add FAIL3BAN_PROJECT_ROOT/lib to Python's module search path
-    lib_path = os.path.join(fail3ban_project_root, 'lib')
-    sys.path.append(lib_path)
-    # Add FAIL3BAN_PROJECT_ROOT/tasklets to Python's module search path
-    tasklet_path = os.path.join(fail3ban_project_root, 'lib/tasklets')
-    sys.path.append(tasklet_path)
-
     # Set up logging
     logging.basicConfig(level=logging.DEBUG)
 
@@ -202,7 +207,7 @@ if __name__ == "__main__":
 
     # Initialize the necessary components for Tasklet_ZDrop
     work_controller = WorkManager.WorkController(num_workers=1)
-    message_manager = WorkManager.MessageManager()
+    message_manager = MessageManager.MessageManager()
 
     # Create an instance of Tasklet_ZDrop
     tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager)
@@ -211,13 +216,26 @@ if __name__ == "__main__":
     for input_str in input_strings:
         message_manager.enqueue(input_str)
 
+    # Enqueue a special message to signal shutdown
+    # - garbage from ChatGPT 4o - message_manager.enqueue(None)  # This will act as the shutdown signal
+    
     # Start processing messages using Tasklet_ZDrop
-    while True:
+    while message_manager.is_enqueued() > 0:
+
+        print(f"is_enqueued() = {message_manager.is_enqueued()}")
+        
         message_unit = message_manager.dequeue()
         if message_unit is None:  # Shutdown condition
             print("Shutting down Tasklet_ZDrop")
             break
         tasklet_zdrop.is_zdrop(message_unit.get_message_string())
 
+    print("Broke out of loop")
+    
     # Simulate shutdown (this would typically happen based on some condition)
     message_manager.shutdown()
+
+    work_controller.initiate_shutdown()
+    work_controller.wait_for_worker_threads_to_finish()
+
+    print("Done")
