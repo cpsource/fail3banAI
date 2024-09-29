@@ -1,11 +1,56 @@
 #!/usr/bin/env python3
 
 import os
+import sys
+
+# get daemonizaton out of the way early
+def daemonize():
+    try:
+        # Fork the first time to create a background process
+        pid = os.fork()
+        if pid > 0:
+            # Exit parent process; the child continues
+            return "parent"
+        
+        # Detach from parent environment (create a new session)
+        os.setsid()
+
+        # Fork a second time to fully detach from terminal
+        pid = os.fork()
+        if pid > 0:
+            # Exit second parent process
+            sys.exit(0)
+
+        # Redirect standard file descriptors to /dev/null
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        with open("/dev/null", 'w') as f:
+            os.dup2(f.fileno(), sys.stdout.fileno())
+            os.dup2(f.fileno(), sys.stderr.fileno())
+
+        # Child process continues running as daemon
+        return "child"
+    except OSError as e:
+        sys.stderr.write(f"fork failed: {e.errno} ({e.strerror})\n")
+        sys.exit(1)
+
+# Check if there are command line arguments
+status = None
+if '--daemonize' in sys.argv:
+    status = daemonize()
+else:
+    print("Running in console mode...")
+if status is not None and status == 'parent':
+    sys.exit(0)
+# Save our pid - must be done after a possible daemonize
+pid_file = '/tmp/monitor_fail3ban.pid'
+save_pid(pid_file)
+   
 #import subprocess
 import tempfile
 #import re
 import ipaddress
-import sys
 from dotenv import load_dotenv
 import subprocess
 import signal
@@ -175,50 +220,7 @@ def find_country(ip_address_string):
                 print(f"Error after {attempts} attempts: {e}")
                 return None
 
-def daemonize(log_file="/dev/null"):
-    """
-    Detach the process from the terminal and run it as a background daemon.
-    Redirect stdout and stderr to the specified log_file (default: /dev/null).
-    """
-    # First fork to detach from the parent
-    try:
-        pid = os.fork()
-        if pid > 0:
-            # Exit the parent process
-            sys.exit(0)
-    except OSError as e:
-        print(f"Fork #1 failed: {e.errno} ({e.strerror})")
-        sys.exit(1)
 
-    # Decouple from parent environment
-    os.chdir("/")  # Change the working directory to the root directory
-    os.setsid()    # Create a new session and become the session leader
-    os.umask(0)    # Reset the file mode creation mask
-
-    # Second fork to prevent the process from acquiring a controlling terminal
-    try:
-        pid = os.fork()
-        if pid > 0:
-            # Exit the second parent
-            sys.exit(0)
-    except OSError as e:
-        print(f"Fork #2 failed: {e.errno} ({e.strerror})")
-        sys.exit(1)
-
-    # Redirect standard file descriptors to the specified log_file
-    sys.stdout.flush()
-    sys.stderr.flush()
-
-    with open('/dev/null', 'r') as dev_null_in:
-        os.dup2(dev_null_in.fileno(), sys.stdin.fileno())
-
-    with open(log_file, 'a') as log:
-        os.dup2(log.fileno(), sys.stdout.fileno())  # Redirect stdout to log_file
-        os.dup2(log.fileno(), sys.stderr.fileno())  # Redirect stderr to log_file
-
-    # At this point, the process is running as a daemon in the background,
-    # detached from the terminal, with stdout/stderr redirected to log_file.
-            
 # Function to delete temporary files created by the script
 def clean_temp_files():
     if os.path.exists(temp_file.name):
@@ -286,10 +288,6 @@ def remove_pid(pid_file):
     else:
         print(f"PID file {pid_file} does not exist.")
 
-# Save our pid
-pid_file = '/tmp/monitor_fail3ban.pid'
-save_pid(pid_file)
-
 #
 # signaling
 #
@@ -336,11 +334,7 @@ signal.signal(signal.SIGHUP, handle_signal)
 worker_thread_id = threading.Thread(target=worker_thread)
 worker_thread_id.start()
 
-# Check if there are command line arguments
-if '--daemonize' in sys.argv:
-    daemonize()
-else:
-    print("Running in console mode...")
+
 
 # Our Main Loop
 try:
