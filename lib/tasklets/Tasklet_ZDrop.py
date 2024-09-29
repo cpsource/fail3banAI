@@ -12,7 +12,7 @@ from ManageBanActivityDatabase import ManageBanActivityDatabase
 
 # Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
 
-class ZDrop:
+class Tasklet_ZDrop:
     def __init__(self, work_controller, message_manager):
         # Create a named logger consistent with the log file name
         self.logger = logging.getLogger("fail3ban")
@@ -28,15 +28,12 @@ class ZDrop:
         pass
         #self.wctlr.shutdown()
         
-    def task_callback(self,result):
-        print(f"ZDrop: Task completed with result: {result}, {HTTPStatus(result).phrase}")
-        
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False
     def is_zdrop(self, input_str):
-        # look for this: " zDROP ufw-blocklist-XXX: "
-
         if not 'zDROP' in input_str:
+            # look for this: " zDROP ufw-blocklist-XXX: "
+            logger.warnng(f"input_str must contain zDROP: {input_str}")
             return False
         
         pattern = r"\szDROP\sufw-blocklist-([A-Za-z0-9]+):\s"
@@ -173,7 +170,16 @@ class ZDrop:
 
         # say we handled the zDROP for the caller
         return True
-        
+
+    # create an instance
+    tasklet_zdrop = Tasklet_ZDrop()
+    while True:
+        message_unit = message_manager.dequeue()
+        if message_unit is None: #shutdown condition
+            print("Shutting down Tasklet_ZDrop")
+            break
+        tasklet_zdrop.is_zdrop(work_unit.get_message_string())
+
 if __name__ == "__main__":
     # Input strings
     input_strings = [
@@ -182,6 +188,8 @@ if __name__ == "__main__":
 
     ]
 
+    #<Please remove the rest of this code, and add in approprite test code here>
+    
     # Create an instance of the class
     zdro = ZDrop()
 

@@ -192,6 +192,9 @@ from GlobalShutdown import GlobalShutdown
 # get our work manager
 import WorkManager
 
+# get our message manager
+import MessageManager
+
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -322,9 +325,10 @@ def worker_thread():
     print("worker_thread is stopping.")
 
 work_controller = WorkManager.WorkController(num_workers=6)
+message_manager = MessageManager.MessageManager()
 
 # Get a ZDROP instance
-zdr = ZDrop.ZDrop(work_controller)
+zdr = ZDrop.ZDrop(work_controller, message_manager)
 
 def handle_signal(signum, frame):
     print("Received SIGHUP signal.")
@@ -335,7 +339,8 @@ def handle_signal(signum, frame):
         worker_thread_id.join()
     gs.request_shutdown()
     zdr.shutdown()
-
+    message_manager.shutdown()
+    
 # Register the signal handler for SIGTERM, SIGHUP, etc.
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGHUP, handle_signal)
@@ -472,6 +477,7 @@ finally:
     work_controller.shutdown()
     remove_pid(pid_file)
     gs.cleanup()
+    message_manager.shutdown()
     
     # Cleanup: close the temporary file and delete it
     #if os.path.exists(temp_file.name):
