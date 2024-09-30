@@ -183,28 +183,56 @@ class ManageBanActivityDatabase:
     def is_in_window(self, ip_addr, N=15):
         """Check if the record for the given IP address exists and is within N minutes old."""
 
-        # borrow a conn
+        print(f"Checking if IP address {ip_addr} is within {N} minutes window...")
+
+        # Borrow a connection from the pool
         conn = self.database_connection_pool.get_connection()
+        if conn is None:
+            print("Failed to retrieve a connection from the pool.")
+            return False
+
         cursor = conn.cursor()
 
-        # Query the record for the given IP address
-        cursor.execute("SELECT datetime_of_last_ban FROM activity_table WHERE ip_address = ?", (ip_addr,))
-        record = cursor.fetchone()
+        try:
+            # Query the record for the given IP address
+            print(f"Executing SQL query to retrieve last ban time for IP: {ip_addr}")
+            cursor.execute("SELECT datetime_of_last_ban FROM activity_table WHERE ip_address = ?", (ip_addr,))
+            record = cursor.fetchone()
 
-        return_status = False
-        if record:
-            # Convert the datetime_of_last_ban to a datetime object
-            last_ban_time = datetime.strptime(record[0], '%Y-%m-%d %H:%M:%S')
-            time_difference = datetime.now() - last_ban_time
-        
-            # Check if the difference is less than or equal to N minutes
-            if time_difference.total_seconds() <= N * 60:
-                return_status = True
+            return_status = False
+            if record:
+                last_ban_time_str = record[0]
+                print(f"Record found for IP {ip_addr}, last ban time: {last_ban_time_str}")
 
-        # return the connection we had on loan
-        cursor.close()
-        self.database_connection_pool.return_connection(conn)
-                
+                # Convert the datetime_of_last_ban to a datetime object
+                try:
+                    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S')
+                except ValueError as e:
+                    print(f"Error parsing datetime: {e}")
+                    return False
+
+                time_difference = datetime.now() - last_ban_time
+                print(f"Time difference for IP {ip_addr}: {time_difference.total_seconds()} seconds")
+
+                # Check if the difference is less than or equal to N minutes
+                if time_difference.total_seconds() <= N * 60:
+                    print(f"IP {ip_addr} is within the {N} minutes window.")
+                    return_status = True
+                else:
+                    print(f"IP {ip_addr} is not within the {N} minutes window.")
+            else:
+                print(f"No record found for IP {ip_addr}.")
+
+        except sqlite3.Error as e:
+            print(f"SQL Error: {e}")
+            return_status = False
+
+        finally:
+            # Return the connection to the pool
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
+            ##print(f"Connection for IP {ip_addr} returned to the pool.")
+
         return return_status
             
     # do any cleanup

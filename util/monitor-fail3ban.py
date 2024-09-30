@@ -373,6 +373,9 @@ signal.signal(signal.SIGHUP, handle_signal)
 worker_thread_id = threading.Thread(target=worker_thread)
 worker_thread_id.start()
 
+# run a test one time
+tst = False
+
 # Our Main Loop
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
@@ -386,24 +389,29 @@ try:
                 # yes
                 break
 
-            print(f"mainloop: line = {line}")
+            line = line.strip()
+            
+            print(f"mainloop: line = <{line}>")
 
             tmp_date = sjs.get_datetime(line)
             if tmp_date is not None:
+                print(f"Updating Checkpoint with date {tmp_date}")
                 checkpoint.set(tmp_date)
+
+            if tst is True:
+                line = "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=127.0.0.1 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
+                tst = False
+                print("tst enqueue line")
+                msg = message_manager.enqueue(line)
+                time.sleep(10)
+                sys.exit(0)
                 
-            line_copy = line[:]
-
-            if True:
-                tst = None
-                if tst is None:
-                    line_copy = "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=127.0.0.1 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
-                    tst = True
-
             # zDROP check, make a copy of the line before we pass it in
-            if 'zDROP' in line_copy:
+            if 'zDROP' in line:
                 # send a message to Tasker_ZDROP
-                msg = message_manager.enqueue(line_copy)
+                print(f"enqueue line <{line}>")
+                msg = message_manager.enqueue(line)
+                time.sleep(.01) # priority scheduling in Python3 - What a joke.
                 continue
             
             # Now save on our previous entries list

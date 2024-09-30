@@ -104,6 +104,8 @@ class Tasklet_ZDrop:
         # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
         window_size = 15
         window_flag = self.mba.is_in_window(ip_address,window_size)
+
+        print(f"window_flag = {window_flag} - False means outside window so we should report")
         
         # track it in our database
         self.mba.insert_or_update_activity(ip_address)

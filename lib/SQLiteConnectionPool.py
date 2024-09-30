@@ -48,7 +48,7 @@ class SQLiteConnectionPool:
         try:
             conn = sqlite3.connect(self.db_name, check_same_thread=False)
             self.created_connections += 1
-            logger.debug(f"Created new connection: {conn}")
+            #logger.debug(f"Created new connection: {conn}")
             return conn
         except sqlite3.Error as e:
             logger.error(f"Error creating connection: {e}")
@@ -67,7 +67,7 @@ class SQLiteConnectionPool:
 
             try:
                 conn = self.pool.get_nowait()
-                logger.debug(f"Retrieved connection from pool: {conn}")
+                #logger.debug(f"Retrieved connection from pool: {conn}")
             except Empty:
                 logger.warning("No available connections in the pool. Creating a new connection.")
                 try:
@@ -99,7 +99,7 @@ class SQLiteConnectionPool:
 
             if not self.pool.full():
                 self.pool.put(conn)
-                logger.debug(f"Returned connection to pool: {conn}")
+                #logger.debug(f"Returned connection to pool: {conn}")
             else:
                 logger.info("Pool is full. Closing returned connection.")
                 self._close_connection(conn)
