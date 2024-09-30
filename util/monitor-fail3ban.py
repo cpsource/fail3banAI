@@ -174,7 +174,7 @@ from PreviousJournalctl import PreviousJournalctl
 import f3b_HashedSet
 
 # get CountryCode
-import f3b_CountryCodes
+import CountryCodes
 
 # get ShortenJournalString
 import ShortenJournalString
@@ -274,7 +274,7 @@ prevs = PreviousJournalctl()
 # and our HashedSet class
 hs = f3b_HashedSet.HashedSet()
 # and our country codes class
-cc = f3b_CountryCodes.CountryCodes()
+cc = CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = ShortenJournalString.ShortenJournalString()
 # and our database
