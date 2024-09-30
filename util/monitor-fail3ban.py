@@ -197,9 +197,6 @@ import MessageManager
 # a thread to handle zdrops
 import Tasklet_ZDrop
 
-# our message manager
-import MessageManager
-
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -329,7 +326,7 @@ def worker_thread():
     print("worker_thread is stopping.")
 
 work_controller = WorkManager.WorkController(num_workers=6)
-message_manager = MessageManager.MessageManager()
+message_manager = MessageManager.MessageManager(("Default",))
 #tasklet_zdrop = Tasklet_ZDrop.Tasklet_ZDrop(work_controller, message_manager)
 
 def task_callback(msg):
