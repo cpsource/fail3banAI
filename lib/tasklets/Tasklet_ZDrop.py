@@ -107,7 +107,7 @@ class Tasklet_ZDrop:
 
         print(f"window_flag = {window_flag} - False means outside window so we should report")
         
-        # track it in our database
+        # track it in our database, but don't change time
         self.mba.insert_or_update_activity(ip_address)
 
         # do so after the database update
@@ -116,6 +116,9 @@ class Tasklet_ZDrop:
             # we are within the 15 minute reporting window for AbuseIPDB
             # say we handled the zDROP for the caller
             return True
+
+        # set time to now, as we are going to report him
+        self.mba.update_time(ip_address)
         
         # we need PROTO=(TCP/UDP/???) - protocol
         pattern = r"\sPROTO=([A-Za-z0-9\.]+)\s"
