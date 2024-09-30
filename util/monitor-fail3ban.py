@@ -386,37 +386,30 @@ try:
                 # yes
                 break
 
-            print(f"mainloop: line = {line}, {type(line)}")
+            print(f"mainloop: line = {line}")
+
             tmp_date = sjs.get_datetime(line)
             if tmp_date is not None:
                 checkpoint.set(tmp_date)
                 
             line_copy = line[:]
 
-            if False:
+            if True:
                 tst = None
                 if tst is None:
-                    line_copy = "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
+                    line_copy = "Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=127.0.0.1 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0"
                     tst = True
 
             # zDROP check, make a copy of the line before we pass it in
-            logger.debug(f"before zDROP chk: {line_copy}")
             if 'zDROP' in line_copy:
                 # send a message to Tasker_ZDROP
                 msg = message_manager.enqueue(line_copy)
-                #time.sleep(10)
-                #sys.exit(0)
                 continue
-            logger.debug("after zDROP chk")
-
             
             # Now save on our previous entries list
             line_copy = line[:]
             prevs.add_entry(line_copy)
 
-            # show line before
-            logger.debug(f"Line: {line}")
-            
             # combine
             result = prevs.combine()
             if result is not None:
@@ -424,7 +417,9 @@ try:
             else:
                 logger.fatal("result can't be None")
                 sys.exit(0)
-                
+
+            print(f"combine_result: {result}")
+            
             # is there an ip address in result ???
             result_copy = result[:]
             found_dict, shortened_str = sjs.shorten_string(result_copy)

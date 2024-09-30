@@ -48,9 +48,12 @@ class Tasklet_ZDrop:
     # take a quick look at the input_str. If it contains zDROP ..., we'll handle it
     # then return True, else we return False
     def is_zdrop(self, input_str):
+        # log our entry
+        self.logger.debug(f"Entry: input_str = {input_str}")
+        
         if not 'zDROP' in input_str:
             # look for this: " zDROP ufw-blocklist-XXX: "
-            logger.warnng(f"input_str must contain zDROP: {input_str}")
+            self.logger.warnng(f"input_str must contain zDROP: {input_str}")
             return False
         
         pattern = r"\szDROP\sufw-blocklist-([A-Za-z0-9]+):\s"

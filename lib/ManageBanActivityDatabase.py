@@ -19,9 +19,9 @@ class ManageBanActivityDatabase:
         
         try:
             self.create_activity_table()
-            self.logger.info(f"Connected to database '{db_name}' successfully.")
+            self.logger.info("Created activity table successfully.")
         except sqlite3.Error as ex:
-            self.logger.error(f"An error occurred while connecting to the database: {ex}")
+            self.logger.error(f"Created activity table returned {ex}")
             raise  # Re-raise the exception to notify higher-level code
 
     def create_activity_table(self):
