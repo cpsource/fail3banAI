@@ -87,4 +87,23 @@ print(completion.choices[0].message.tool_calls[0].function.parsed_arguments)
 
 res = "table_name=<Table.orders: 'orders'> columns=[<Column.id: 'id'>, <Column.status: 'status'>, <Column.expected_delivery_date: 'expected_delivery_date'>, <Column.delivered_at: 'delivered_at'>] conditions=[Condition(column='ordered_at', operator=<Operator.ge: '>='>, value='2023-05-01'), Condition(column='ordered_at', operator=<Operator.lt: '<'>, value='2023-06-01'), Condition(column='status', operator=<Operator.eq: '='>, value='fulfilled'), Condition(column='delivered_at', operator=<Operator.gt: '>'>, value=DynamicValue(column_name='expected_delivery_date'))] order_by=<OrderBy.asc: 'asc'>"
 
+def query_to_sql(query: Query) -> str:
+    # Convert table name and columns
+    table = query.table_name.value
+    columns = ", ".join([col.value for col in query.columns])
+    
+    # Convert conditions to WHERE clause
+    conditions = " AND ".join([
+        f"{cond.column} {cond.operator.value} '{cond.value}'"
+        if not isinstance(cond.value, DynamicValue) else
+        f"{cond.column} {cond.operator.value} {cond.value.column_name}"
+        for cond in query.conditions
+    ])
+    
+    # Order by clause
+    order_by = f"ORDER BY {columns.split(',')[0]} {query.order_by.value}"
+    
+    # Final SQL query
+    sql_query = f"SELECT {columns} FROM {table} WHERE {conditions} {order_by};"
+    return sql_query
 
