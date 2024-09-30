@@ -26,18 +26,20 @@ from ManageBanActivityDatabase import ManageBanActivityDatabase
 # Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
 
 class Tasklet_ZDrop:
-    def __init__(self, work_controller, message_manager):
+    def __init__(self, work_controller, message_manager, database_connection_pool):
         # Create a named logger consistent with the log file name
         self.logger = logging.getLogger("fail3ban")
         # and a work manager
         #self.wctlr = WorkManager.WorkController(num_workers=1)
         self.wctlr = work_controller
-        # and a ManageBanActivityDatabase - manages 
-        self.mba = ManageBanActivityDatabase()
         # and save message_manager
         self.message_manager = message_manager
+        # and save connection_pool
+        self.database_connection_pool = database_connection_pool
         # a callback
         self.task_callback = lambda result: print(f"Task completed with result: {result}")
+        # and a ManageBanActivityDatabase - manages 
+        self.mba = ManageBanActivityDatabase(self.database_connection_pool)
 
     def shutdown(self):
         pass
@@ -191,7 +193,9 @@ def wait_and_process(data, **kwargs):
     # get args from kwargs
     work_controller = kwargs.get('work_controller', None)
     message_manager = kwargs.get('message_manager', None)
-    tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager)
+    database_connection_pool = kwargs.get('database_connection_pool', None)
+
+    tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager, database_connection_pool)
     
     while True:
         message_unit = message_manager.dequeue()

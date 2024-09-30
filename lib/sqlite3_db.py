@@ -17,33 +17,33 @@ LOG_ID = "fail3ban"
 
 class SQLiteDB:
 
-    def __init__(self, db_name="fail3ban_server.db", log_id=LOG_ID):
+    def __init__(self, database_connection_pool, log_id=LOG_ID):
         """
         Initializes the database connection.
-
-        Parameters:
-            db_name (str): The name of the SQLite database file.
         """
         # Obtain logger
         self.logger = logging.getLogger(log_id)
         # register a cleanup
         atexit.register(self.cleanup)
-        # adjust path for db_name
-        self.db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + db_name
+        # save our pool
+        self.database_connection_pool = database_connection_pool
         
         try:
-            self.connection = sqlite3.connect(db_name, check_same_thread=False)
-            self.cursor = self.connection.cursor()
             # Create tables if they don't exist
             self.create_ban_table()
             self.create_threat_table()
-            self.logger.info(f"Connected to database '{db_name}' successfully.")
+            self.logger.info("Created ban and threat tables successfully.")
         except sqlite3.Error as e:
-            self.logger.error(f"An error occurred while connecting to the database: {e}")
+            self.logger.error(f"An error occurred while creating ban and threat tables: {e}")
             raise  # Re-raise the exception to notify higher-level code
-
+            
     def create_ban_table(self):
         """Create the ban_table if it doesn't already exist."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         create_table_query = '''
         CREATE TABLE IF NOT EXISTS ban_table (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,15 +55,24 @@ class SQLiteDB:
         )
         '''
         try:
-            self.cursor.execute(create_table_query)
-            self.connection.commit()
+            cursor.execute(create_table_query)
+            conn.commit()
             self.logger.info("ban_table created or already exists.")
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while creating ban_table: {e}")
             raise  # Re-raise the exception to notify higher-level code
-
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
+            
     def create_threat_table(self):
         """Create the threat_table if it doesn't already exist."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         create_threat_query = '''
         CREATE TABLE IF NOT EXISTS threat_table (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,20 +83,27 @@ class SQLiteDB:
         )
         '''
         try:
-            self.cursor.execute(create_threat_query)
-            self.connection.commit()
+            cursor.execute(create_threat_query)
+            conn.commit()
             self.logger.info("threat_table created or already exists.")
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while creating threat_table: {e}")
             raise  # Re-raise the exception to notify higher-level code
-
-        
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
     #
     # Handle threat table
     #
 
     # a debugging method
     def reset_hazard_level(self):
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         try:
             # Update all rows in the threat_table where hazard_level is 'no' and set it to 'unk'
             update_query = """
@@ -95,17 +111,24 @@ class SQLiteDB:
             SET hazard_level = 'unk'
             WHERE hazard_level = 'no';
             """
-            self.cursor.execute(update_query)
-            self.connection.commit()
+            cursor.execute(update_query)
+            conn.commit()
             print("Hazard levels updated successfully.")
-        
         except sqlite3.Error as e:
             print(f"An error occurred: {e}")
-            self.conn.rollback()
+            conn.rollback()
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
     def insert_or_update_threat(self, shortened_string, hit_count, hazard_level):
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         try:
-            cursor = self.connection.cursor()
             # Insert new row or update existing one if shortened_string already exists
             query = '''
             INSERT INTO threat_table (shortened_string, hit_count, hazard_level)
@@ -115,13 +138,18 @@ class SQLiteDB:
                           hazard_level = excluded.hazard_level
             '''
             cursor.execute(query, (shortened_string, hit_count, hazard_level))
-            self.connection.commit()
+            conn.commit()
         except sqlite3.Error as e:
             print(f"Error occurred: {e}")
+        
 
     def fetch_threat_level(self, shortened_string):
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         try:
-            cursor = self.connection.cursor()
             # Query to fetch hazard_level and hit_count based on shortened_string
             query = '''
             SELECT hit_count, hazard_level FROM threat_table WHERE shortened_string = ?
@@ -140,7 +168,7 @@ class SQLiteDB:
                 WHERE shortened_string = ?
                 '''
                 cursor.execute(update_query, (hit_count, shortened_string))
-                self.connection.commit()
+                conn.commit()
 
                 return (True, hazard_level)  # Return True and hazard_level
             else:
@@ -148,10 +176,18 @@ class SQLiteDB:
         except sqlite3.Error as e:
             print(f"Error occurred: {e}")
             return (False, None)
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
             
     def show_threats(self):
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         try:
-            cursor = self.connection.cursor()
             # Query to select all rows from the threat_table
             query = '''
             SELECT id, shortened_string, hit_count, hazard_level FROM threat_table
@@ -167,12 +203,21 @@ class SQLiteDB:
                 print("No threats found in the table.")
         except sqlite3.Error as e:
             print(f"Error occurred: {e}")
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
     #
     # Handle ban table
     #
     def add_or_update_ban(self, ip_addr, jail_name, minutes_until_ban_end):
         """Add a new ban or update an existing ban based on ip_address and jail."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         # Parse and expand the IP address (IPv6 addresses to full form)
         try:
             ip_obj = ipaddress.ip_address(ip_addr)
@@ -189,8 +234,8 @@ class SQLiteDB:
             select_query = '''
             SELECT id, usage_count FROM ban_table WHERE ip_address = ? AND jail = ?
             '''
-            self.cursor.execute(select_query, (ip_addr, jail_name))
-            record = self.cursor.fetchone()
+            cursor.execute(select_query, (ip_addr, jail_name))
+            record = cursor.fetchone()
 
             if record:
                 # If the record exists, update usage_count and ban_expire_time
@@ -199,8 +244,8 @@ class SQLiteDB:
                 SET usage_count = usage_count + 1, ban_expire_time = ? 
                 WHERE ip_address = ? AND jail = ?
                 '''
-                self.cursor.execute(update_query, (ban_expire_time, ip_addr, jail_name))
-                self.connection.commit()
+                cursor.execute(update_query, (ban_expire_time, ip_addr, jail_name))
+                conn.commit()
                 self.logger.info(f"Updated ban for IP {ip_addr} in jail '{jail_name}'.")
             else:
                 # If the record does not exist, insert a new record
@@ -208,15 +253,24 @@ class SQLiteDB:
                 INSERT INTO ban_table (ip_address, jail, usage_count, ban_expire_time) 
                 VALUES (?, ?, ?, ?)
                 '''
-                self.cursor.execute(insert_query, (ip_addr, jail_name, 1, ban_expire_time))
-                self.connection.commit()
+                cursor.execute(insert_query, (ip_addr, jail_name, 1, ban_expire_time))
+                conn.commit()
                 self.logger.info(f"Added new ban for IP {ip_addr} in jail '{jail_name}'.")
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while adding/updating ban: {e}")
             raise  # Re-raise to notify higher-level code
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
     def get_expired_records(self):
         """Return a list of expired records in the form [ip_addr, is_ipv6, jail]."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         expired_records = []
 
         # Get the current time
@@ -227,8 +281,8 @@ class SQLiteDB:
             query = '''
             SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time < ?
             '''
-            self.cursor.execute(query, (current_time,))
-            records = self.cursor.fetchall()
+            cursor.execute(query, (current_time,))
+            records = cursor.fetchall()
 
             # Process each record to check if the IP is IPv6 and format the output
             for record in records:
@@ -250,11 +304,20 @@ class SQLiteDB:
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while fetching expired records: {e}")
             raise  # Re-raise to notify higher-level code
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
         return expired_records
 
     def get_non_expired_records(self):
         """Return a list of expired records in the form [ip_addr, is_ipv6, jail]."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         expired_records = []
 
         # Get the current time
@@ -265,8 +328,8 @@ class SQLiteDB:
             query = '''
             SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time >= ?
             '''
-            self.cursor.execute(query, (current_time,))
-            records = self.cursor.fetchall()
+            cursor.execute(query, (current_time,))
+            records = cursor.fetchall()
 
             # Process each record to check if the IP is IPv6 and format the output
             for record in records:
@@ -288,11 +351,20 @@ class SQLiteDB:
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while fetching expired records: {e}")
             raise  # Re-raise to notify higher-level code
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
         return expired_records
     
     def show_bans(self, ip_addr=None, jail_name=None):
         """Show a list of records in a human-readable format for the given ip_addr and jail_name."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         # Build the base query
         query = "SELECT id, ip_address, jail, usage_count, ban_expire_time FROM ban_table WHERE 1=1"
         params = []
@@ -309,8 +381,8 @@ class SQLiteDB:
 
         try:
             # Execute the query
-            self.cursor.execute(query, tuple(params))
-            records = self.cursor.fetchall()
+            cursor.execute(query, tuple(params))
+            records = cursor.fetchall()
 
             # Check if records were found
             if records:
@@ -333,30 +405,48 @@ class SQLiteDB:
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while showing bans: {e}")
             raise  # Re-raise to notify higher-level code
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
     def remove_record(self, ip_addr, jail_name):
         """Remove a record from the ban_table based on ip_address and jail_name."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+        
         delete_query = '''
         DELETE FROM ban_table WHERE ip_address = ? AND jail = ?
         '''
         try:
-            self.cursor.execute(delete_query, (ip_addr, jail_name))
-            self.connection.commit()
+            cursor.execute(delete_query, (ip_addr, jail_name))
+            conn.commit()
             self.logger.info(f"Record for IP {ip_addr} in jail '{jail_name}' has been removed.")
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while removing record: {e}")
             raise  # Re-raise to notify higher-level code
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
     def show_database(self):
         """Show all records in the database in a human-readable format, and show if the ban has expired."""
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         # Get the current time
         current_time = datetime.now()
 
         try:
             # Query to select all records from the ban_table
             query = "SELECT id, ip_address, jail, usage_count, ban_expire_time FROM ban_table"
-            self.cursor.execute(query)
-            records = self.cursor.fetchall()
+            cursor.execute(query)
+            records = cursor.fetchall()
 
             # Check if records were found
             if records:
@@ -393,6 +483,10 @@ class SQLiteDB:
         except sqlite3.Error as e:
             self.logger.error(f"An error occurred while showing the database: {e}")
             raise  # Re-raise to notify higher-level code
+        finally:
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
 
     def check_db_integrity(self):
@@ -402,6 +496,11 @@ class SQLiteDB:
         Raises:
         DatabaseIntegrityError: If corruption is detected in the database.
         """
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         db_path = self.db_name
         try:
             # Connect to the SQLite database
@@ -421,52 +520,12 @@ class SQLiteDB:
         except sqlite3.Error as e:
             raise sqlite3.Error(f"SQLite error occurred: {e}")
         finally:
-            # Close the connection
-            if conn:
-                conn.close()
-
-# Example usage
-#try:
-#    check_db_integrity("/path/to/your-database.db")
-#except DatabaseIntegrityError as e:
-#    print(f"Integrity check failed: {e}")
-#except sqlite3.Error as e:
-#    print(f"SQLite error: {e}")
-
-    def close(self):
-        """Close the database connection and cursor."""
-        if self.cursor:
-            try:
-                self.cursor.close()
-                self.logger.info("Database cursor closed.")
-                self.cursor = None  # Prevent further use
-            except sqlite3.Error as e:
-                self.logger.error(f"An error occurred while closing the cursor: {e}")
-                raise
-        
-        """Close the database connection."""
-        if self.connection:
-            try:
-                self.connection.close()
-                self.connection = None
-                self.logger.info("Database connection closed.")
-            except sqlite3.Error as e:
-                self.logger.error(f"An error occurred while closing the database connection: {e}")
-                raise  # Re-raise to notify higher-level code
-
-#    def __del__(self):
-#        """
-#        Destructor method to close the database connection when the object is destroyed.
-#        """
-#        if hasattr(self, 'connection') and self.connection:
-#            try:
-#                self.connection.close()
-#                logger.info("Database connection closed.")
-#            except sqlite3.Error as e:
-#                logger.error(f"An error occurred while closing the database connection: {e}")
+            # return the connection we had on loan
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
 
     def cleanup(self):
-        self.close()
+        pass
 
 if __name__ == "__main__":
     # Create a named logger consistent with the log file name

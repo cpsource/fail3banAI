@@ -197,6 +197,9 @@ import MessageManager
 # a thread to handle zdrops
 import Tasklet_ZDrop
 
+# database pool
+import SQLiteConnectionPool
+
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -266,6 +269,10 @@ else:
 # Start journalctl
 journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
+# Setup database pool
+db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
+database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
+
 # use new PreviousJournalctl class
 prevs = PreviousJournalctl()
 # and our HashedSet class
@@ -274,8 +281,8 @@ hs = f3b_HashedSet.HashedSet()
 cc = CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = ShortenJournalString.ShortenJournalString()
-# and our database
-db = f3b_sqlite3_db.SQLiteDB()
+# setup database
+db = f3b_sqlite3_db.SQLiteDB(database_connection_pool)
 db.reset_hazard_level()
 db.show_threats()
 # and GlobalShutdown
@@ -322,12 +329,10 @@ def worker_thread():
 
             time.sleep(0.5)  # Sleep in shorter intervals to check the event frequently
 
-            
     print("worker_thread is stopping.")
 
 work_controller = WorkManager.WorkController(num_workers=6)
-message_manager = MessageManager.MessageManager(("Default",))
-#tasklet_zdrop = Tasklet_ZDrop.Tasklet_ZDrop(work_controller, message_manager)
+message_manager = MessageManager.MessageManager(("Default","Tasklet_ZDrop"))
 
 def task_callback(msg):
     print(f"task_callback: {msg}")
@@ -338,7 +343,8 @@ work_unit = WorkManager.WorkUnit(
     function=Tasklet_ZDrop.wait_and_process,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
-            'message_manager' : message_manager
+            'message_manager' : message_manager,
+            'database_connection_pool' : database_connection_pool
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
@@ -357,6 +363,7 @@ def handle_signal(signum, frame):
     gs.request_shutdown()
     work_controller.shutdown()
     message_manager.shutdown()
+    database_connection_pool.shutdown()
     
 # Register the signal handler for SIGTERM, SIGHUP, etc.
 signal.signal(signal.SIGTERM, handle_signal)
@@ -504,9 +511,4 @@ finally:
     remove_pid(pid_file)
     gs.cleanup()
     message_manager.shutdown()
-    
-    # Cleanup: close the temporary file and delete it
-    #if os.path.exists(temp_file.name):
-    #    temp_file.close()
-    #    os.remove(temp_file.name)
-    #    logging.debug(f"Temporary file {temp_file.name} removed.")
+    database_connection_pool.shutdown()

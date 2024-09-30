@@ -8,36 +8,28 @@ import logging
 LOG_ID = "fail3ban"
 
 class ManageBanActivityDatabase:
-    def __init__(self, db_name='fail3ban_server.db', log_id=LOG_ID):
+    def __init__(self, database_connection_pool, log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
-
-        # adjust path for db_name
-        self.db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + db_name
-        self.conn = None
+        # save off connection pool
+        self.database_connection_pool = database_connection_pool
 
         # Register cleanup function to close the database connection
         atexit.register(self.cleanup)
         
         try:
-            self.connect_db()
             self.create_activity_table()
             self.logger.info(f"Connected to database '{db_name}' successfully.")
         except sqlite3.Error as ex:
             self.logger.error(f"An error occurred while connecting to the database: {ex}")
             raise  # Re-raise the exception to notify higher-level code
-        
-    def connect_db(self):
-        """Connect to the SQLite database, creating it if necessary."""
-        try:
-            self.conn = sqlite3.connect(self.db_name)
-            print(f"Connected to database {self.db_name}")
-        except sqlite3.Error as e:
-            print(f"Error connecting to database: {e}")
 
     def create_activity_table(self):
         """Create the activity_table and the index on ip_address if they don't exist."""
-        cursor = self.conn.cursor()
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
     
         # Check if the table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='activity_table';")
@@ -56,7 +48,7 @@ class ManageBanActivityDatabase:
             '''
             try:
                 cursor.execute(create_table_query)
-                self.conn.commit()
+                conn.commit()
                 print("Activity table created.")
             except sqlite3.Error as e:
                 print(f"Error creating table: {e}")
@@ -71,14 +63,20 @@ class ManageBanActivityDatabase:
             create_index_query = "CREATE INDEX idx_ip_address ON activity_table (ip_address);"
             try:
                 cursor.execute(create_index_query)
-                self.conn.commit()
+                conn.commit()
                 print("Index 'idx_ip_address' created.")
             except sqlite3.Error as er:
                 print(f"Error creating index: {er}")
-            
+
+        # return the connection we had on loan
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+
     def insert_or_update_activity(self, ip_address):
         """Insert a new record or update the existing record for the given IP address."""
-        cursor = self.conn.cursor()
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
         
         # Get the current timestamp
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -107,11 +105,19 @@ class ManageBanActivityDatabase:
             self.logger.debug(f"Inserted new record for {ip_address}")
         
         # Commit the changes
-        self.conn.commit()
+        conn.commit()
+
+        # return the connection we had on loan
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
 
     def show(self):
         """Display all records from the activity_table along with the age in days."""
-        cursor = self.conn.cursor()
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         cursor.execute("SELECT * FROM activity_table")
         records = cursor.fetchall()
 
@@ -126,9 +132,16 @@ class ManageBanActivityDatabase:
         else:
             print("No records found in the activity table.")
 
+        # return the connection we had on loan
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+
     def scan_for_expired(self, days_old=30):
         """Scan for records older than the specified number of days and delete them."""
-        cursor = self.conn.cursor()
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
 
         # Calculate the expiration cutoff date
         cutoff_date = (datetime.now() - timedelta(days=days_old)).strftime('%Y-%m-%d %H:%M:%S')
@@ -144,25 +157,41 @@ class ManageBanActivityDatabase:
                 self.delete_record(record[0])
         else:
             print(f"No records older than {days_old} days found.")
-    
+
+        # return the connection we had on loan
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+            
     def delete_record(self, record_id):
         """Delete a record from the activity_table by its ID."""
-        cursor = self.conn.cursor()
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         try:
             cursor.execute("DELETE FROM activity_table WHERE id = ?", (record_id,))
-            self.conn.commit()
+            conn.commit()
             print(f"Deleted record ID {record_id}")
         except sqlite3.Error as e:
             print(f"Error deleting record: {e}")
 
+        # return the connection we had on loan
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+
     def is_in_window(self, ip_addr, N=15):
         """Check if the record for the given IP address exists and is within N minutes old."""
-        cursor = self.conn.cursor()
-    
+
+        # borrow a conn
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         # Query the record for the given IP address
         cursor.execute("SELECT datetime_of_last_ban FROM activity_table WHERE ip_address = ?", (ip_addr,))
         record = cursor.fetchone()
 
+        return_status = False
         if record:
             # Convert the datetime_of_last_ban to a datetime object
             last_ban_time = datetime.strptime(record[0], '%Y-%m-%d %H:%M:%S')
@@ -170,16 +199,17 @@ class ManageBanActivityDatabase:
         
             # Check if the difference is less than or equal to N minutes
             if time_difference.total_seconds() <= N * 60:
-                return True
+                return_status = True
 
-        return False
+        # return the connection we had on loan
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+                
+        return return_status
             
     # do any cleanup
     def cleanup(self):
-        """Cleanup function to close the database connection."""
-        if self.conn:
-            self.conn.close()
-            print("Database connection closed.")
+        pass
 
     @staticmethod
     def print_help():
@@ -193,7 +223,12 @@ class ManageBanActivityDatabase:
         
 # Main function to handle command-line arguments
 if __name__ == "__main__":
-    manage_ban = ManageBanActivityDatabase()
+
+    import SQLiteConnectionPool
+
+    db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
+    database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name)
+    manage_ban = ManageBanActivityDatabase(database_connection_pool)
 
     # Check if any arguments are passed
     if len(sys.argv) < 2:
@@ -232,9 +267,10 @@ if __name__ == "__main__":
                 manage_ban.insert_or_update_activity(ip_address)
 
         elif command == "help":
-            ManageBanActivity.print_help()
+            manage_ban.print_help()
 
         else:
             print(f"Unknown command: {command}. Use 'help' for usage instructions.")
 
+        database_connection_pool.shutdown()            
 
