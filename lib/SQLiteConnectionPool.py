@@ -146,6 +146,10 @@ class SQLiteConnectionPool:
         with self.lock:
             return self.created_connections
 
+    # a wrapper function so we are consistent with project standards
+    def shutdown(self):
+        self.close_all_connections()
+
 # Example usage in a threaded environment
 def db_task(pool, task_id):
     """
