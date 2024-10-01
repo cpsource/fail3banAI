@@ -21,133 +21,121 @@ import time
 import threading
 import re
 from datetime import datetime
-
+import atexit
+# database pool
+import SQLiteConnectionPool
 # This class does the actual notification work
 import AbuseIPDB
-abi = AbuseIPDB.AbuseIPDB()
+# And a database guy
+from ManageBanActivityDatabase import ManageBanActivityDatabase
+# our parselet
+from Parslet_GETenv import Parselet_GETenv
 
-#
-# Tasklets are small routines that are kicked off from our thread pool, because
-# these guys can wait around and when they are done, just return.
-#
-# The thread that was running it will then go back to the thread pool and
-# wait for more work
-#
-# kwargs
-#
-#  'stop_event' : stop_event
-#
+LOG_ID = "fail3ban"
 
-def process_line(str, logger):
-    if True:
-        return
+class Tasklet_apache2_access_log:
+    def __init__(self, database_connection_pool, parselet, log_id=LOG_ID):
+        # Obtain logger
+        self.logger = logging.getLogger(log_id)
+        self.abi = AbuseIPDB.AbuseIPDB()  # AbuseIPDB instance for reporting
+        self.mba = ManageBanActivityDatabase(database_connection_pool,LOG_ID) # TODO - two loggers?
+        self.parselet = parselet
+        # Register cleanup function to close the database connection
+        atexit.register(self.cleanup)
 
-    ip_address = None
-    if ip_address is None:
+    def cleanup(self):
+        pass
+        
+    def process_line(self, line):
+        """Process a single log line, parse it, and report violations."""
+        self.logger.debug(f"Processing line: {line}")
+
+        # Well, we are going to cheat and not use the parselet mgr
+        res = self.parselet.compress_line(line)
+        print(res)
         return
     
-    # we are given each line in turn. We parse it to see
-    # if we are interested, and if so, we see if it's severe
-    # and if so we take action, such as report to AbuseIPDB,
-    # and add to our banned lists, etc
+        # Dummy example: Assume IP extraction from the log line
+        ip_address = self.extract_ip(line)
+        if not ip_address:
+            self.logger.debug("No IP address found in line.")
+            return
 
-    # determine if we are within the 15 minute rule for reporting, and if so,
-    # don't report
-
-    # set ipv6_flag to True if ip_address is of type IPv6, else False
-    ipv6_flag = ':' in ip_address
-
-    # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
-    window_size = 15
-    window_flag = self.mba.is_in_window(ip_address,window_size)
-
-    # set time to now
-    self.mba.update_time(ip_address)
+        # Determine if we're in the 15-minute window and handle accordingly
+        window_size = 15
+        window_flag = self.mba.is_in_window(ip_address, window_size) if self.mba else False
         
-    # do so after the database update
-    if window_flag is True:
-        self.logger.debug(f"Within {window_size} minute window, skip reporting to AbuseIPDB")
-        # we are within the 15 minute reporting window for AbuseIPDB
-        # say we handled the zDROP for the caller
+        # Update the time for this IP
+        self.mba.update_time(ip_address) if self.mba else None
+
+        if window_flag:
+            self.logger.debug(f"Within {window_size}-minute window, skipping AbuseIPDB report.")
+            return True
+        else:
+            self.logger.debug(f"Outside {window_size}-minute window, reporting to AbuseIPDB.")
+        
+        # Update usage count and report to AbuseIPDB
+        self.mba.update_usage_count(ip_address) if self.mba else None
+        self.report_abuse_ipdb(ip_address)
+
         return True
-    else:
-        self.logger.debug(f"Outisde {window_size} minute window, reporting to AbuseIPDB")
-            
-    # update usage count
-    self.mba.update_usage_count(ip_address)
 
-    #
-    # report to AbuseIPDB
-    #
-    try:
-        resp = abi.report_endpoint(ip_address, categories, comment, zulu_time_str)
-        logger.debug("Notifying AbuseIPDB Complete")
-    except Exception as em:
-        logger.error(f"Error from abi.rport_endpoint: {em}")
-    logger.debug(f"resp = {resp}")
+    def extract_ip(self, line):
+        """Extract the IP address from a log line."""
+        ip_pattern = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')  # Basic IPv4 regex
+        match = ip_pattern.search(line)
+        if match:
+            return match.group(0)
+        return None
 
-    return True
+    def report_abuse_ipdb(self, ip_address):
+        """Report IP violation to AbuseIPDB."""
+        try:
+            categories = "21,22"  # Example categories, adjust as needed
+            comment = "Potential attack detected"
+            zulu_time_str = datetime.utcnow().isoformat() + "Z"
+            resp = self.abi.report_endpoint(ip_address, categories, comment, zulu_time_str)
+            self.logger.debug(f"AbuseIPDB report response: {resp}")
+        except Exception as e:
+            self.logger.error(f"Error reporting to AbuseIPDB: {e}")
 
-def monitor_log(file_path, stop_event, logger):
-    logger.debug(f"Monitoring {file_path}")
-    try:
-        # Open the log file
-        log_file = open(file_path, 'r')
-        # Move the cursor to the end of the file
-        log_file.seek(0, os.SEEK_END)
-        last_inode = os.stat(file_path).st_ino
+    def monitor_log(self, file_path, stop_event):
+        """Monitor the apache2 access log for new entries and process them."""
+        self.logger.debug(f"Monitoring log file: {file_path}")
         
-        while not stop_event.is_set():
-            # Check for log rotation by checking the inode of the file
-            current_inode = os.stat(file_path).st_ino
-            if current_inode != last_inode:
-                # Inode has changed, log rotation detected
-                logger.debug("Log rotation detected. Re-opening the file.")
-                log_file.close()  # Close the old file
-                
-                # Reopen the new log file
-                log_file = open(file_path, 'r')
-                last_inode = current_inode
+        try:
+            with open(file_path, 'r') as log_file:
+                log_file.seek(0, os.SEEK_END)  # Go to the end of the file
+                last_inode = os.stat(file_path).st_ino
 
-            # Read any new lines from the log file
-            line = log_file.readline()
-            if line:
-                str = line[:]
-                str = str.strip()
-                process_line(str, logger)
-            else:
-                time.sleep(1)  # Sleep for a second if no new data
+                while not stop_event.is_set():
+                    current_inode = os.stat(file_path).st_ino
+                    if current_inode != last_inode:
+                        self.logger.debug("Log rotation detected. Re-opening the log file.")
+                        log_file = open(file_path, 'r')
+                        last_inode = current_inode
 
-    except Exception as em:
-        logger.error(f"Error while monitoring log: {em}")
+                    line = log_file.readline()
+                    if line:
+                        self.process_line(line.strip())
+                    else:
+                        time.sleep(1)
+        except Exception as e:
+            self.logger.error(f"Error monitoring log: {e}")
 
-# Note: do not include this in your class
-def Tasklet_apache2_start(**kwargs):
+# Thread - Main entry point from thread pool
+def run_tasklet_apache2_access_log(**kwargs):
 
     # get logging setup early
     logger = kwargs['logger']
-    logger.debug("Starting...")
 
-    #
-    # Load our python3 paths
-    #
-    # Get the FAIL3BAN_PROJECT_ROOT environment variable
-    project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
-    # Check if FAIL3BAN_PROJECT_ROOT is not set
-    if project_root is None:
-        logger.error("The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set. Exiting ...")
-        sys.exit(1)  # Exit the program with an error code
-
-    # This class does the actual notification work
-    import AbuseIPDB
-    # get an instance
-    abi = AbuseIPDB.AbuseIPDB()
-
-    if False:
+    if True:
         # for debug, lets display these
         for key, value in kwargs.items():
             logger.debug(f"{key} = {value}")
-
+    
+    # database link
+    database_connection_pool = kwargs['database_connection_pool']
     # lets check our arguments, none are optional
     if 'stop_event' not in kwargs:
         logger.warning("no stop_event. Exiting ...")
@@ -155,38 +143,27 @@ def Tasklet_apache2_start(**kwargs):
     else:
         stop_event = kwargs['stop_event']
 
-    # monitor file
+    # parselet
+    parselet = kwargs['parselet']
+
+    # Setup database pool
+    db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
+    database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
+        
+    # create our main class
+    taal = Tasklet_apache2_access_log(database_connection_pool, parselet)
+
+    # monitor this file
     file_path = "/var/log/apache2/access.log"
-    monitor_log(file_path, stop_event, logger)
+    # and go to it
+    status = taal.monitor_log(file_path, stop_event)
 
-    # take a nap
-    time.sleep(15)
+    # signal to stop - somebody else sets
+    #stop_event.set()
 
-    # signal to stop
-    stop_event.set()
-    
-    if False:
-        logger.info("Notifying AbuseIPDB ...")
-
-    if False:
-        # one last chance to log
-        logger.debug(f"ip_address: {ip_address}")
-        logger.debug(f"categories: {categories}")
-        logger.debug(f"comment   : {comment}")
-        logger.debug(f"timestamp : {timestamp}")
-    
-    # uncomment to do it for real, resp should be the HTTPS error code
-    #resp = abi.report_endpoint(ip_address, categories, comment, timestamp)
-    #logger.info("Notifying AbuseIPDB Complete")
-
-    if False:
-        sleep_time = int(random.uniform(2,5))
-        print(f"{data} Sleeping for {sleep_time} seconds ...")
-        time.sleep(sleep_time)
-
-    resp = "OK"
-    logger.debug(f"resp = {resp}")
-    return resp
+    # we are done. cleanup and exit this thread
+    logger.debug(f"status = {status}")
+    return status
 
 if __name__ == "__main__":
     # Extracted constants for log file name and format
@@ -210,10 +187,31 @@ if __name__ == "__main__":
     setup_logging()
     # Create a named logger consistent with the log file name
     logger = logging.getLogger(LOG_ID)
+
+    # create our parselet
+    parselet = Parslet_GETenv()
+
     # Create a global event object to signaling threads to stop
     stop_event = threading.Event()
+
     # Setup kwargs
     data = "Tasklet_apache2_error_log.py"
     kwargs={'stop_event' : stop_event,
-            'logger'     : logger }  # Using kwargs to pass arguments
-    Tasklet_apache2_error_log(**kwargs)
+            'logger'     : logger,
+            'database_connection_pool' : database_connection_pool,
+            'parselet'   : parselet,
+            }
+
+    # Create and start the thread
+    tasklet_thread = threading.Thread(target=run_tasklet_apache2_access_log, kwargs=kwargs)
+    tasklet_thread.start()
+
+    # Wait for some time (simulating the main thread doing other work)
+    # take a nap
+    time.sleep(60)
+
+    # Signal the thread to stop and join
+    stop_event.set()  # This will cause the thread to exit the loop
+    tasklet_thread.join()  # Wait for the tasklet thread to finish
+
+    print("Tasklet has finished.")
