@@ -26,9 +26,17 @@ import atexit
 project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
 # Add the constructed path to sys.path only if it's not already in sys.path
 # Step 2: Construct the paths for lib and parselets
-lib_path = os.path.join(project_root, 'lib')
-parselets_path = os.path.join(project_root, 'lib/parselets')
-tasklets_path = os.path.join(project_root, 'lib/tasklets')
+p = f"{project_root}" + "/lib"
+if p not in sys.path:
+    sys.path.insert(0, p)
+p = f"{project_root}" + "/lib/parselets"
+if p not in sys.path:
+    sys.path.insert(1,p)
+p = f"{project_root}" + "/lib/tasklets"
+if p not in sys.path:
+    sys.path.insert(2,p)
+
+print(sys.path)
 
 # database pool
 import SQLiteConnectionPool
@@ -37,7 +45,7 @@ import AbuseIPDB
 # And a database guy
 from ManageBanActivityDatabase import ManageBanActivityDatabase
 # our parselet
-from Parslet_GETenv import Parselet_GETenv
+import Parselet_GETenv
 
 LOG_ID = "fail3ban"
 
@@ -175,7 +183,23 @@ def run_tasklet_apache2_access_log(**kwargs):
 
 if __name__ == "__main__":
 
+    project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
+    # Add the constructed path to sys.path only if it's not already in sys.path
+    # Step 2: Construct the paths for lib and parselets
+    lib_path = os.path.join(project_root, 'lib')
+    parselets_path = os.path.join(project_root, 'lib/parselets')
+    tasklets_path = os.path.join(project_root, 'lib/tasklets')
 
+    if False:
+        # database pool
+        import SQLiteConnectionPool
+        # This class does the actual notification work
+        import AbuseIPDB
+        # And a database guy
+        from ManageBanActivityDatabase import ManageBanActivityDatabase
+        # our parselet
+        import Parselet_GETenv
+    
     # Extracted constants for log file name and format
     LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
     # Set up the logging format to include file name and line number
@@ -199,7 +223,7 @@ if __name__ == "__main__":
     logger = logging.getLogger(LOG_ID)
 
     # create our parselet
-    parselet = Parslet_GETenv()
+    parselet = Parselet_GETenv.Parselet_GETenv()
 
     # Create a global event object to signaling threads to stop
     stop_event = threading.Event()
