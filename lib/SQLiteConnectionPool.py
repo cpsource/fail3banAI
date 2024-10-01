@@ -5,20 +5,21 @@ import logging
 import os
 import sys
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("sqlite_connection_pool.log")
-    ]
-)
+if False:
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("sqlite_connection_pool.log")
+        ]
+    )
 
-logger = logging.getLogger("SQLiteConnectionPool")
+logger = logging.getLogger("fail3ban")
 
 class SQLiteConnectionPool:
-    def __init__(self, pool_size=5):
+    def __init__(self, db_name, pool_size=5):
         """
         Initialize the connection pool and the necessary locks.
         """
@@ -27,18 +28,19 @@ class SQLiteConnectionPool:
         self.in_use = threading.Lock()  # Second lock to control access to the connection process
         self.track_all_outstanding_connections = []  # List to track all active connections
         self.shutdown_in_progress = False  # Flag for shutdown
-        self._initialize_pool()
+        self._initialize_pool(db_name)
 
-    def _initialize_pool(self):
+    def _initialize_pool(self, db_name):
         """Fill the pool with initial connections."""
         for _ in range(self.pool.maxsize):
-            conn = self._create_connection()
+            conn = self._create_connection(db_name)
             if conn:
                 self.pool.put_nowait(conn)
 
-    def _create_connection(self):
-        """Simulate creating a new connection (this should be replaced with actual DB connection creation logic)."""
-        return f"SQLiteConnection_{len(self.track_all_outstanding_connections) + 1}"
+    def _create_connection(self, db_name):
+        """Create a connection to the database"""
+        conn = sqlite3.connect(db_name)
+        return conn
 
     def get_connection(self):
         """
@@ -51,7 +53,7 @@ class SQLiteConnectionPool:
         # Explicitly acquire the in_use lock
         self.in_use.acquire() # self.in_use_acquire(blocking=False) won't block
 
-        # Use this code to pass the blocking condition to caller
+        # Dead Code, TODO, Use this code to pass the blocking condition to caller
         if False and not self.in_use.acquire(blocking=False):
             logger.debug("Connection in use. Unable to get connection now.")
             return None
