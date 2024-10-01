@@ -108,15 +108,17 @@ class Tasklet_ZDrop:
         # set time to now
         self.mba.update_time(ip_address)
         
-        print(f"window_flag = {window_flag} - False means outside window so we should report")
+
         
         # do so after the database update
         if window_flag is True:
-            self.logger.debug(f"Within {window_size} minute window, skipping AbuseIPDB notification")
+            self.logger.debug(f"Within {window_size} minute window, skip reporting to AbuseIPDB")
             # we are within the 15 minute reporting window for AbuseIPDB
             # say we handled the zDROP for the caller
             return True
-
+        else:
+            self.logger.debug(f"Outisde {window_size} minute window, reporting to AbuseIPDB")
+            
         # update usage count
         self.mba.update_usage_count(ip_address)
         
