@@ -1,6 +1,6 @@
 import sqlite3
 import threading
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 import logging
 import os
 import sys
@@ -18,91 +18,90 @@ logging.basicConfig(
 logger = logging.getLogger("SQLiteConnectionPool")
 
 class SQLiteConnectionPool:
-    def __init__(self, db_name, pool_size=5):
+    def __init__(self, pool_size=5):
         """
-        Initialize the SQLiteConnectionPool.
-
-        :param db_name: Name of the SQLite database file.
-        :param pool_size: Number of connections to maintain in the pool.
+        Initialize the connection pool and the necessary locks.
         """
-        self.db_name = db_name
-        self.pool_size = pool_size
-        self.pool = Queue(maxsize=pool_size)
-        self.lock = threading.Lock()  # Ensures thread safety
-        self.created_connections = 0  # Tracks dynamically created connections
-        self.track_all_outstanding_connections = []  # Tracks all active connections
-        self.shutdown_in_progress = False  # Indicates if shutdown has started
+        self.pool = Queue(maxsize=pool_size)  # Connection pool
+        self.lock = threading.Lock()  # Main lock for the pool
+        self.in_use = threading.Lock()  # Second lock to control access to the connection process
+        self.track_all_outstanding_connections = []  # List to track all active connections
+        self.shutdown_in_progress = False  # Flag for shutdown
+        self._initialize_pool()
 
-        # Pre-create pool_size connections
-        try:
-            for _ in range(pool_size):
-                conn = self._create_connection()
-                self.pool.put(conn)
-        except Exception as e:
-            logger.error(f"Failed to initialize connection pool: {e}")
-            self.close_all_connections()
-            raise
+    def _initialize_pool(self):
+        """Fill the pool with initial connections."""
+        for _ in range(self.pool.maxsize):
+            conn = self._create_connection()
+            if conn:
+                self.pool.put_nowait(conn)
 
     def _create_connection(self):
-        """Create a new SQLite connection."""
-        try:
-            conn = sqlite3.connect(self.db_name, check_same_thread=False)
-            self.created_connections += 1
-            #logger.debug(f"Created new connection: {conn}")
-            return conn
-        except sqlite3.Error as e:
-            logger.error(f"Error creating connection: {e}")
-            raise
+        """Simulate creating a new connection (this should be replaced with actual DB connection creation logic)."""
+        return f"SQLiteConnection_{len(self.track_all_outstanding_connections) + 1}"
 
     def get_connection(self):
         """
         Retrieve a connection from the pool or create a new one if the pool is empty.
-
-        :return: SQLite connection object or None if shutdown is in progress.
+        This method acquires the self.in_use lock and holds it until return_connection is called.
+        It also ensures proper release of the lock in case of an error.
+        
+        :return: SQLite connection object or None if shutdown is in progress or error occurs.
         """
-        with self.lock:
-            if self.shutdown_in_progress:
-                logger.info("Shutdown in progress. No new connections will be provided.")
-                return None
+        # Explicitly acquire the in_use lock
+        self.in_use.acquire() # self.in_use_acquire(blocking=False) won't block
 
-            try:
-                conn = self.pool.get_nowait()
-                #logger.debug(f"Retrieved connection from pool: {conn}")
-            except Empty:
-                logger.warning("No available connections in the pool. Creating a new connection.")
-                try:
-                    conn = self._create_connection()
-                except Exception as e:
-                    logger.error(f"Failed to create a new connection: {e}")
+        # Use this code to pass the blocking condition to caller
+        if False and not self.in_use.acquire(blocking=False):
+            logger.debug("Connection in use. Unable to get connection now.")
+            return None
+        
+        try:
+            with self.lock:
+                if self.shutdown_in_progress:
+                    logger.info("Shutdown in progress. No new connections will be provided.")
+                    # Release the in_use lock before returning
+                    self.in_use.release()
                     return None
 
-            self.track_all_outstanding_connections.append(conn)
-            return conn
+                try:
+                    conn = self.pool.get_nowait()
+                except queue.Empty:
+                    logger.warning("No available connections in the pool. Creating a new connection.")
+                    try:
+                        conn = self._create_connection()
+                    except Exception as e:
+                        logger.error(f"Failed to create a new connection: {e}")
+                        # Release the in_use lock before returning in case of error
+                        self.in_use.release()
+                        return None
+
+                self.track_all_outstanding_connections.append(conn)
+                return conn
+        
+        except Exception as e:
+            logger.error(f"Error in get_connection: {e}")
+            # Ensure that we release the in_use lock even in case of an unexpected error
+            self.in_use.release()
+            return None
 
     def return_connection(self, conn):
         """
-        Return a connection to the pool or close it if the pool is full or shutdown is in progress.
-
-        :param conn: SQLite connection object to return.
-        :return: None
+        Return a connection to the pool, releasing the self.in_use lock.
         """
         with self.lock:
-            if self.shutdown_in_progress:
-                logger.info("Shutdown in progress. Closing returned connection.")
-                self._close_connection(conn)
-                return
-
             if conn in self.track_all_outstanding_connections:
                 self.track_all_outstanding_connections.remove(conn)
-            else:
-                logger.warning("Attempted to return an unmanaged connection.")
 
-            if not self.pool.full():
-                self.pool.put(conn)
-                #logger.debug(f"Returned connection to pool: {conn}")
-            else:
-                logger.info("Pool is full. Closing returned connection.")
-                self._close_connection(conn)
+            try:
+                self.pool.put_nowait(conn)
+                logger.debug(f"Returned connection to pool: {conn}")
+            except queue.Full:
+                logger.warning("Connection pool is full. Closing the returned connection.")
+                conn.close()
+        
+        # Release the in_use lock after returning the connection
+        self.in_use.release()
 
     def _close_connection(self, conn):
         """Close a single SQLite connection."""
@@ -137,6 +136,10 @@ class SQLiteConnectionPool:
 
             logger.info("All connections have been closed.")
 
+    # A wrapper function
+    def shutdown():
+        self.close_all_connections()
+        
     def get_total_connections_created(self):
         """
         Get the total number of connections created, including dynamic ones.
@@ -167,6 +170,10 @@ class SQLiteConnectionPool:
     def shutdown(self):
         self.close_all_connections()
 
+    def is_in_use(self):
+        """Returns True if the self.in_use lock is currently held."""
+        return self.in_use.locked()
+    
 # Example usage in a threaded environment
 def db_task(pool, task_id):
     """
@@ -190,7 +197,35 @@ def db_task(pool, task_id):
     finally:
         pool.return_connection(conn)
 
+# Test the class using threads
+import threading
+import time
+
+def worker(pool, worker_id):
+    logger.info(f"Worker {worker_id} attempting to get a connection...")
+    conn = pool.get_connection()
+
+    if conn:
+        logger.info(f"Worker {worker_id} acquired connection: {conn}")
+        time.sleep(2)  # Simulate work
+        pool.return_connection(conn)
+        logger.info(f"Worker {worker_id} returned connection: {conn}")
+    else:
+        logger.info(f"Worker {worker_id} could not acquire a connection. In use: {pool.is_in_use()}")
+
 if __name__ == "__main__":
+    pool = SQLiteConnectionPool(pool_size=2)
+
+    threads = []
+    for i in range(4):  # 4 threads trying to access 2 connections
+        t = threading.Thread(target=worker, args=(pool, i))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+        
+if __name__ == "__main__" and False:
     # Ensure the database exists for demonstration purposes
     db_path = 'example.db'
     if not os.path.exists(db_path):
