@@ -350,6 +350,19 @@ work_unit = WorkManager.WorkUnit(
 )
 work_controller.enqueue(work_unit)
 
+# build and run Tasklet_Console
+data = "Tasklet_Console"
+work_unit1 = WorkManager.WorkUnit(
+    function=Tasklet_Console.run_tasklet_console,
+    kwargs={'data'       : data,
+            'work_controller' : work_controller,
+            'message_manager' : message_manager,
+            'database_connection_pool' : database_connection_pool
+            },  # Using kwargs to pass arguments
+    callback=task_callback
+)
+work_controller.enqueue(work_unit1)
+
 # Get a ZDROP instance
 #zdr = ZDrop.ZDrop(work_controller, message_manager)
 

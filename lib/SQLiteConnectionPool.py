@@ -28,18 +28,21 @@ class SQLiteConnectionPool:
         self.in_use = threading.Lock()  # Second lock to control access to the connection process
         self.track_all_outstanding_connections = []  # List to track all active connections
         self.shutdown_in_progress = False  # Flag for shutdown
-        self._initialize_pool(db_name)
+        self._initialize_pool()
+        self.db_name = db_name
 
-    def _initialize_pool(self, db_name):
+    def _initialize_pool(self):
         """Fill the pool with initial connections."""
-        for _ in range(self.pool.maxsize):
-            conn = self._create_connection(db_name)
-            if conn:
-                self.pool.put_nowait(conn)
-
-    def _create_connection(self, db_name):
+        # Unfortunately, conn's can't be swapped between threads
+        if False:
+            for _ in range(self.pool.maxsize):
+                conn = self._create_connection(db_name)
+                if conn:
+                    self.pool.put_nowait(conn)
+                    
+    def _create_connection(self):
         """Create a connection to the database"""
-        conn = sqlite3.connect(db_name)
+        conn = sqlite3.connect(self.db_name)
         return conn
 
     def get_connection(self):
@@ -53,6 +56,9 @@ class SQLiteConnectionPool:
         # Explicitly acquire the in_use lock
         self.in_use.acquire() # self.in_use_acquire(blocking=False) won't block
 
+        conn = self._create_connection()
+        return conn
+    
         # Dead Code, TODO, Use this code to pass the blocking condition to caller
         if False and not self.in_use.acquire(blocking=False):
             logger.debug("Connection in use. Unable to get connection now.")
@@ -92,15 +98,19 @@ class SQLiteConnectionPool:
         Return a connection to the pool, releasing the self.in_use lock.
         """
         with self.lock:
-            if conn in self.track_all_outstanding_connections:
-                self.track_all_outstanding_connections.remove(conn)
 
-            try:
-                self.pool.put_nowait(conn)
-                logger.debug(f"Returned connection to pool: {conn}")
-            except queue.Full:
-                logger.warning("Connection pool is full. Closing the returned connection.")
-                conn.close()
+            if True:
+                self._close_connection(conn) # Barf - TODO fix this nonsense
+            else:
+                if conn in self.track_all_outstanding_connections:
+                    self.track_all_outstanding_connections.remove(conn)
+
+                    try:
+                        self.pool.put_nowait(conn)
+                        logger.debug(f"Returned connection to pool: {conn}")
+                    except queue.Full:
+                        logger.warning("Connection pool is full. Closing the returned connection.")
+                        conn.close()
         
         # Release the in_use lock after returning the connection
         self.in_use.release()
