@@ -197,6 +197,9 @@ import MessageManager
 # a thread to handle zdrops
 import Tasklet_ZDrop
 
+# a console thread
+import Tasklet_Console
+
 # database pool
 import SQLiteConnectionPool
 
@@ -332,7 +335,7 @@ def worker_thread():
     print("worker_thread is stopping.")
 
 work_controller = WorkManager.WorkController(num_workers=6)
-message_manager = MessageManager.MessageManager(("Default","Tasklet_ZDrop"))
+message_manager = MessageManager.MessageManager(("Default","Tasklet_ZDrop", "Tasklet_Console"))
 
 def task_callback(msg):
     print(f"task_callback: {msg}")
@@ -341,6 +344,19 @@ def task_callback(msg):
 data = "Tasklet_ZDrop"
 work_unit = WorkManager.WorkUnit(
     function=Tasklet_ZDrop.wait_and_process,
+    kwargs={'data'       : data,
+            'work_controller' : work_controller,
+            'message_manager' : message_manager,
+            'database_connection_pool' : database_connection_pool
+            },  # Using kwargs to pass arguments
+    callback=task_callback
+)
+work_controller.enqueue(work_unit)
+
+# build and run Tasklet_Console
+data = "Tasklet_Console"
+work_unit = WorkManager.WorkUnit(
+    function=Tasklet_Console.run_tasklet_console,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
             'message_manager' : message_manager,
