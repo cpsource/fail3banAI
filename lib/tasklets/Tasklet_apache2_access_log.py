@@ -22,6 +22,14 @@ import threading
 import re
 from datetime import datetime
 import atexit
+
+project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
+# Add the constructed path to sys.path only if it's not already in sys.path
+# Step 2: Construct the paths for lib and parselets
+lib_path = os.path.join(project_root, 'lib')
+parselets_path = os.path.join(project_root, 'lib/parselets')
+tasklets_path = os.path.join(project_root, 'lib/tasklets')
+
 # database pool
 import SQLiteConnectionPool
 # This class does the actual notification work
@@ -166,6 +174,8 @@ def run_tasklet_apache2_access_log(**kwargs):
     return status
 
 if __name__ == "__main__":
+
+
     # Extracted constants for log file name and format
     LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
     # Set up the logging format to include file name and line number
