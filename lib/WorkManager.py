@@ -10,6 +10,8 @@ class WorkUnit:
         self.args = args if args is not None else ()
         self.kwargs = kwargs if kwargs is not None else {}
         self.callback = callback
+        # Create a global event object to signaling threads to stop
+        self.stop_event = threading.Event()
         
     def execute(self):
         result = self.function(*self.args, **self.kwargs)
@@ -49,11 +51,13 @@ class WorkManager:
             self.shutdown_flag = True
             self.condition.notify_all()
 
-            
 class WorkController:
     def __init__(self, num_workers=3):
         # Create a named logger consistent with the log file name
         self.logger = logging.getLogger("fail3ban")
+        # allow our children to request that we shutdown (Example: Tasklet_Console)
+        # So far, unsupported at this level - TODO
+        self.request_shutdown = False
         # Create a WorkManager instance
         self.work_manager = WorkManager()
         # Cleanup at exit

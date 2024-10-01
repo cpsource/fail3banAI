@@ -4,19 +4,20 @@ import time
 import semaphore
 
 class Tasklet_Console:
-    def __init__(self, host='localhost', port=57, work_controller=None):
+    def __init__(self, host='localhost', port=1025, work_controller=None):
         self.host = host
         self.port = port
         self.server_socket = None
         self.client_socket = None
         self.client_address = None
-        self.running = False
-        self.threads = []  # List to keep track of created threads
+        self.running = False # signals start_server to exit
+        self.threads = []    # List to keep track of created threads
         self.work_controller = work_controller  # Reference to work_controller
-        self.shutdown_semaphore = threading.Semaphore(0)  # Semaphore to signal shutdown
+        self.shutdown_semaphore = threading.Semaphore(0)  # Semaphore to signal shutdown of run_tasklet_console
         self.commands = {
-            "help": self.show_help,
+            "help": self.do_show_help,
             "shutdown": self.shutdown,  # Shutdown command for stopping the console
+            "exit" : self.do_exit,         # exit this console
         }
 
     def start_server(self):
@@ -58,36 +59,55 @@ class Tasklet_Console:
             self.client_socket.sendall(b"Type 'help' for a list of commands.\n")
 
             while self.running:
-                data = self.client_socket.recv(1024).decode('utf-8').strip()
-                if not data:
-                    print("Client disconnected.")
-                    break
+                try:
+                    self.client_socket.sendall(b"cmd>")
+                    data = self.client_socket.recv(1024)
+                    # Safely decode data, ignoring problematic bytes
+                    decoded_data = data.decode('utf-8', errors='ignore').strip()
 
-                print(f"Received command: {data}")
-                self.dispatch_command(data)
+                    if not decoded_data:
+                        print("Client disconnected.")
+                        break
+
+                    print(f"Received command: {decoded_data}")
+                    status = self.dispatch_command(decoded_data)
+                    if not status:
+                        print("Client disconnected.")
+                        break
+                
+                except UnicodeDecodeError as e:
+                    print(f"Unicode decode error: {e}")
+                    continue  # Skip problematic data
 
         except ConnectionResetError:
             print("Client disconnected unexpectedly.")
         finally:
             self.client_socket.close()
             self.client_socket = None
-
+        
     def dispatch_command(self, command):
         """Dispatch command to the appropriate handler."""
+        status = True
         if command in self.commands:
-            self.commands[command]()
+            status = self.commands[command]()
         else:
             self.client_socket.sendall(b"Unknown command. Type 'help' for a list of commands.\n")
-
-    def show_help(self):
+        return status # A False will cause the shell to exit
+    
+    def do_show_help(self):
         """Display help information to the client."""
         help_message = (
             "Available commands:\n"
             "help - Show this help message\n"
             "shutdown - Shut down the server\n"
+            "exit - Exit this console\n"
         )
         self.client_socket.sendall(help_message.encode('utf-8'))
-
+        return True
+    
+    def do_exit(self):
+        return False
+    
     def shutdown(self):
         """Shut down the server and stop all threads."""
         self.running = False
@@ -100,11 +120,12 @@ class Tasklet_Console:
 
         self.stop_server()  # Stop the server after all threads are joined
         if self.work_controller:
-            self.work_controller.request_shutdown = True  # Set the request_shutdown flag
+            self.work_controller.request_shutdown = True  # Set the request_shutdown flag to our parent
         print("All threads have been stopped, and the server has been shut down.")
         self.shutdown_semaphore.release()  # Release semaphore to signal shutdown
-
-# Entry point for running the Tasklet_Console in a separate thread
+        return False
+    
+# Thread - Entry point from WorkController for running the Tasklet_Console in a separate thread
 def run_tasklet_console(**kwargs):
     work_controller = kwargs.get('work_controller')
     tasklet_console = Tasklet_Console(work_controller=work_controller)
@@ -114,6 +135,9 @@ def run_tasklet_console(**kwargs):
 
     # Wait for the shutdown signal via semaphore
     tasklet_console.shutdown_semaphore.acquire()
+
+    # Done
+    return "OK"
 
 if __name__ == "__main__":
     # Dummy work_controller class for testing

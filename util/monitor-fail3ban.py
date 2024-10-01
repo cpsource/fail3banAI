@@ -337,7 +337,7 @@ message_manager = MessageManager.MessageManager(("Default","Tasklet_ZDrop"))
 def task_callback(msg):
     print(f"task_callback: {msg}")
 
-# build a work unit
+# build and run Tasklet_ZDrop
 data = "Tasklet_ZDrop"
 work_unit = WorkManager.WorkUnit(
     function=Tasklet_ZDrop.wait_and_process,
