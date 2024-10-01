@@ -1,10 +1,13 @@
+
+import os
 import socket
 import threading
 import time
 import semaphore
+import subprocess
 
 class Tasklet_Console:
-    def __init__(self, host='localhost', port=1025, work_controller=None):
+    def __init__(self, host='localhost', port=1027, work_controller=None):
         self.host = host
         self.port = port
         self.server_socket = None
@@ -18,8 +21,32 @@ class Tasklet_Console:
             "help": self.do_show_help,
             "shutdown": self.shutdown,  # Shutdown command for stopping the console
             "exit" : self.do_exit,         # exit this console
+            "show-activity_table": self.show_activity_table  # New command
         }
 
+    def show_activity_table(self, filter_arg=None):
+        """Run the ManageBanActivityDatabase.py show command with an optional filter argument."""
+        try:
+            # Prepare the command
+            command = 'FAIL3BAN_PROJECT_ROOT/util/ManageBanActivityDatabase.py show'
+            
+            # If there's a filter argument (e.g., to pipe output to grep), add it
+            if filter_arg:
+                command += f' | grep {filter_arg}'
+
+            env = os.environ.copy()  # Copy the current environment
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, env=env)
+
+            if result.returncode == 0:
+                print(result.stdout)  # Normally, you'd send this to the client socket
+            else:
+                error_message = f"Error running command: {result.stderr}\n"
+                print(error_message)
+
+        except Exception as e:
+            error_message = f"Exception occurred: {e}\n"
+            print(error_message)
+    
     def start_server(self):
         """Start the telnet server and listen for a connection."""
         try:
@@ -84,23 +111,30 @@ class Tasklet_Console:
         finally:
             self.client_socket.close()
             self.client_socket = None
-        
+
     def dispatch_command(self, command):
-        """Dispatch command to the appropriate handler."""
-        status = True
-        if command in self.commands:
-            status = self.commands[command]()
+        """Dispatch command to the appropriate handler with optional arguments."""
+        parts = command.split()
+
+        # Extract the main command and any optional argument
+        main_command = parts[0]
+        optional_arg = parts[1] if len(parts) > 1 else None
+
+        if main_command in self.commands:
+            if main_command == 'show-activity_table':
+                self.commands[main_command](optional_arg)  # Pass the optional argument
+            else:
+                self.commands[main_command]()  # No arguments for other commands
         else:
-            self.client_socket.sendall(b"Unknown command. Type 'help' for a list of commands.\n")
-        return status # A False will cause the shell to exit
-    
+            print("Unknown command. Type 'help' for a list of commands.\n")
+            
     def do_show_help(self):
         """Display help information to the client."""
         help_message = (
             "Available commands:\n"
             "help - Show this help message\n"
             "shutdown - Shut down the server\n"
-            "exit - Exit this console\n"
+            "show-activity_table - Display the contents of the activity_table\n"
         )
         self.client_socket.sendall(help_message.encode('utf-8'))
         return True
@@ -133,9 +167,15 @@ def run_tasklet_console(**kwargs):
     # Start the server
     tasklet_console.start_server()
 
-    # Wait for the shutdown signal via semaphore
-    tasklet_console.shutdown_semaphore.acquire()
-
+    while not work_controller.stop_flag.is_set():
+        # Wait for the shutdown signal, with a timeout of 15 seconds
+        if tasklet_console.shutdown_semaphore.acquire(timeout=15):
+            # Semaphore was acquired within 10 seconds
+            print("Semaphore acquired, shutting down.")
+        else:
+            # Timeout reached without the semaphore being released
+            print("Timeout reached, continuing without semaphore.")
+    
     # Done
     return "OK"
 
@@ -154,6 +194,6 @@ if __name__ == "__main__":
     console_thread.start()
 
     # Simulate shutdown after 10 seconds (for testing)
-    time.sleep(10)
+    time.sleep(60*5)
     work_controller.stop_flag = True  # Simulate stop flag being set
     print("Stop flag set, waiting for Tasklet_Console to shut down.")

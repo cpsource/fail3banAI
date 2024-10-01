@@ -197,12 +197,13 @@ import MessageManager
 # a thread to handle zdrops
 import Tasklet_ZDrop
 
-# a console thread
+# tasklet Console
 import Tasklet_Console
 
 # database pool
 import SQLiteConnectionPool
 
+# 
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
@@ -355,7 +356,11 @@ work_controller.enqueue(work_unit)
 
 # build and run Tasklet_Console
 data = "Tasklet_Console"
+<<<<<<< HEAD
 work_unit = WorkManager.WorkUnit(
+=======
+work_unit1 = WorkManager.WorkUnit(
+>>>>>>> cc249d499bda219f9d5c6aa9f054c6de4072a5bd
     function=Tasklet_Console.run_tasklet_console,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
@@ -364,7 +369,11 @@ work_unit = WorkManager.WorkUnit(
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
+<<<<<<< HEAD
 work_controller.enqueue(work_unit)
+=======
+work_controller.enqueue(work_unit1)
+>>>>>>> cc249d499bda219f9d5c6aa9f054c6de4072a5bd
 
 # Get a ZDROP instance
 #zdr = ZDrop.ZDrop(work_controller, message_manager)
