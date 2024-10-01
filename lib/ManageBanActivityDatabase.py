@@ -72,7 +72,45 @@ class ManageBanActivityDatabase:
         cursor.close()
         self.database_connection_pool.return_connection(conn)
 
-    def insert_or_update_activity(self, ip_address):
+    def update_usage_count(self, ip_address):
+        """Update the usage_count for the given IP address, or create it if it doesn't exist."""
+        # Borrow a connection from the pool
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
+        # Check if the IP address exists
+        cursor.execute("SELECT usage_count FROM activity_table WHERE ip_address = ?", (ip_address,))
+        record = cursor.fetchone()
+
+        if record:
+            # If the IP address exists, increment the usage_count
+            new_count = record[0] + 1
+            update_query = '''
+            UPDATE activity_table
+            SET usage_count = ?
+            WHERE ip_address = ?
+            '''
+            cursor.execute(update_query, (new_count, ip_address))
+            self.logger.debug(f"Incremented usage_count for {ip_address} to {new_count}")
+        else:
+            # If the IP address doesn't exist, insert a new record
+            insert_query = '''
+            INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
+            VALUES (?, 1, ?)
+            '''
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cursor.execute(insert_query, (ip_address, current_time))
+            self.logger.info(f"Inserted new record for {ip_address} with usage_count = 1 and datetime_of_last_ban = {current_time}")
+
+        # Commit the changes
+        conn.commit()
+
+        # Return the connection to the pool
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+
+    # deprecated TODO
+    def zinsert_or_update_activity(self, ip_address):
         """Insert a new record or update the existing record for the given IP address."""
         # borrow a conn
         conn = self.database_connection_pool.get_connection()
@@ -112,7 +150,7 @@ class ManageBanActivityDatabase:
         self.database_connection_pool.return_connection(conn)
 
     def update_time(self, ip_address):
-        """Update the datetime_of_last_ban for the given IP address."""
+        """Update the datetime_of_last_ban for the given IP address, or create it if it doesn't exist."""
         # Borrow a connection from the pool
         conn = self.database_connection_pool.get_connection()
         cursor = conn.cursor()
@@ -134,11 +172,16 @@ class ManageBanActivityDatabase:
             cursor.execute(update_query, (current_time, ip_address))
             self.logger.debug(f"Updated datetime_of_last_ban for {ip_address} to {current_time}")
         else:
-            # If the IP address doesn't exist, log or handle the error
-            self.logger.warning(f"IP address {ip_address} not found in the database")
+            # If the IP address doesn't exist, insert a new record
+            insert_query = '''
+            INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
+            VALUES (?, 1, ?)
+            '''
+            cursor.execute(insert_query, (ip_address, current_time))
+            self.logger.info(f"Inserted new record for {ip_address} with datetime_of_last_ban = {current_time}")
 
-            # Commit the changes
-            conn.commit()
+        # Commit the changes
+        conn.commit()
 
         # Return the connection to the pool
         cursor.close()
