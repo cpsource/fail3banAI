@@ -197,9 +197,13 @@ import MessageManager
 # a thread to handle zdrops
 import Tasklet_ZDrop
 
+# tasklet Console
+import Tasklet_Console
+
 # database pool
 import SQLiteConnectionPool
 
+# 
 #
 # Here's a double line that needs to be combined
 # into one line, so we can process it effectively.
