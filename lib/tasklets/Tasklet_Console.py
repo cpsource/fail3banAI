@@ -1,10 +1,13 @@
+
+import os
 import socket
 import threading
 import time
 import semaphore
+import subprocess
 
 class Tasklet_Console:
-    def __init__(self, host='localhost', port=1025, work_controller=None):
+    def __init__(self, host='localhost', port=1027, work_controller=None):
         self.host = host
         self.port = port
         self.server_socket = None
@@ -18,8 +21,28 @@ class Tasklet_Console:
             "help": self.do_show_help,
             "shutdown": self.shutdown,  # Shutdown command for stopping the console
             "exit" : self.do_exit,         # exit this console
+            "show-activity_table": self.show_activity_table  # New command
         }
 
+    def show_activity_table(self):
+        """Run the ManageBanActivityDatabase.py show command and display the results."""
+        command = f"python3 {os.getenv('FAIL3BAN_PROJECT_ROOT')}" + "/lib/ManageBanActivityDatabase.py show"
+        try:
+            #command = 'FAIL3BAN_PROJECT_ROOT/util/ManageBanActivityDatabase.py show'
+            env = os.environ.copy()  # Copy the current environment
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, env=env)
+
+            if result.returncode == 0:
+                self.client_socket.sendall(result.stdout.encode('utf-8'))
+            else:
+                error_message = f"Error running command: {result.stderr}\n"
+                self.client_socket.sendall(error_message.encode('utf-8'))
+
+        except Exception as e:
+            error_message = f"Exception occurred: {e}\n"
+            self.client_socket.sendall(error_message.encode('utf-8'))
+        return True
+    
     def start_server(self):
         """Start the telnet server and listen for a connection."""
         try:
@@ -100,7 +123,7 @@ class Tasklet_Console:
             "Available commands:\n"
             "help - Show this help message\n"
             "shutdown - Shut down the server\n"
-            "exit - Exit this console\n"
+            "show-activity_table - Display the contents of the activity_table\n"
         )
         self.client_socket.sendall(help_message.encode('utf-8'))
         return True
@@ -154,6 +177,6 @@ if __name__ == "__main__":
     console_thread.start()
 
     # Simulate shutdown after 10 seconds (for testing)
-    time.sleep(10)
+    time.sleep(60*5)
     work_controller.stop_flag = True  # Simulate stop flag being set
     print("Stop flag set, waiting for Tasklet_Console to shut down.")
