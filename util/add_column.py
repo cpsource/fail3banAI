@@ -2,7 +2,42 @@ import sqlite3
 import os
 import sys
 
+# List of valid SQLite3 field types
+valid_sqlite3_field_names = (
+    "INTEGER", "TEXT", "BLOB", "REAL", "NUMERIC", 
+    "BOOLEAN", "DATE", "DATETIME", "CHAR"
+)
+
+def give_help(db_name):
+    """Provide help on how to use this script, valid SQLite3 field types, and list available tables."""
+    print("Usage: python3 add_column.py <table_name> <column_name> <column_type>")
+    print("\nValid SQLite3 field types:")
+    for field_type in valid_sqlite3_field_names:
+        print(f" - {field_type}")
+
+    # Connect to the SQLite database to list available tables
+    try:
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        if tables:
+            print("\nAvailable tables in the database:")
+            for table in tables:
+                print(f" - {table[0]}")
+        else:
+            print("\nNo tables found in the database.")
+    except sqlite3.Error as e:
+        print(f"Error accessing database: {e}")
+    finally:
+        conn.close()
+
 def add_column_to_table(db_name, table_name, column_name, column_type):
+    # Check if the column type is valid
+    if column_type.upper() not in valid_sqlite3_field_names:
+        print(f"Error: Invalid column type '{column_type}'.")
+        give_help(db_name)
+
     # Connect to the SQLite database
     try:
         conn = sqlite3.connect(db_name)
@@ -41,8 +76,8 @@ def add_column_to_table(db_name, table_name, column_name, column_type):
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print("Usage: python3 add_column.py <table_name> <column_name> <column_type>")
-        sys.exit(1)
+        db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
+        give_help(db_name)
 
     # Database location
     db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
