@@ -147,7 +147,7 @@ class Tasklet_apache2_access_log:
             print(f"IP address {ip_address} is NOT whitelisted")
 
         #
-        # report to AbuseIPDB
+        # report to AbuseIPDB ???
         #
         
         # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
@@ -159,7 +159,7 @@ class Tasklet_apache2_access_log:
             print("would report to AbuseIPDB, but we are stubbed for testing")
         
         # report to AbuseIPDB
-        if window_flag is False:
+        if False or window_flag is False:
             # we can report as it's not too soon
             # we need to estimate categories. See https://www.abuseipdb.com/categories for details
 
@@ -186,26 +186,6 @@ class Tasklet_apache2_access_log:
             
         # done for now $$$
         return True
-
-    # TODO - dead code
-    def extract_ip(self, line):
-        """Extract the IP address from a log line."""
-        ip_pattern = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')  # Basic IPv4 regex
-        match = ip_pattern.search(line)
-        if match:
-            return match.group(0)
-        return None
-
-    def report_abuse_ipdb(self, ip_address):
-        """Report IP violation to AbuseIPDB."""
-        try:
-            categories = "21,22"  # Example categories, adjust as needed
-            comment = "Potential attack detected"
-            zulu_time_str = datetime.utcnow().isoformat() + "Z"
-            resp = self.abi.report_endpoint(ip_address, categories, comment, zulu_time_str)
-            self.logger.debug(f"AbuseIPDB report response: {resp}")
-        except Exception as e:
-            self.logger.error(f"Error reporting to AbuseIPDB: {e}")
 
     # We should hang here basically forever
     def monitor_log(self, file_path, stop_event):
@@ -238,7 +218,7 @@ class Tasklet_apache2_access_log:
             # dump the stack
             traceback.print_exc()
 
-# Thread - Main entry point from thread pool
+# Thread - Main entry point from thread pool mgr
 def run_tasklet_apache2_access_log(**kwargs):
 
     # get logging setup early
@@ -264,10 +244,6 @@ def run_tasklet_apache2_access_log(**kwargs):
     # work controller
     work_controller = kwargs['work_controller']
     
-    # Setup database pool
-    #db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
-    #database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
-        
     # create our main class
     taal = Tasklet_apache2_access_log(database_connection_pool, parselet, work_controller)
 
