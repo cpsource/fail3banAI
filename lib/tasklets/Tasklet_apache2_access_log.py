@@ -136,7 +136,9 @@ class Tasklet_apache2_access_log:
         if not self.badgets.is_bad_get(requested_file):
             print("Not a bad GET, returning ...")
             return
-
+        else:
+            print("Is a bad get. continuing ...")
+            
         #print(f"whitelist = {self.white_list.get_whitelist()}")
         
         # is the ip_address in the whitelist?
@@ -149,15 +151,18 @@ class Tasklet_apache2_access_log:
         #
         # report to AbuseIPDB
         #
-        
-        # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
-        window_size = 15
-        # Note: This guy creates the record if not there, updates usage counts and current if needed
-        window_flag = self.mba.is_in_window(ip_address,window_size)
 
-        if window_flag is False:
-            print("would report to AbuseIPDB, but we are stubbed for testing")
-        
+        # $$$ just for test
+        if False:
+            # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
+            window_size = 15
+            # Note: This guy creates the record if not there, updates usage counts and current if needed
+            window_flag = self.mba.is_in_window(ip_address,window_size)
+            if window_flag is False:
+                print("would report to AbuseIPDB, but we are stubbed for testing")
+        else:
+            window_flag = False
+            
         # report to AbuseIPDB
         if window_flag is False:
             # we can report as it's not too soon
@@ -214,6 +219,7 @@ class Tasklet_apache2_access_log:
         
         try:
             with open(file_path, 'r') as log_file:
+                # $$$
                 #log_file.seek(0, os.SEEK_END)  # Go to the end of the file
                 last_inode = os.stat(file_path).st_ino
 
