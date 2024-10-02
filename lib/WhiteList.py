@@ -23,10 +23,12 @@ if __name__ != "__main__":
     import f3b_iptables
 
 # Extracted constants for log file name and format
-LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
+LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban.log"
 # Set up the logging format to include file name and line number
 LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
 LOG_ID = "fail3ban"
+
+print(f"LOG_FILE_NAME = {LOG_FILE_NAME}")
 
 # localhost is always good to have in the whitelist
 LOCAL_IP = "127.0.0.1"
@@ -43,6 +45,8 @@ class WhiteList:
         #print(f"__init__: logger = {self.logger}")
         # register a cleanup
         atexit.register(self.cleanup)
+        # and setup
+        self.whitelist_init()
         
     # Initialize the class by reading whitlist.ctl into a dictionary
     def whitelist_init(self):
@@ -113,7 +117,7 @@ class WhiteList:
             return None
     
     def get_whitelist_file_path(self):
-        path = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/" + "whitelist.ctl"
+        path = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/whitelist.ctl"
         if path is None:
             path = "whitelist.ctl"
         return path
@@ -137,7 +141,11 @@ class WhiteList:
 # Example usage
 if __name__ == "__main__":
 
+    #
+    # Setup logging
+    #
     # Extracted function to set up logging configuration
+    # Create a named logger consistent with the log file name
     def setup_logging():
         logging.basicConfig(
             level=logging.DEBUG,
@@ -147,10 +155,8 @@ if __name__ == "__main__":
                 logging.StreamHandler()
             ]
         )
-    
     # setup logging
     setup_logging()
-    # Create a named logger consistent with the log file name
     logger = logging.getLogger(LOG_ID)
 
     # And show logger for debugging
@@ -158,10 +164,18 @@ if __name__ == "__main__":
 
     # onward to test class
     wl = WhiteList()
-    wl.whitelist_init()
+    #wl.whitelist_init()
 
     # show
     print(wl.get_whitelist())
+
+    test_ip = '98.97.20.191'
+    status = "whitelisted" if wl.is_whitelisted(test_ip) else "not whitelisted"
+    print(f"ip {test_ip}, status = {status}")
+    
+    test_ip = '98.97.20.192'
+    status = "whitelisted" if wl.is_whitelisted(test_ip) else "not whitelisted"
+    print(f"ip {test_ip}, status = {status}")
     
     # done for now
     sys.exit(0)

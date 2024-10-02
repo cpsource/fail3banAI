@@ -22,6 +22,7 @@ import threading
 import re
 from datetime import datetime
 import atexit
+import json
 
 project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
 # Add the constructed path to sys.path only if it's not already in sys.path
@@ -46,29 +47,140 @@ import AbuseIPDB
 from ManageBanActivityDatabase import ManageBanActivityDatabase
 # our parselet
 import Parselet_GETenv
+# determine if a GET is invalid
+import BadGets
+# our WhiteList
+import WhiteList
+# manage ban activity deatabase
+from ManageBanActivityDatabase import ManageBanActivityDatabase
+# tasklet that notifies AbuseIPDB
+from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
+# work manager
+import WorkManager
 
 LOG_ID = "fail3ban"
 
 class Tasklet_apache2_access_log:
-    def __init__(self, database_connection_pool, parselet, log_id=LOG_ID):
+    def __init__(self, database_connection_pool, parselet, work_controller, log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
+        self.wctlr = work_controller
         self.abi = AbuseIPDB.AbuseIPDB()  # AbuseIPDB instance for reporting
         self.mba = ManageBanActivityDatabase(database_connection_pool,LOG_ID) # TODO - two loggers?
         self.parselet = parselet
+        self.badgets = BadGets.BadGets()
+
+        # whitelist
+        self.white_list = WhiteList.WhiteList()
+
+        # and a ManageBanActivityDatabase - manages 
+        self.mba = ManageBanActivityDatabase(database_connection_pool)
+
         # Register cleanup function to close the database connection
         atexit.register(self.cleanup)
 
     def cleanup(self):
         pass
-        
+
+    def is_error_response(self, parsed_res):
+        """Check if the given response contains an error."""
+        if "error" in parsed_res:
+            return True
+        return False
+
+    def truncate_string(self,input_str):
+        if len(input_str) > 80:
+            return input_str[:80] + ' ...'
+        return input_str
+
+    def task_callback(self, status):
+        print(f"at task_callback, status = {status}")
+    
     def process_line(self, line):
         """Process a single log line, parse it, and report violations."""
-        self.logger.debug(f"Processing line: {line}")
-
+        #print(f"* Processing line: {line}")
+        
         # Well, we are going to cheat and not use the parselet mgr
         res = self.parselet.compress_line(line)
-        print(res)
+
+        print(f"res = {res}")
+
+        parsed_res = json.loads(res)
+        
+        #print(f"\n* type of parsed_res = {type(parsed_res)}")
+        
+        # errors look like this {"class_name": "Parselet_GETenv", "error": "No match found"}
+        if self.is_error_response(parsed_res):
+            err = parsed_res.get('error')
+            print(f"Error returned = {err}")
+            return
+
+        #print(f"\n* res = {res}")
+        #print(f"\n* parsed_res = {parsed_res}")
+
+        # Extract info
+        ip_address     = parsed_res.get('extracted_info', {}).get('ip_address')
+        requested_file = parsed_res.get('extracted_info', {}).get('requested_file')
+        timestamp      = parsed_res.get('extracted_info', {}).get('timestamp')
+
+        #
+        # convert timestamp to iso_timestamp
+        #
+        # Parse the string using datetime.strptime
+        parsed_time = datetime.strptime(timestamp, "%d/%b/%Y:%H:%M:%S %z")
+        # Convert to ISO 8601 format
+        iso_timestamp = parsed_time.isoformat()
+        print(f"iso_timestamp = {iso_timestamp}")
+
+        print(f"requested_file = {requested_file}, ip_address = {ip_address}")
+
+        # is it one of the bad GET's ???
+        if not self.badgets.is_bad_get(requested_file):
+            print("Not a bad GET")
+            return
+
+        print(f"whitelist = {self.white_list.get_whitelist()}")
+        
+        # is the ip_address in the whitelist?
+        if self.white_list.is_whitelisted(ip_address):
+            print(f"IP address {ip_address} is whitelisted")
+            return
+        else:
+            print(f"IP address {ip_address} is NOT whitelisted")
+
+        #
+        # report to AbuseIPDB
+        #
+        
+        # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
+        window_size = 15
+        window_flag = self.mba.is_in_window(ip_address,window_size)
+        if False and window_flag is False:
+            # we can report as it's not too soon
+            # we need to estimate categories. See https://www.abuseipdb.com/categories for details
+
+            # build info for report
+            categories = "10,18"
+            # get comment
+            comment  = self.truncate_string(f"apache2 (hacking attempt) reports illegal GET = {requested_file}")
+
+            # build a work unit
+            data = f"Tasklet_apache2_access_log"
+            work_unit = WorkManager.WorkUnit(
+                function=Tasklet_notify_abuseIPDB,
+                kwargs={'data'       : data,
+                        'ip_address' : ip_address,
+                        'categories' : categories,
+                        'comment'    : comment,
+                        'timestamp'  : iso_timestamp
+                        },  # Using kwargs to pass arguments
+                callback=self.task_callback
+            )
+            self.wctlr.enqueue(work_unit)
+            # and lower our priority a bit for a bit - Cheezy Python3, hack, hack, hack !!!
+            time.sleep(.01)
+            
+        # done for now $$$
         return
     
         # Dummy example: Assume IP extraction from the log line
@@ -96,6 +208,7 @@ class Tasklet_apache2_access_log:
 
         return True
 
+    # TODO - dead code
     def extract_ip(self, line):
         """Extract the IP address from a log line."""
         ip_pattern = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')  # Basic IPv4 regex
@@ -162,12 +275,15 @@ def run_tasklet_apache2_access_log(**kwargs):
     # parselet
     parselet = kwargs['parselet']
 
+    # work controller
+    work_controller = kwargs['work_controller']
+    
     # Setup database pool
-    db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
-    database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
+    #db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
+    #database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
         
     # create our main class
-    taal = Tasklet_apache2_access_log(database_connection_pool, parselet)
+    taal = Tasklet_apache2_access_log(database_connection_pool, parselet, work_controller)
 
     # monitor this file
     file_path = "/var/log/apache2/access.log"
@@ -228,12 +344,20 @@ if __name__ == "__main__":
     # Create a global event object to signaling threads to stop
     stop_event = threading.Event()
 
+    # Setup database pool
+    db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
+    database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
+
+    # Get WorkController
+    work_controller = WorkManager.WorkController()
+    
     # Setup kwargs
     data = "Tasklet_apache2_error_log.py"
     kwargs={'stop_event' : stop_event,
             'logger'     : logger,
             'database_connection_pool' : database_connection_pool,
             'parselet'   : parselet,
+            'work_controller' : work_controller,
             }
 
     # Create and start the thread
