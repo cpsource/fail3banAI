@@ -291,7 +291,7 @@ class ManageBanActivityDatabase:
                 SET datetime_of_last_ban = ?, usage_count = ?
                 WHERE ip_address = ?
                 '''
-                cursor.execute(update_query, (date_current_time, new_usage_count, ip_addr))
+                cursor.execute(update_query, (current_date_time, new_usage_count, ip_addr))
 
                 # Convert the datetime_of_last_ban to a datetime object
                 try:

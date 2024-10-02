@@ -147,3 +147,7 @@ ZDrop: Task completed with result: 200, OK
 2024-09-26 23:41:52,128 - ManageBanActivity.py:99 - DEBUG - Updated record for 85.209.11.27, usage_count incremented to 12
 2024-09-26 23:41:52,132 - ZDrop.py:92 - DEBUG - Within 15 minute window, skipping AbuseIPDB notification
 ^C2024-09-26 23:42:07,525 - monitor-fail3ban.py:517 - ERROR - Script interrupted. Exiting...
+
+---
+
+Error returned from compressed_line = No match found for line 78.153.140.151 - - [02/Oct/2024:17:05:36 +0000] "GET / HTTP/1.0" 400 624 "-" "-"

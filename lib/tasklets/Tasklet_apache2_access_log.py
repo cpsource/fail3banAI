@@ -104,18 +104,18 @@ class Tasklet_apache2_access_log:
         # Well, we are going to cheat and not use the parselet mgr
         res = self.parselet.compress_line(line)
 
-        print(f"compressed line = {res}")
+        #print(f"compressed line = {res}")
 
         parsed_res = json.loads(res)
         
         # errors look like this {"class_name": "Parselet_GETenv", "error": "No match found"}
         if self.is_error_response(parsed_res):
             err = parsed_res.get('error')
-            print(f"Error returned = {err} for line {line}")
+            print(f"Error returned from compressed_line = {err} for line {line}")
             return
 
         try:
-            # Extract info
+            # Extract info from JSON
             ip_address     = parsed_res.get('extracted_info', {}).get('ip_address')
             requested_file = parsed_res.get('extracted_info', {}).get('requested_file')
             timestamp      = parsed_res.get('extracted_info', {}).get('timestamp')
@@ -134,7 +134,7 @@ class Tasklet_apache2_access_log:
 
         # is it one of the bad GET's ???
         if not self.badgets.is_bad_get(requested_file):
-            print("Not a bad GET, returning ...")
+            print("Is Not a bad GET, returning ...")
             return
         else:
             print("Is a bad get. continuing ...")
@@ -143,28 +143,30 @@ class Tasklet_apache2_access_log:
         
         # is the ip_address in the whitelist?
         if self.white_list.is_whitelisted(ip_address):
-            print(f"IP address {ip_address} is whitelisted, returning ...")
+            print(f"Is whitelisted for address {ip_address}, returning ...")
             return
         else:
-            print(f"IP address {ip_address} is NOT whitelisted")
+            print(f"Is not whitelisted for address {ip_address}")
 
         #
         # report to AbuseIPDB ???
         #
 
-        # $$$ just for test
-        if False:
+        # $$$ just for test - False will report everything to AbuseIPDB
+        if True:
             # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
             window_size = 15
             # Note: This guy creates the record if not there, updates usage counts and current if needed
             window_flag = self.mba.is_in_window(ip_address,window_size)
-            if window_flag is False:
-                print("would report to AbuseIPDB, but we are stubbed for testing")
+            #if window_flag is False:
+            #    print("would report to AbuseIPDB, but we are stubbed for testing")
         else:
             window_flag = False
-            
+
+        print("Window flag is True" if window_flag else "Window flag is False")            
+        
         # report to AbuseIPDB
-        if False or window_flag is False:
+        if False and window_flag is False:
             # we can report as it's not too soon
             # we need to estimate categories. See https://www.abuseipdb.com/categories for details
 
@@ -199,8 +201,8 @@ class Tasklet_apache2_access_log:
         
         try:
             with open(file_path, 'r') as log_file:
-                # $$$
-                #log_file.seek(0, os.SEEK_END)  # Go to the end of the file
+                # $$$ - for production, enable this line
+                log_file.seek(0, os.SEEK_END)  # Go to the end of the file
                 last_inode = os.stat(file_path).st_ino
 
                 print("starting main wait loop")
