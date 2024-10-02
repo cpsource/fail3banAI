@@ -61,6 +61,6 @@
 /ws/ec/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
 /ws/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
 /www/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
-/xmlrpc.php
 /yii/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
 /zend/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+/cgi-bin/luci/;stok=/locale

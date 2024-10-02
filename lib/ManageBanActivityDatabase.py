@@ -273,13 +273,25 @@ class ManageBanActivityDatabase:
         try:
             # Query the record for the given IP address
             print(f"Executing SQL query to retrieve last ban time for IP: {ip_addr}")
-            cursor.execute("SELECT datetime_of_last_ban FROM activity_table WHERE ip_address = ?", (ip_addr,))
+            cursor.execute("SELECT id, usage_count, datetime_of_last_ban FROM activity_table WHERE ip_address = ?", (ip_addr,))
             record = cursor.fetchone()
 
             return_status = False
             if record:
-                last_ban_time_str = record[0]
-                print(f"Record found for IP {ip_addr}, last ban time: {last_ban_time_str}")
+                last_ban_time_str = record[2]
+                new_usage_count = record[1] + 1
+                
+                print(f"Record found for IP {ip_addr}, new_usage_count = {new_usage_count} last ban time: {last_ban_time_str}")
+                # Get the current date and time
+                current_date_time = datetime.now()
+
+                # Update the datetime_of_last_ban and usage_count
+                update_query = '''
+                UPDATE activity_table
+                SET datetime_of_last_ban = ?, usage_count = ?
+                WHERE ip_address = ?
+                '''
+                cursor.execute(update_query, (date_current_time, new_usage_count, ip_addr))
 
                 # Convert the datetime_of_last_ban to a datetime object
                 try:
@@ -298,8 +310,16 @@ class ManageBanActivityDatabase:
                 else:
                     print(f"IP {ip_addr} is not within the {N} minutes window.")
             else:
-                print(f"No record found for IP {ip_addr}.")
-
+                # If the IP address doesn't exist, insert a new record
+                current_date_time = datetime.now()
+                insert_query = '''
+                INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
+                VALUES (?, 1, ?)
+                '''
+                cursor.execute(insert_query, (ip_addr, current_date_time))
+                self.logger.debug(f"Inserted new record for {ip_addr}")
+                return_status = True
+                
         except sqlite3.Error as e:
             print(f"SQL Error: {e}")
             return_status = False

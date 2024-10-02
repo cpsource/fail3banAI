@@ -23,6 +23,7 @@ import re
 from datetime import datetime
 import atexit
 import json
+import traceback
 
 project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
 # Add the constructed path to sys.path only if it's not already in sys.path
@@ -103,25 +104,23 @@ class Tasklet_apache2_access_log:
         # Well, we are going to cheat and not use the parselet mgr
         res = self.parselet.compress_line(line)
 
-        print(f"res = {res}")
+        print(f"compressed line = {res}")
 
         parsed_res = json.loads(res)
-        
-        #print(f"\n* type of parsed_res = {type(parsed_res)}")
         
         # errors look like this {"class_name": "Parselet_GETenv", "error": "No match found"}
         if self.is_error_response(parsed_res):
             err = parsed_res.get('error')
-            print(f"Error returned = {err}")
+            print(f"Error returned = {err} for line {line}")
             return
 
-        #print(f"\n* res = {res}")
-        #print(f"\n* parsed_res = {parsed_res}")
-
-        # Extract info
-        ip_address     = parsed_res.get('extracted_info', {}).get('ip_address')
-        requested_file = parsed_res.get('extracted_info', {}).get('requested_file')
-        timestamp      = parsed_res.get('extracted_info', {}).get('timestamp')
+        try:
+            # Extract info
+            ip_address     = parsed_res.get('extracted_info', {}).get('ip_address')
+            requested_file = parsed_res.get('extracted_info', {}).get('requested_file')
+            timestamp      = parsed_res.get('extracted_info', {}).get('timestamp')
+        except Exception as e:
+            self.logger.error(f"Error extracting info: {e}")
 
         #
         # convert timestamp to iso_timestamp
@@ -130,20 +129,19 @@ class Tasklet_apache2_access_log:
         parsed_time = datetime.strptime(timestamp, "%d/%b/%Y:%H:%M:%S %z")
         # Convert to ISO 8601 format
         iso_timestamp = parsed_time.isoformat()
-        print(f"iso_timestamp = {iso_timestamp}")
 
-        print(f"requested_file = {requested_file}, ip_address = {ip_address}")
+        print(f"requested_file = {requested_file}, ip_address = {ip_address}, iso_timestamp ={iso_timestamp}")
 
         # is it one of the bad GET's ???
         if not self.badgets.is_bad_get(requested_file):
-            print("Not a bad GET")
+            print("Not a bad GET, returning ...")
             return
 
-        print(f"whitelist = {self.white_list.get_whitelist()}")
+        #print(f"whitelist = {self.white_list.get_whitelist()}")
         
         # is the ip_address in the whitelist?
         if self.white_list.is_whitelisted(ip_address):
-            print(f"IP address {ip_address} is whitelisted")
+            print(f"IP address {ip_address} is whitelisted, returning ...")
             return
         else:
             print(f"IP address {ip_address} is NOT whitelisted")
@@ -154,8 +152,14 @@ class Tasklet_apache2_access_log:
         
         # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
         window_size = 15
+        # Note: This guy creates the record if not there, updates usage counts and current if needed
         window_flag = self.mba.is_in_window(ip_address,window_size)
-        if False and window_flag is False:
+
+        if window_flag is False:
+            print("would report to AbuseIPDB, but we are stubbed for testing")
+        
+        # report to AbuseIPDB
+        if window_flag is False:
             # we can report as it's not too soon
             # we need to estimate categories. See https://www.abuseipdb.com/categories for details
 
@@ -181,31 +185,6 @@ class Tasklet_apache2_access_log:
             time.sleep(.01)
             
         # done for now $$$
-        return
-    
-        # Dummy example: Assume IP extraction from the log line
-        ip_address = self.extract_ip(line)
-        if not ip_address:
-            self.logger.debug("No IP address found in line.")
-            return
-
-        # Determine if we're in the 15-minute window and handle accordingly
-        window_size = 15
-        window_flag = self.mba.is_in_window(ip_address, window_size) if self.mba else False
-        
-        # Update the time for this IP
-        self.mba.update_time(ip_address) if self.mba else None
-
-        if window_flag:
-            self.logger.debug(f"Within {window_size}-minute window, skipping AbuseIPDB report.")
-            return True
-        else:
-            self.logger.debug(f"Outside {window_size}-minute window, reporting to AbuseIPDB.")
-        
-        # Update usage count and report to AbuseIPDB
-        self.mba.update_usage_count(ip_address) if self.mba else None
-        self.report_abuse_ipdb(ip_address)
-
         return True
 
     # TODO - dead code
@@ -228,29 +207,36 @@ class Tasklet_apache2_access_log:
         except Exception as e:
             self.logger.error(f"Error reporting to AbuseIPDB: {e}")
 
+    # We should hang here basically forever
     def monitor_log(self, file_path, stop_event):
         """Monitor the apache2 access log for new entries and process them."""
         self.logger.debug(f"Monitoring log file: {file_path}")
         
         try:
             with open(file_path, 'r') as log_file:
-                log_file.seek(0, os.SEEK_END)  # Go to the end of the file
+                #log_file.seek(0, os.SEEK_END)  # Go to the end of the file
                 last_inode = os.stat(file_path).st_ino
 
+                print("starting main wait loop")
+                
+                # main wait loop
                 while not stop_event.is_set():
                     current_inode = os.stat(file_path).st_ino
                     if current_inode != last_inode:
                         self.logger.debug("Log rotation detected. Re-opening the log file.")
                         log_file = open(file_path, 'r')
                         last_inode = current_inode
-
                     line = log_file.readline()
                     if line:
                         self.process_line(line.strip())
                     else:
-                        time.sleep(1)
+                        #print("main loop, no data")
+                        time.sleep(5)
+
         except Exception as e:
             self.logger.error(f"Error monitoring log: {e}")
+            # dump the stack
+            traceback.print_exc()
 
 # Thread - Main entry point from thread pool
 def run_tasklet_apache2_access_log(**kwargs):
@@ -271,7 +257,7 @@ def run_tasklet_apache2_access_log(**kwargs):
         return "Error. No stop_event"
     else:
         stop_event = kwargs['stop_event']
-
+    
     # parselet
     parselet = kwargs['parselet']
 
@@ -294,7 +280,7 @@ def run_tasklet_apache2_access_log(**kwargs):
     #stop_event.set()
 
     # we are done. cleanup and exit this thread
-    logger.debug(f"status = {status}")
+    logger.debug(f"taal.monitor_log returns status = {status}")
     return status
 
 if __name__ == "__main__":
@@ -343,7 +329,13 @@ if __name__ == "__main__":
 
     # Create a global event object to signaling threads to stop
     stop_event = threading.Event()
-
+    if False:
+        if stop_event is not None:
+            stop_event.clear()
+        else:
+            print("Error, stop evet was none")
+            sys.exit(0)
+        
     # Setup database pool
     db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
     database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
@@ -353,7 +345,8 @@ if __name__ == "__main__":
     
     # Setup kwargs
     data = "Tasklet_apache2_error_log.py"
-    kwargs={'stop_event' : stop_event,
+    kwargs={'dummy' : None,
+            'stop_event' : stop_event,
             'logger'     : logger,
             'database_connection_pool' : database_connection_pool,
             'parselet'   : parselet,
@@ -366,10 +359,10 @@ if __name__ == "__main__":
 
     # Wait for some time (simulating the main thread doing other work)
     # take a nap
-    time.sleep(60)
+    #time.sleep(60)
 
     # Signal the thread to stop and join
-    stop_event.set()  # This will cause the thread to exit the loop
+    #stop_event.set()  # This will cause the thread to exit the loop
     tasklet_thread.join()  # Wait for the tasklet thread to finish
 
     print("Tasklet has finished.")
