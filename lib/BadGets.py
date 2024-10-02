@@ -1,4 +1,7 @@
 import os
+import logging
+
+logger = logging.getLogger("fail3ban")
 
 class BadGets:
     def __init__(self, filepath=None):
@@ -11,7 +14,7 @@ class BadGets:
         if self.filepath is None:
             self.filepath = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/BadGets.ctl"
             
-        print(f"filepath: {self.filepath}")
+        logger.debug(f"filepath: {self.filepath}")
 
         self.bad_gets = set()  # Initialize as an empty set for fast membership checks
 
@@ -26,13 +29,13 @@ class BadGets:
     def save_file_attributes(self):
         """Save the file's size and modification time."""
 
-        print(f"filepath = {self.filepath}")
+        logger.debug(f"filepath = {self.filepath}")
         
         try:
             self.last_modified_time = os.path.getmtime(self.filepath)
             self.file_size = os.path.getsize(self.filepath)
         except FileNotFoundError:
-            print(f"File {self.filepath} not found.")
+            logger.error(f"File {self.filepath} not found.")
 
     def read_bad_gets_file(self):
         """Read the BadGets.ctl file and store non-commented lines in self.bad_gets."""
@@ -46,9 +49,9 @@ class BadGets:
             self.save_file_attributes()
 
         except FileNotFoundError:
-            print(f"File {self.filepath} not found.")
+            logger.error(f"File {self.filepath} not found.")
         except Exception as e:
-            print(f"An error occurred while reading the file: {e}")
+            logger.error(f"An error occurred while reading the file: {e}")
 
     def _bad_gets_changed(self):
         """Check if the BadGets.ctl file has changed (size or modification time)."""
@@ -58,12 +61,12 @@ class BadGets:
 
             if (current_modified_time != self.last_modified_time or
                 current_file_size != self.file_size):
-                print("File has changed, reloading...")
+                logger.debug("File has changed, reloading...")
                 self.read_bad_gets_file()
                 return True
             return False
         except FileNotFoundError:
-            print(f"File {self.filepath} not found.")
+            logger.debug(f"File {self.filepath} not found.")
             return False
         
     def is_bad_get(self, input_string):
@@ -82,8 +85,32 @@ class BadGets:
 
         # else look in the set
         return input_string in self.bad_gets
+
     
 if __name__ == "__main__":
+    # Extracted constants for log file name and format
+    LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
+    # Set up the logging format to include file name and line number
+    LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
+    # And our log id
+    LOG_ID = "fail3ban"
+
+    # Extracted function to set up logging configuration
+    def setup_logging():
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format=LOG_FORMAT,
+            handlers=[
+                logging.FileHandler(LOG_FILE_NAME),
+                logging.StreamHandler()
+            ]
+        )
+    # Call the extracted function to configure logging
+    setup_logging()
+
+    # Create a named logger consistent with the log file name
+    logger = logging.getLogger(LOG_ID)
+
     # Initialize the class with the control file
     bad_gets_instance = BadGets()
 
