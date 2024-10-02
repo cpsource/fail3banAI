@@ -5,7 +5,6 @@ logger = logging.getLogger("fail3ban")
 
 class BadGets:
     def __init__(self, filepath=None):
-
         # if this goes to zero, check the filepath for change
         self.reload_counter = 10
 
@@ -16,7 +15,7 @@ class BadGets:
             
         logger.debug(f"filepath: {self.filepath}")
 
-        self.bad_gets = set()  # Initialize as an empty set for fast membership checks
+        self.bad_gets = ()  # Initialize as an empty tuple for membership checks
 
         # Save initial file attributes
         self.last_modified_time = None
@@ -28,7 +27,6 @@ class BadGets:
 
     def save_file_attributes(self):
         """Save the file's size and modification time."""
-
         logger.debug(f"filepath = {self.filepath}")
         
         try:
@@ -41,8 +39,8 @@ class BadGets:
         """Read the BadGets.ctl file and store non-commented lines in self.bad_gets."""
         try:
             with open(self.filepath, 'r') as file:
-                # Read lines, filter out comments (lines starting with #), and add to the set
-                valid_lines = {line.strip() for line in file if not line.strip().startswith('#')}
+                # Read lines, filter out comments (lines starting with #), and add to the tuple
+                valid_lines = tuple(line.strip() for line in file if not line.strip().startswith('#'))
                 self.bad_gets = valid_lines
 
             # After successful read, save file attributes again
@@ -70,21 +68,25 @@ class BadGets:
             return False
         
     def is_bad_get(self, input_string):
-        """Return True if input_string contains ../../ or is in the bad_gets set."""
-
-        # do we reload the file? If so, do so
+        """Return True if input_string contains ../../ or matches a bad_get in self.bad_gets."""
+        # Reload the file if necessary
         self.reload_counter -= 1
         if self.reload_counter <= 0:
             self.reload_counter = 10
             if self._bad_gets_changed():
                 self.read_bad_gets_file()
 
-        # special case testing
+        # Special case for "../../"
         if "../../" in input_string:
             return True
 
-        # else look in the set
-        return input_string in self.bad_gets
+        # Check each entry in the bad_gets tuple by comparing the part of input_string
+        # with the same length as the bad_get entry.
+        for bad_get in self.bad_gets:
+            if input_string[:len(bad_get)] == bad_get:
+                return True
+
+        return False
 
     
 if __name__ == "__main__":
@@ -127,3 +129,4 @@ if __name__ == "__main__":
     for input_string in test_strings:
         result = bad_gets_instance.is_bad_get(input_string)
         print(f"Input: {input_string}\nIs Bad Get: {result}\n")
+
