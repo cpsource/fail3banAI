@@ -142,17 +142,21 @@ class Tasklet_apache2_access_log:
         #print(f"whitelist = {self.white_list.get_whitelist()}")
         
         # is the ip_address in the whitelist?
-        if self.white_list.is_whitelisted(ip_address):
+        white_list_flag = self.white_list.is_whitelisted(ip_address)
+        if white_list_flag is True:
             print(f"Is whitelisted for address {ip_address}, returning ...")
-            return
+            #return
         else:
             print(f"Is not whitelisted for address {ip_address}")
 
         #
         # Get AbuseIPDB confidence_score
         #
-        is_white_listed , abuse_confidence_score = self.abi.check_endpoint(ip_addr)
+        is_white_listed , abuse_confidence_score = self.abi.check_endpoint(ip_address)
         print(f"is_white_listed {is_white_listed}, abuse_confidence_score = {abuse_confidence_score}")
+
+        if white_list_flag is True:
+            return
         
         #
         # report to AbuseIPDB ???
