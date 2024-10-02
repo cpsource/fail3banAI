@@ -147,3 +147,15 @@ ZDrop: Task completed with result: 200, OK
 2024-09-26 23:41:52,128 - ManageBanActivity.py:99 - DEBUG - Updated record for 85.209.11.27, usage_count incremented to 12
 2024-09-26 23:41:52,132 - ZDrop.py:92 - DEBUG - Within 15 minute window, skipping AbuseIPDB notification
 ^C2024-09-26 23:42:07,525 - monitor-fail3ban.py:517 - ERROR - Script interrupted. Exiting...
+
+----
+
+2024-10-02 19:07:41,372 - BadGets.py:16 - DEBUG - filepath: /home/ubuntu/fail3banAI/control/BadGets.ctl
+2024-10-02 19:07:41,372 - BadGets.py:30 - DEBUG - filepath = /home/ubuntu/fail3banAI/control/BadGets.ctl
+2024-10-02 19:07:41,372 - BadGets.py:30 - DEBUG - filepath = /home/ubuntu/fail3banAI/control/BadGets.ctl
+2024-10-02 19:07:41,373 - SQLiteConnectionPool.py:122 - DEBUG - Closed connection: <sqlite3.Connection object at 0x7a3fb011d040>
+2024-10-02 19:07:41,373 - ManageBanActivityDatabase.py:23 - INFO - Created activity table successfully.
+2024-10-02 19:07:41,373 - Tasklet_apache2_access_log.py:200 - DEBUG - Monitoring log file: /var/log/apache2/access.log
+starting main wait loop
+client_loop: send disconnect: Broken pipe
+(openai) pagec@AlienPC:~$

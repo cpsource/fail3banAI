@@ -1,3 +1,6 @@
+
+# all things Abuse_IPDB
+
 import os
 import sys
 import json
@@ -66,7 +69,6 @@ class AbuseIPDB:
             if response.status_code == 200:
                 decoded_response = json.loads(response.text)
 
-                
                 print(json.dumps(decoded_response, sort_keys=True, indent=4))
 
                 # Extract isWhitelisted
@@ -77,10 +79,10 @@ class AbuseIPDB:
                 return is_whitelisted, abuse_confidence_score
             else:
                 self.logger.error(f"Failed to fetch data for IP {ip_address}: {response.status_code}")
-                return None
+                return None, None
         except Exception as e:
             self.logger.error(f"An error occurred while checking IP {ip_address}: {e}")
-            return None
+            return None, None
 
     def blacklist_endpoint(self, ip_version="4", confidence_minimum=100):
         """Retrieve a blacklist of IP addresses with a minimum confidence score"""
