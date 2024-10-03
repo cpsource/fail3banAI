@@ -1,24 +1,28 @@
 import re
 import json
 
-class Parselet_GETenv:
+class Parselet_HEAD:
     def __init__(self):
         pass
 
     def compress_line(self, log_line):
         # Regex pattern to extract IP address, timestamp, HTTP method, requested file, response code, bytes sent, and user agent
-        pattern = r'(\d{1,3}(?:\.\d{1,3}){3}) - - \[(.*?)\] "(GET) (/.*?) HTTP/\d\.\d" (\d{3}) (\d+) ".*?" "(.*?)"'
+        #pattern = r'(\d{1,3}(?:\.\d{1,3}){3}) - - \[(.*?)\] "(GET) (/.+?) HTTP/\d\.\d" (\d{3}) (\d+) ".*?" "(.*?)"'
+
+        pattern = r'(\d{1,3}(?:\.\d{1,3}){3}) - - \[(.*?)\] "(HEAD) (/.*?) HTTP/\d\.\d" (\d{3}) (\d+) ".*?" "(.*?)"'
 
         match = re.search(pattern, log_line)
         
         if match:
+            print(f"{match.groups()}")
+            
             ip_address = match.group(1)        # Extract IP address
             timestamp = match.group(2)         # Extract timestamp
-            http_method = match.group(3)       # Extract HTTP method (GET)
-            requested_file = match.group(4)    # Extract requested file (.env)
-            response_code = match.group(5)     # Extract response code (302)
-            bytes_sent = match.group(6)        # Extract bytes sent (841)
-            user_agent = match.group(7)        # Extract user agent (Go-http-client/1.1)
+            http_method = match.group(3)       # Extract HTTP method (POST)
+            requested_file = match.group(4)    # Extract requested file
+            response_code = match.group(5)     # Extract response code
+            bytes_sent = match.group(6)        # Extract bytes sent
+            user_agent = match.group(7)        # Extract user agent
 
             # Create the compressed string by replacing the extracted parts with placeholders
             compressed_log = log_line
@@ -55,12 +59,11 @@ class Parselet_GETenv:
 
 if __name__ == "__main__":
     # Example log line from access.log
-    log_line = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
+    log_line = '135.125.244.48 - - [24/Sep/2024:21:57:49 +0000] "HEAD / HTTP/1.1" 204 152 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36"'
 
     # Create an instance of the Parselet_GETen class
-    compressor = Parselet_GETenv()
+    compressor = Parselet_HEAD()
 
     # Compress the log line and print the JSON output
     compressed_json = compressor.compress_line(log_line)
     print(compressed_json)
-
