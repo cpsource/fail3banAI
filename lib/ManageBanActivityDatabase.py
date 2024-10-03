@@ -110,46 +110,6 @@ class ManageBanActivityDatabase:
         cursor.close()
         self.database_connection_pool.return_connection(conn)
 
-    # deprecated TODO
-    def zinsert_or_update_activity(self, ip_address):
-        """Insert a new record or update the existing record for the given IP address."""
-        # borrow a conn
-        conn = self.database_connection_pool.get_connection()
-        cursor = conn.cursor()
-        
-        # Get the current timestamp
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Check if the IP address already exists
-        cursor.execute("SELECT id, usage_count FROM activity_table WHERE ip_address = ?", (ip_address,))
-        record = cursor.fetchone()
-        
-        if record:
-            # If the IP address exists, update the record (increment usage_count and update datetime_of_last_ban)
-            usage_count = record[1] + 1
-            update_query = '''
-            UPDATE activity_table
-            SET usage_count = ?
-            WHERE ip_address = ?
-            '''
-            cursor.execute(update_query, (usage_count, ip_address))
-            self.logger.debug(f"Updated record for {ip_address}, usage_count incremented to {usage_count}")
-        else:
-            # If the IP address doesn't exist, insert a new record
-            insert_query = '''
-            INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
-            VALUES (?, 1, ?)
-            '''
-            cursor.execute(insert_query, (ip_address, current_time))
-            self.logger.debug(f"Inserted new record for {ip_address}")
-        
-        # Commit the changes
-        conn.commit()
-
-        # return the connection we had on loan
-        cursor.close()
-        self.database_connection_pool.return_connection(conn)
-
     def update_time(self, ip_address):
         """Update the datetime_of_last_ban for the given IP address, or create it if it doesn't exist."""
         # Borrow a connection from the pool

@@ -2,48 +2,49 @@ import re
 import json
 import ipaddress
 
-# One might wonder why I broke out the parsing of the ip_address. Well, re can't handle it.
-# This routine performs an additional check on the parsed ip address with the imported
-# module ipaddress
-
-def parse_ipaddress(string, starting_position=0):
-    # Define the regex pattern for IPv4 and IPv6 addresses
-    pattern = r"((?:\d{1,3}\.){3}\d{1,3}|(?:[a-fA-F0-9:]+:+[a-fA-F0-9:]*))"
-    
-    # Extract the substring starting from the given position
-    substring = string[starting_position:]
-    
-    # Use re.search to find the first occurrence of an IP address
-    match = re.search(pattern, substring)
-    
-    if match:
-        ip_candidate = match.group(0)
-        try:
-            # Validate the found IP address
-            ipaddress.ip_address(ip_candidate)
-            
-            # Calculate the actual position in the original string where the match was found
-            start = starting_position + match.start()
-            end = starting_position + match.end()
-            
-            # Replace the IP address in the original string at the specific position
-            modified_string = string[:start] + "<ip-address>" + string[end:]
-            
-            return True, ip_candidate, modified_string  # Return True, IP, and modified string
-        except ValueError:
-            return False, None, string  # Return False if invalid IP and the original string
-    else:
-        return False, None, string  # No IP found, return the original string
 
 class Parselet_GET:
     def __init__(self):
         pass
 
+    # One might wonder why I broke out the parsing of the ip_address. Well, re can't handle it.
+    # This routine performs an additional check on the parsed ip address with the imported
+    # module ipaddress
+    
+    def parse_ipaddress(self, string, starting_position=0):
+        # Define the regex pattern for IPv4 and IPv6 addresses
+        pattern = r"((?:\d{1,3}\.){3}\d{1,3}|(?:[a-fA-F0-9:]+:+[a-fA-F0-9:]*))"
+    
+        # Extract the substring starting from the given position
+        substring = string[starting_position:]
+    
+        # Use re.search to find the first occurrence of an IP address
+        match = re.search(pattern, substring)
+        
+        if match:
+            ip_candidate = match.group(0)
+            try:
+                # Validate the found IP address
+                ipaddress.ip_address(ip_candidate)
+            
+                # Calculate the actual position in the original string where the match was found
+                start = starting_position + match.start()
+                end = starting_position + match.end()
+            
+                # Replace the IP address in the original string at the specific position
+                modified_string = string[:start] + "<ip-address>" + string[end:]
+            
+                return True, ip_candidate, modified_string  # Return True, IP, and modified string
+            except ValueError:
+                return False, None, string  # Return False if invalid IP and the original string
+        else:
+            return False, None, string  # No IP found, return the original string
+
     def compress_line(self, log_line):
         # Regex pattern to extract IP address, timestamp, HTTP method, requested file, response code, bytes sent, and user agent
         pattern = r' - - \[(.*?)\] "(GET) (/.*?) HTTP/\d\.\d" (\d{3}) (\d+) ".*?" "(.*?)"'
 
-        flag , ip_address , compressed_string = parse_ipaddress(log_line,0)
+        flag , ip_address , compressed_string = self.parse_ipaddress(log_line,0)
 
         if flag is not True:
             return json.dumps({
