@@ -48,3 +48,15 @@
 /yii/vendor/
 /zend/vendor/
 /version
+/1phpmyadmin
+/PMA
+/admin
+/administrator
+/db
+/mysql
+/phpMyAdmin
+/phpmyAdmin
+/phpmyadmin
+/phpmyadmin
+/sql
+/sqlmanager
