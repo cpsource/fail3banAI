@@ -4,7 +4,7 @@ import sys
 import json
 import re
 
-class DynamicImporter:
+class Dynamic_Importer_apache2_access_log:
     def __init__(self, directory):
         self.directory = directory
         self.modules = {}
@@ -117,7 +117,7 @@ class DynamicImporter:
 if __name__ == "__main__":
     # Assume the directory 'my_directory' contains the modules you want to import
     my_directory = os.getenv('FAIL3BAN_PROJECT_ROOT') + '/lib/parselets/apache2/access-log'
-    dynamic_importer = DynamicImporter(my_directory)
+    dynamic_importer = Dynamic_Importer_apache2_access_log(my_directory)
 
     test_inputs = (
         '2602:80d:1002::18 - - [03/Oct/2024:14:13:04 +0000] "PRI * HTTP/2.0" 400 488 "-" "-"',
