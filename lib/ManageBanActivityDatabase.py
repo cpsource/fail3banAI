@@ -318,7 +318,7 @@ class ManageBanActivityDatabase:
                 '''
                 cursor.execute(insert_query, (ip_addr, current_date_time))
                 self.logger.debug(f"Inserted new record for {ip_addr}")
-                return_status = True
+                return_status = False
                 
         except sqlite3.Error as e:
             print(f"SQL Error: {e}")

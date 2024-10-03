@@ -1,7 +1,7 @@
 import re
 import json
 
-class Parselet_GETenv:
+class Parselet_GET:
     def __init__(self):
         pass
 
@@ -57,8 +57,8 @@ if __name__ == "__main__":
     # Example log line from access.log
     log_line = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
 
-    # Create an instance of the Parselet_GETen class
-    compressor = Parselet_GETenv()
+    # Create an instance of the Parselet_GET class
+    compressor = Parselet_GET()
 
     # Compress the log line and print the JSON output
     compressed_json = compressor.compress_line(log_line)

@@ -81,6 +81,10 @@ class BadGets:
             if self._bad_gets_changed():
                 self.read_bad_gets_file()
 
+        # Get rid of // in input_string
+        if input_string[:2] == '//':
+            input_string = input_string[1:]
+            
         # special case for "/"
         if input_string == '/':
             return False

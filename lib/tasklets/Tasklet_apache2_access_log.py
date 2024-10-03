@@ -47,7 +47,7 @@ import AbuseIPDB
 # And a database guy
 from ManageBanActivityDatabase import ManageBanActivityDatabase
 # our parselet
-import Parselet_GETenv
+import Parselet_GET
 # determine if a GET is invalid
 import BadGets
 # our WhiteList
@@ -108,7 +108,7 @@ class Tasklet_apache2_access_log:
 
         parsed_res = json.loads(res)
         
-        # errors look like this {"class_name": "Parselet_GETenv", "error": "No match found"}
+        # errors look like this {"class_name": "Parselet_GET", "error": "No match found"}
         if self.is_error_response(parsed_res):
             err = parsed_res.get('error')
             print(f"Error returned from compressed_line = {err} for line {line}")
@@ -294,7 +294,7 @@ if __name__ == "__main__":
         # And a database guy
         from ManageBanActivityDatabase import ManageBanActivityDatabase
         # our parselet
-        import Parselet_GETenv
+        import Parselet_GET
     
     # Extracted constants for log file name and format
     LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
@@ -319,7 +319,7 @@ if __name__ == "__main__":
     logger = logging.getLogger(LOG_ID)
 
     # create our parselet
-    parselet = Parselet_GETenv.Parselet_GETenv()
+    parselet = Parselet_GET.Parselet_GET()
 
     # Create a global event object to signaling threads to stop
     stop_event = threading.Event()
