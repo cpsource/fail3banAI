@@ -176,7 +176,7 @@ class Tasklet_apache2_access_log:
         print("Window flag is True" if window_flag else "Window flag is False")            
         
         # report to AbuseIPDB
-        if False and window_flag is False:
+        if window_flag is False:
             # we can report as it's not too soon
             # we need to estimate categories. See https://www.abuseipdb.com/categories for details
 
