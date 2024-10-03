@@ -1,6 +1,6 @@
 import re
 import json
-import ipaddress
+#import ipaddress
 
 #
 # handle lines of the form 65.49.1.73 - - [03/Oct/2024:14:35:17 +0000] "\x16\x03\x01" 400 488 "-" "-"
@@ -79,13 +79,18 @@ class Parselet_Probe_Attack:
             })
 
 if __name__ == "__main__":
-    # Example log line from access.log
-    log_line = '65.49.1.73 - - [03/Oct/2024:14:35:17 +0000] "\x16\x03\x01" 400 488 "-" "-"'
-    
+    log_lines = (
+        '2602:80d:1002::18 - - [03/Oct/2024:14:13:04 +0000] "PRI * HTTP/2.0" 400 488 "-" "-"',
+        '154.213.187.244 - - [03/Oct/2024:14:28:01 +0000] "CONNECT google.com:443 HTTP/1.1" 200 569 "-" "Go-http-client/1.1"',
+        '154.213.187.244 - - [03/Oct/2024:14:28:01 +0000] "\x16\x03\x01" 400 488 "-" "-"'
+        )
+
     # Create an instance of the Parselet_Probe_Attack class
     compressor = Parselet_Probe_Attack()
 
-    # Compress the log line and print the JSON output
-    compressed_json = compressor.compress_line(log_line)
-    print(compressed_json)
+    for log_line in log_lines:
+        # Example log line from access.log
+        # Compress the log line and print the JSON output
+        compressed_json = compressor.compress_line(log_line)
+        print(compressed_json)
 
