@@ -20,8 +20,9 @@ class DynamicImporter:
         self.import_modules(file_list)
 
     def print_supported_methods(self,obj):
-        methods = [method for method in dir(obj) if callable(getattr(obj, method)) and not method.startswith("__")]
-        print("Supported methods:", methods)
+        pass
+        #methods = [method for method in dir(obj) if callable(getattr(obj, method)) and not method.startswith("__")]
+        #print("Supported methods:", methods)
     
     def extract_parselet_class(self,filepath):
         match = re.search(r'(Parselet_[A-Za-z0-9_]+)\.py', filepath)
@@ -79,18 +80,18 @@ class DynamicImporter:
                 print(f"Error importing {module_name}: {e}")  # Debugging info for errors
 
     def compress_line(self, input_string):
-        print(f"compress_line: input_string = {input_string}")
+        #print(f"compress_line: input_string = {input_string}")
 
         # Walk through the imported modules and call compress_line(input_string) on each
         for module_name, module in self.modules.items():
-            print(f"compress_line: module_name = {module_name}, module={module}")
+            #print(f"compress_line: module_name = {module_name}, module={module}")
             self.print_supported_methods(module)
             try:
                 # Call the compress_line function in the module
                 result = module.compress_line(input_string)
 
-                print(f"result = {result}")
-                print(f"type of result = {type(result)})")
+                #print(f"result = {result}")
+                #print(f"type of result = {type(result)})")
 
                 # Check if the response indicates an error
                 if 'No match found' in result:
@@ -118,11 +119,15 @@ if __name__ == "__main__":
     my_directory = os.getenv('FAIL3BAN_PROJECT_ROOT') + '/lib/parselets/apache2/access-log'
     dynamic_importer = DynamicImporter(my_directory)
 
-    
+    test_inputs = (
+        '2602:80d:1002::18 - - [03/Oct/2024:14:13:04 +0000] "PRI * HTTP/2.0" 400 488 "-" "-"',
+        '154.213.187.244 - - [03/Oct/2024:14:28:01 +0000] "CONNECT google.com:443 HTTP/1.1" 200 569 "-" "Go-http-client/1.1"',
+        '154.213.187.244 - - [03/Oct/2024:14:28:01 +0000] "\x16\x03\x01" 400 488 "-" "-"',
+        '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
+    )
+
     # Test input string to be passed
-    #test_input = "some_input_string"
-    test_input = '64.225.75.246 - - [28/Sep/2024:00:31:27 +0000] "GET /.env HTTP/1.1" 302 841 "-" "Go-http-client/1.1"'
-    
-    # Call compress_line with the test input and print the result
-    result = dynamic_importer.compress_line(test_input)
-    print(f"Result: {result}")
+    for line in test_inputs:
+        # Call compress_line with the test input and print the result
+        result = dynamic_importer.compress_line(line)
+        print(f"Result: {result}")
