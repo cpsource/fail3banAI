@@ -2,7 +2,6 @@ import re
 import json
 import ipaddress
 
-
 class Parselet_OPTIONS:
     def __init__(self):
         pass
@@ -108,3 +107,6 @@ if __name__ == "__main__":
     compressed_json = compressor.compress_line(log_line)
     print(compressed_json)
 
+def compress_line(str):
+    c = Parselet_OPTIONS()
+    return c.compress_line(str)

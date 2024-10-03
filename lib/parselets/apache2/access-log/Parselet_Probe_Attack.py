@@ -78,6 +78,10 @@ class Parselet_Probe_Attack:
                 "error": "No match found"
             })
 
+def compress_line(str):
+    c = Parselet_Probe_Attack()
+    return c.compress_line(str)
+        
 if __name__ == "__main__":
     log_lines = (
         '2602:80d:1002::18 - - [03/Oct/2024:14:13:04 +0000] "PRI * HTTP/2.0" 400 488 "-" "-"',
