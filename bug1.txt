@@ -178,3 +178,9 @@ etc are reported as BAD
         "usageType": "Fixed Line ISP"
     }
 }
+
+---
+
+Error returned from compressed_line = No match found for line 2001:bc8:1201:1f:ba2a:72ff:fee1:16a2 - - [03/Oct/2024:07:37:42 +0000] "GET /xmlrpc.php HTTP/1.1" 200 4041 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
+
+This should have matched !!!!
