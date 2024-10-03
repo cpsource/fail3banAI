@@ -217,7 +217,7 @@ class ManageBanActivityDatabase:
         cursor.close()
         self.database_connection_pool.return_connection(conn)
 
-    def is_in_window(self, ip_addr, N=15):
+    def is_in_window(self, ip_addr, N=20):
         """Check if the record for the given IP address exists and is within N minutes old."""
 
         print(f"Checking if IP address {ip_addr} is within {N} minutes window...")
