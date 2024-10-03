@@ -68,7 +68,12 @@ class BadGets:
             return False
         
     def is_bad_get(self, input_string):
-        """Return True if input_string contains ../../ or matches a bad_get in self.bad_gets."""
+        """Return True if input_string contains ../../ or / or matches a bad_get in self.bad_gets."""
+
+        #print(f"{self.bad_gets}")
+        
+        input_string = input_string.strip()
+        
         # Reload the file if necessary
         self.reload_counter -= 1
         if self.reload_counter <= 0:
@@ -76,18 +81,26 @@ class BadGets:
             if self._bad_gets_changed():
                 self.read_bad_gets_file()
 
+        # special case for "/"
+        if input_string == '/':
+            return False
+        
         # Special case for "../../"
         if "../../" in input_string:
             return True
 
         # Check each entry in the bad_gets tuple by comparing the part of input_string
         # with the same length as the bad_get entry.
+        idx = 0
         for bad_get in self.bad_gets:
+            idx += 1
+            if len(bad_get) == 0:
+                continue
             if input_string[:len(bad_get)] == bad_get:
+                #print(f"match: idx = {idx}, {bad_get}, {type(bad_get)}")
+                #print(f"{self.bad_gets}")
                 return True
-
         return False
-
     
 if __name__ == "__main__":
     # Extracted constants for log file name and format
@@ -123,6 +136,8 @@ if __name__ == "__main__":
         "/guacamole",
         "/index.php?lang=../../../../../../../../usr/local/lib/php/pearcmd&+config-create+/&/<?echo(md5(\"hi\"));?>+/tmp/index1.//i",
         "/foobar",
+        "/favicon.ico",
+        "/xmlrpc.php",
     ]
 
     # Loop over the test strings and check if they are "bad GETs"
