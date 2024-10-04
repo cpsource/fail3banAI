@@ -183,7 +183,7 @@ import ShortenJournalString
 import f3b_sqlite3_db
 
 # get whitelist
-import f3b_whitelist
+import WhiteList
 
 # get GlobalShutdown
 from GlobalShutdown import GlobalShutdown
@@ -295,7 +295,7 @@ gs = GlobalShutdown()
 gs.cleanup()
 
 # our whitelist
-wl = f3b_whitelist.WhiteList()
+wl = WhiteList.WhiteList()
 wl.whitelist_init()
 
 def remove_pid(pid_file):
@@ -356,11 +356,7 @@ work_controller.enqueue(work_unit)
 
 # build and run Tasklet_Console
 data = "Tasklet_Console"
-<<<<<<< HEAD
 work_unit = WorkManager.WorkUnit(
-=======
-work_unit1 = WorkManager.WorkUnit(
->>>>>>> cc249d499bda219f9d5c6aa9f054c6de4072a5bd
     function=Tasklet_Console.run_tasklet_console,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
@@ -369,11 +365,7 @@ work_unit1 = WorkManager.WorkUnit(
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
-<<<<<<< HEAD
 work_controller.enqueue(work_unit)
-=======
-work_controller.enqueue(work_unit1)
->>>>>>> cc249d499bda219f9d5c6aa9f054c6de4072a5bd
 
 # Get a ZDROP instance
 #zdr = ZDrop.ZDrop(work_controller, message_manager)
