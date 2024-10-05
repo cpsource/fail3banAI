@@ -17,7 +17,7 @@ try:
         user=os.getenv('MARIADB_USER_NAME'),
         password=os.getenv('MARIADB_USER_PASSWORD'),
         host=os.getenv('MARIADB_USER_HOST'),
-        port=3306,
+        port=os.getenv('MARIADB_USER_PORT'),
         database=os.getenv('MARIADB_USER_DATABASE')
     )
 
