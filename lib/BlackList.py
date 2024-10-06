@@ -41,9 +41,11 @@ import WhiteList
 
 import Maria_DB
 
+import MariaDBConnectionPool
+
 class BlackList:
 
-    def __init__(self, database_conneciton_pool, config_data=None, logger_id=LOG_ID):
+    def __init__(self, database_connection_pool, config_data=None, logger_id=LOG_ID):
         # cnt added by ban_table
         self.ban_table_cnt = 0
         # save off
@@ -130,7 +132,7 @@ class BlackList:
 
         # Load blacklisted ip's from ban_table
         mdb = Maria_DB.Maria_DB(self.database_connection_pool)
-        if mdb is None{
+        if mdb is None:
                 self.logger.error("Can't create an instance of Maria_DB")
         else:
                 mdb.get_expired_records(self._callback)
@@ -234,6 +236,8 @@ class BlackList:
 # Example usage
 if __name__ == "__main__":
 
+    from dotenv import load_dotenv
+
     # Extracted function to set up logging configuration
     def setup_logging():
         logging.basicConfig(
@@ -244,16 +248,28 @@ if __name__ == "__main__":
                 logging.StreamHandler()
             ]
         )
-
     # Setup logging
     setup_logging()
     # Create a named logger consistent with the log file name
     logger = logging.getLogger(LOG_ID)
+    
     # And show logger for debugging
-    print(f"__main__: logger = {logger}")
+    #print(f"__main__: logger = {logger}")
 
+    # load dotenv
+    try:
+        # Attempt to load dotenv file using the environment variable
+        dotenv_config = load_dotenv(f"{os.getenv('HOME')}/.env")
+        logger.info("dotenv file loaded successfully.")
+    except Exception as e:
+        # Handle any exceptions that may occur
+        logger.error(f"An error occurred while loading dotenv: {e}")
+
+    # build some database conns for BackList
+    mdcp = MariaDBConnectionPool.MariaDBConnectionPool(logger, pool_size=2)
+                
     # Instantiate the BlackList class
-    bl = BlackList()
+    bl = BlackList(mdcp)
     #print("Blacklisted IPs:", bl.get_blacklist())
 
     # Done

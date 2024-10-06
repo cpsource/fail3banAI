@@ -217,7 +217,7 @@ class Maria_DB:
     #
     # Handle ban table
     #
-    def add_or_update_ban(self, ip_addr, jail_name='n/a', minutes_until_ban_end):
+    def add_or_update_ban(self, ip_addr, minutes_until_ban_end, jail_name='n/a'):
         """Add or update a ban record in the ban_table."""
         
         # Borrow a connection
@@ -341,7 +341,7 @@ class Maria_DB:
         query = '''
         SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time < %s
         '''
-        self.cursor.execute(query, (current_time,))
+        cursor.execute(query, (current_time,))
 
         # Fetch records one by one and pass them to the callback
         while True:
@@ -384,7 +384,7 @@ class Maria_DB:
         query = '''
         SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time IS NULL
         '''
-        self.cursor.execute(query)
+        cursor.execute(query)
 
         # Fetch records one by one and pass them to the callback
         while True:
