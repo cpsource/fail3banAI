@@ -39,9 +39,15 @@ else:
 
 import WhiteList
 
+import Maria_DB
+
 class BlackList:
 
-    def __init__(self, config_data=None, logger_id=LOG_ID):
+    def __init__(self, database_conneciton_pool, config_data=None, logger_id=LOG_ID):
+        # cnt added by ban_table
+        self.ban_table_cnt = 0
+        # save off
+        self.database_connection_pool = database_connection_pool
         # ip_count
         self.ip_count_loaded = 0
         # our config data
@@ -95,7 +101,16 @@ class BlackList:
             self.logger.error(f"An error occurred: {e}")
 
         self.logger.debug(f"blacklist {filespec} loaded {local_count} new ip addresses")
-                
+
+    # a callback that adds ip_address to blacklist if it's not already there
+    def _callback(self, record):
+        ip_address , _ , _ = record
+        # If the line contains an IP address and is not already blacklisted
+        if ip_address not in self.blacklist:
+            self.blacklist.add(ip_address)
+            self.ip_count_loaded += 1
+            self.ban_table_count += 1
+        
     # Initialize the class by reading blacklist.ctl into a list
     def _blacklist_init(self):
 
@@ -112,6 +127,16 @@ class BlackList:
         self.process_rules_vx(file_path)
         file_path = f"{project_root}" + "/ufw-blocklist/rules.v6"
         self.process_rules_vx(file_path)
+
+        # Load blacklisted ip's from ban_table
+        mdb = Maria_DB.Maria_DB(self.database_connection_pool)
+        if mdb is None{
+                self.logger.error("Can't create an instance of Maria_DB")
+        else:
+                mdb.get_expired_records(self._callback)
+                mdb.get_banned_records(self._callback)
+                mdb = None # Garbage Collect ???
+                self.logger.debug(f"ban_table added {self.ban_table_cnt} records to blacklist")
 
         # now write out
         file_path = f"{project_root}" + "/ufw-blocklist/master-blacklist.ctl"

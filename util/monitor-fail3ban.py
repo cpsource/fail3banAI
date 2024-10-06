@@ -180,7 +180,7 @@ import CountryCodes
 import ShortenJournalString
 
 # get database
-import f3b_sqlite3_db
+import MariaDB
 
 # get whitelist
 import WhiteList
@@ -201,7 +201,10 @@ import Tasklet_ZDrop
 import Tasklet_Console
 
 # database pool
-import SQLiteConnectionPool
+import MariaDBConnectionPool
+
+# our blacklist
+import BlackList
 
 # 
 #
@@ -275,7 +278,11 @@ journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subpr
 
 # Setup database pool
 db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
-database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
+database_connection_pool = MariaDBConnectionPool.MariaDBConnectionPool(db_name=db_name, pool_size=10 )
+
+# Setup blacklist
+bl = BlackList.BlackList(database_connection_pool)
+print(f"Number of blacklisted items: {len(bl.get_blacklist()}")
 
 # use new PreviousJournalctl class
 prevs = PreviousJournalctl()
@@ -286,7 +293,7 @@ cc = CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = ShortenJournalString.ShortenJournalString()
 # setup database
-db = f3b_sqlite3_db.SQLiteDB(database_connection_pool)
+db = MariaDB.MariaDB(database_connection_pool)
 db.reset_hazard_level()
 db.show_threats()
 # and GlobalShutdown
