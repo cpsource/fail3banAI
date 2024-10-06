@@ -108,8 +108,6 @@ class Tasklet_ZDrop:
         # set time to now
         self.mba.update_time(ip_address)
         
-
-        
         # do so after the database update
         if window_flag is True:
             self.logger.debug(f"Within {window_size} minute window, skip reporting to AbuseIPDB")

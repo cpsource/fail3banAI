@@ -222,10 +222,11 @@ class ManageBanActivityDatabase_MariaDB:
             record = cursor.fetchone()
 
             if record:
-                last_ban_time_str = record[2]
+                last_ban_time_str = record[2]      # -1 or None means forever
                 new_usage_count = record[1] + 1
                 current_date_time = datetime.now()
 
+                # update the usage count in the activity table
                 cursor.execute('''
                 UPDATE activity_table
                 SET datetime_of_last_ban = %s, usage_count = %s
@@ -248,9 +249,7 @@ class ManageBanActivityDatabase_MariaDB:
                     print(f"IP {ip_addr} is not within the {N} minutes window.")
             else:
                 cursor.execute('''
-                INSERT INTO
-
- activity_table (ip_address, usage_count, datetime_of_last_ban)
+                INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
                 VALUES (%s, 1, %s)
                 ''', (ip_addr, datetime.now()))
                 self.logger.debug(f"Inserted new record for {ip_addr}")

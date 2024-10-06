@@ -28,7 +28,7 @@ LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban.log"
 LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
 LOG_ID = "fail3ban"
 
-print(f"LOG_FILE_NAME = {LOG_FILE_NAME}")
+#print(f"LOG_FILE_NAME = {LOG_FILE_NAME}")
 
 # localhost is always good to have in the whitelist
 LOCAL_IP = "127.0.0.1"
@@ -46,10 +46,10 @@ class WhiteList:
         # register a cleanup
         atexit.register(self.cleanup)
         # and setup
-        self.whitelist_init()
+        self._whitelist_init()
         
     # Initialize the class by reading whitlist.ctl into a dictionary
-    def whitelist_init(self):
+    def _whitelist_init(self):
         # Open the whitelist.ctl file
         WHITELIST_FILE = self.get_whitelist_file_path()
         try:

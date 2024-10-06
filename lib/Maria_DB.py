@@ -23,8 +23,8 @@ class Maria_DB:
         
         try:
             # Create tables if they don't exist
-            self.create_ban_table()
-            self.create_threat_table()
+            self._create_ban_table()
+            self._create_threat_table()
             self.logger.info("Created ban and threat tables successfully.")
         except mysql.connector.Error as e:
             self.logger.error(f"An error occurred while creating ban and threat tables: {e}")
@@ -32,7 +32,7 @@ class Maria_DB:
             traceback.print_exc()
             raise  # Re-raise the exception to notify higher-level code
 
-    def create_ban_table(self):
+    def _create_ban_table(self):
         """Create the ban_table if it doesn't already exist."""
 
         # Borrow a connection
@@ -45,7 +45,7 @@ class Maria_DB:
             ip_address CHAR(40),
             jail CHAR(100),
             usage_count INT,
-            ban_expire_time DATETIME,
+            ban_expire_time DATETIME NULL,
             UNIQUE(ip_address, jail)
         )
         '''
@@ -63,7 +63,7 @@ class Maria_DB:
             cursor.close()
             self.database_connection_pool.return_connection(conn)
             
-    def create_threat_table(self):
+    def _create_threat_table(self):
         """Create the threat_table if it doesn't already exist."""
 
         # Borrow a connection
@@ -276,5 +276,112 @@ class Maria_DB:
             cursor.close()
             self.database_connection_pool.return_connection(conn)
 
+    def is_banned_for_life(self, ip_address):
+        """
+        Check if an IP address is banned for life (ban_expire_time is NULL).
+
+        Args:
+            ip_address (str): The IP address to check.
+
+        Returns:
+            bool: True if banned for life (ban_expire_time is NULL), 
+                  False if not banned for life,
+                  None if the IP address is not in the database.
+        """
+        conn = None
+        try:
+            # Borrow a connection from the pool
+            conn = self.database_connection_pool.get_connection()
+            cursor = conn.cursor()
+
+            # Query to check if the IP address is banned for life (ban_expire_time is NULL)
+            query = '''
+            SELECT ban_expire_time FROM ban_table WHERE ip_address = %s
+            '''
+            cursor.execute(query, (ip_address,))
+            record = cursor.fetchone()
+
+            if record is None:
+                # IP address is not found in the database
+                return None
+
+            ban_expire_time = record[0]
+
+            # If ban_expire_time is NULL, the IP address is banned for life
+            if ban_expire_time is None:
+                return True
+            else:
+                return False
+
+        except mysql.connector.Error as e:
+            print(f"Error occurred while checking the ban: {e}")
+            return None
+        finally:
+            if conn:
+                cursor.close()
+                self.database_connection_pool.return_connection(conn)
+
+    def get_expired_records(self):
+        """Return a list of expired records in the form [ip_addr, True-if-ipv6, else False, jail]."""
+        expired_records = []
+        current_time = datetime.now()
+
+        query = '''
+        SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time < %s
+        '''
+        self.cursor.execute(query, (current_time,))
+        records = self.cursor.fetchall()
+
+        for record in records:
+            ip_addr, jail, ban_expire_time = record
+            try:
+                ip_obj = ipaddress.ip_address(ip_addr)
+                is_ipv6 = isinstance(ip_obj, ipaddress.IPv6Address)
+                if is_ipv6:
+                    ip_addr = ip_obj.compressed
+            except ValueError:
+                is_ipv6 = False
+
+            expired_records.append([ip_addr, is_ipv6, jail])
+
+        return expired_records
+
+    def show_database(self):
+        """Print all records in the database in a human-readable format, and show if the ban has expired."""
+        current_time = datetime.now()
+
+        query = '''
+        SELECT id, ip_address, jail, usage_count, ban_expire_time FROM ban_table
+        '''
+        self.cursor.execute(query)
+        records = self.cursor.fetchall()
+
+        if records:
+            print(f"Found {len(records)} record(s):")
+            for record in records:
+                id, ip_addr, jail, usage_count, ban_expire_time = record
+                try:
+                    ip_obj = ipaddress.ip_address(ip_addr)
+                    is_ipv6 = isinstance(ip_obj, ipaddress.IPv6Address)
+                    if is_ipv6:
+                        ip_addr = ip_obj.compressed
+                except ValueError:
+                    is_ipv6 = False
+
+                expired_status = "Expired" if current_time > ban_expire_time else "Active"
+                print(f"ID: {id}, IP: {ip_addr}, Jail: {jail}, Usage Count: {usage_count}, "
+                      f"Ban Expire Time: {ban_expire_time} ({expired_status})")
+        else:
+            print("No records found in the database.")
+
+    def remove_record(self, ip_addr):
+        """Remove a record from the ban_table based on ip_address and jail_name."""
+        delete_query = '''
+        DELETE FROM ban_table WHERE ip_address = %s
+        '''
+        self.cursor.execute(delete_query, (ip_addr,))
+        self.connection.commit()
+        print(f"Record for IP {ip_addr} in jail {jail_name} has been removed.")
+                
     def cleanup(self):
         pass

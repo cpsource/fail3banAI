@@ -1,6 +1,6 @@
-# blacklist.py
+# BlackList.py
 
-# Handle everything from blacklist.ctl
+# Handle everything from blacklist.ctl and produces self.blacklist = set()
 
 # we load all the known rules from control, then we load the previously saved rules
 # from ipset in ufw-blocklist. Then we create a master-blacklist.ctl
@@ -37,7 +37,7 @@ if lib_path not in sys.path:
 else:
     print(f"{lib_path} is already in the system path.")
 
-import f3b_whitelist
+import WhiteList
 
 class BlackList:
 
@@ -47,14 +47,16 @@ class BlackList:
         # our config data
         self.configData = None
         # init and load whitelist
-        self.wl = f3b_whitelist.WhiteList()
-        self.wl.whitelist_init()
+        self.wl = WhiteList.WhiteList()
         # Initialize an empty list to store blacklisted IPs
         self.blacklist = set()
         # Keep a pointer to our configuration dictionary
         self.configData = config_data
         # Obtain logger
         self.logger = logging.getLogger(logger_id)
+        # Self Initialize
+        self._blacklist_init()
+        
         # register a cleanup
         atexit.register(self.cleanup)
 
@@ -88,14 +90,14 @@ class BlackList:
                             print(f"Skipping {clean_line} as it's whitelisted")
                         
         except FileNotFoundError:
-            print(f"Error: File {filespec} not found.")
+            self.logger.error(f"Error: File {filespec} not found.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            self.logger.error(f"An error occurred: {e}")
 
         self.logger.debug(f"blacklist {filespec} loaded {local_count} new ip addresses")
                 
     # Initialize the class by reading blacklist.ctl into a list
-    def blacklist_init(self):
+    def _blacklist_init(self):
 
         # get a list of blacklist files
         blacklist_files = [ f"{project_root}" + "/control/blacklist.ctl",
@@ -119,7 +121,16 @@ class BlackList:
 
     # Fetch the blacklist list from the class
     def get_blacklist(self):
+
+        #
+        # Later, you can walk the list with:
+        # Walk through the set and print each value
+        #  for value in blacklist:
+        #    print(value)
+        #
+        
         # Return the list of blacklisted IPs
+    
         return self.blacklist
 
     def is_blacklisted(self, ip_address):
@@ -154,7 +165,7 @@ class BlackList:
         except Exception as e:
             self.logger.error(f"An error occurred while processing {file_path}: {e}")
 
-        print(f"New Count: {new_cnt}")
+        self.logger.info(f"New Count: {new_cnt}")
             
     def process_third_column(self, column_data):
         """
@@ -190,7 +201,7 @@ class BlackList:
                     #self.logger.info(f"Blacklist written to {file_path}.")
         except Exception as e:
             self.logger.error(f"An error occurred while writing to {file_path}: {e}")
-        print(f"total records written {cnt}")
+        self.logger.debug(f"total records written {cnt}")
         
     def cleanup(self):
         pass
@@ -218,8 +229,6 @@ if __name__ == "__main__":
 
     # Instantiate the BlackList class
     bl = BlackList()
-    # and Initialize it
-    bl.blacklist_init()
     #print("Blacklisted IPs:", bl.get_blacklist())
 
     # Done
