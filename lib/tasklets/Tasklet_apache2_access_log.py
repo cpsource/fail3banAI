@@ -24,6 +24,8 @@ from datetime import datetime
 import atexit
 import json
 import traceback
+#import mysql.connector
+from dotenv import load_dotenv
 
 project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
 # Add the constructed path to sys.path only if it's not already in sys.path
@@ -41,19 +43,17 @@ if p not in sys.path:
 print(sys.path)
 
 # database pool
-import SQLiteConnectionPool
+import MariaDBConnectionPool
 # This class does the actual notification work
 import AbuseIPDB
-# And a database guy
-from ManageBanActivityDatabase import ManageBanActivityDatabase
+# manage ban activity deatabase
+from ManageBanActivityDatabase_MariaDB import ManageBanActivityDatabase_MariaDB
 # our parselet
 import Parselet_GET
 # determine if a GET is invalid
 import BadGets
 # our WhiteList
 import WhiteList
-# manage ban activity deatabase
-from ManageBanActivityDatabase import ManageBanActivityDatabase
 # tasklet that notifies AbuseIPDB
 from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
 # work manager
@@ -67,15 +67,12 @@ class Tasklet_apache2_access_log:
         self.logger = logging.getLogger(log_id)
         self.wctlr = work_controller
         self.abi = AbuseIPDB.AbuseIPDB()  # AbuseIPDB instance for reporting
-        self.mba = ManageBanActivityDatabase(database_connection_pool,LOG_ID) # TODO - two loggers?
+        self.mba = ManageBanActivityDatabase_MariaDB(database_connection_pool,LOG_ID) # TODO - two loggers?
         self.parselet = parselet
         self.badgets = BadGets.BadGets()
 
         # whitelist
         self.white_list = WhiteList.WhiteList()
-
-        # and a ManageBanActivityDatabase - manages 
-        self.mba = ManageBanActivityDatabase(database_connection_pool)
 
         # Register cleanup function to close the database connection
         atexit.register(self.cleanup)
@@ -329,10 +326,33 @@ if __name__ == "__main__":
         else:
             print("Error, stop evet was none")
             sys.exit(0)
-        
-    # Setup database pool
-    db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
-    database_connection_pool = SQLiteConnectionPool.SQLiteConnectionPool(db_name=db_name, pool_size=10 )
+
+    # load dotenv
+    try:
+        # Attempt to load dotenv file using the environment variable
+        dotenv_config = load_dotenv(f"{os.getenv('HOME')}/.env")
+        print("dotenv file loaded successfully.")
+    except Exception as e:
+        # Handle any exceptions that may occur
+        print(f"An error occurred while loading dotenv: {e}")
+    
+    # debugging
+    user=os.getenv('MARIADB_USER_NAME')
+    password=os.getenv('MARIADB_USER_PASSWORD')
+    host=os.getenv('MARIADB_USER_HOST')
+    port=os.getenv('MARIADB_USER_PORT')
+    database=os.getenv('MARIADB_USER_DATABASE')
+
+    if False:
+        print(f"user = {user}")
+        print(f"password = {password}")
+        print(f"host = {host}")
+        print(f"port = {port}")
+        print(f"database = {database}")
+    
+    # Initialize the connection pool
+    database_connection_pool = MariaDBConnectionPool.MariaDBConnectionPool(logger, pool_size=10)
+    database_connection_pool.print_pool_contents() # Prints all connections in the pool
 
     # Get WorkController
     work_controller = WorkManager.WorkController()

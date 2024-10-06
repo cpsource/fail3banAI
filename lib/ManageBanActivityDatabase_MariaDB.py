@@ -8,7 +8,7 @@ import mysql.connector
 
 LOG_ID = "fail3ban"
 
-class ManageBanActivityDatabase:
+class ManageBanActivityDatabase_MariaDB:
     def __init__(self, database_connection_pool, log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     import MariaDBConnectionPool  # Update your connection pool class
 
     database_connection_pool = MariaDBConnectionPool.MariaDBConnectionPool()
-    manage_ban = ManageBanActivityDatabase(database_connection_pool)
+    manage_ban = ManageBanActivityDatabase_Mariadb(database_connection_pool)
 
     if len(sys.argv) < 2:
         print("No command provided. Use 'help' for usage instructions.")

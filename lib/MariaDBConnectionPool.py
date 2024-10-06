@@ -66,12 +66,12 @@ class MariaDBConnectionPool:
                     # Try to get a connection from the pool without blocking
                     conn = self.pool.get_nowait()
                 except Empty:  # queue.Empty is replaced by Empty due to the direct import from queue
-                    logger.warning("No available connections in the pool. Creating a new connection.")
+                    self.logger.warning("No available connections in the pool. Creating a new connection.")
                     try:
                         # Create a new connection if the pool is empty
                         conn = self._create_connection()
                     except Exception as e:
-                        logger.error(f"Failed to create a new connection: {e}")
+                        self.logger.error(f"Failed to create a new connection: {e}")
                         return None
 
             # Add the connection to the list of outstanding connections
@@ -79,7 +79,7 @@ class MariaDBConnectionPool:
             return conn
         
         except Exception as e:
-            logger.error(f"Error in get_connection: {e}")
+            self.logger.error(f"Error in get_connection: {e}")
             return None
 
     def return_connection(self, conn):
@@ -91,18 +91,18 @@ class MariaDBConnectionPool:
                 self.track_all_outstanding_connections.remove(conn)
                 try:
                     self.pool.put_nowait(conn)
-                    logger.debug(f"Returned connection to pool: {conn}")
+                    self.logger.debug(f"Returned connection to pool: {conn}")
                 except Full:
-                    logger.warning("Connection pool is full. Closing the returned connection.")
+                    self.logger.warning("Connection pool is full. Closing the returned connection.")
                     conn.close()
 
     def _close_connection(self, conn):
         """Close a single SQLite connection."""
         try:
             conn.close()
-            logger.debug(f"Closed connection: {conn}")
+            self.logger.debug(f"Closed connection: {conn}")
         except mysql.connector.Error as e:
-            logger.error(f"Error closing connection: {e}")
+            self.logger.error(f"Error closing connection: {e}")
 
     def close_all_connections(self):
         """
@@ -196,9 +196,9 @@ def db_task(pool, task_id):
         cursor = conn.cursor()
         cursor.execute("SHOW TABLES;")  # MariaDB equivalent of listing tables
         rows = cursor.fetchall()
-        print(f"Task {task_id}: Tables in database: {rows}")
+        self.logger.debug(f"Task {task_id}: Tables in database: {rows}")
     except mysql.connector.Error as e:
-        logger.error(f"Task {task_id}: Database error: {e}")
+        self.logger.error(f"Task {task_id}: Database error: {e}")
     finally:
         pool.return_connection(conn)
     
