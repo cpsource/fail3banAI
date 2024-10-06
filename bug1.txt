@@ -230,3 +230,16 @@ Traceback (most recent call last):
 ValueError: unconverted data remains: .778180
 2024-10-06 08:27:51,424 - Tasklet_apache2_access_log.py:277 - DEBUG - taal.monitor_log returns status = None
 Tasklet has finished.
+Ask these question to get the code from an input line
+
+----------------
+
+so, looking at /var/log/apache2/error.log I see the attached typical line. Can you write the regex to extract relevant information? Also for each extract, replace that data with a <datetime> (or whatever) and return that compressed string. The idea is to come up with a compressed string that's generic.    [Fri Sep 27 07:32:32.228793 2024] [core:notice] [pid 183991:tid 183991] AH00113: /var/www/html/.htaccess:45 cannot use \
+a full URL in a 401 ErrorDocument directive --- ignoring!  xmlrpc.php[183991]: 'xmlrpc.php' executed by 2602:80d:1006::15. Please return as a json output.
+
+You must be able to handle ipv4 as well as 6. For the example, I got a string 2602:80. Try again with that part of the regex
+
+The compressed log should be an edited original. Only replace the regex matches with the <>. So for example, we'd get <datetime> [core:notice] <pid> etc
+
+turn your response into a class. You pick the name based on the input string and what you think it should be. Add the class name to the json you return. Add a __main__ for testing and call the class.
+
