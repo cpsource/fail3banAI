@@ -131,6 +131,9 @@ class Tasklet_apache2_access_log:
 
         # is it one of the bad GET's ???
         if not self.badgets.is_bad_get(requested_file):
+            # no, lets log it for later
+            self.mba.put_not_bad_get_string(ip_address, requested_file)
+            # and say what we are doing about it
             print("Is Not a bad GET, returning ...")
             return
         else:

@@ -27,7 +27,7 @@ class BadGets:
 
     def save_file_attributes(self):
         """Save the file's size and modification time."""
-        logger.debug(f"filepath = {self.filepath}")
+        #logger.debug(f"filepath = {self.filepath}")
         
         try:
             self.last_modified_time = os.path.getmtime(self.filepath)

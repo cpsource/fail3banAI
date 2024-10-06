@@ -1,5 +1,6 @@
 # list any gets that are invalid and are considered a security threat
 
+/vicidial
 /.DS_Store
 /.env
 /.git/config

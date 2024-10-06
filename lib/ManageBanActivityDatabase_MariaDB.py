@@ -19,13 +19,20 @@ class ManageBanActivityDatabase_MariaDB:
         atexit.register(self.cleanup)
         
         try:
-            self.create_activity_table()
+            self._create_activity_table()
             self.logger.info("Created activity table successfully.")
         except mysql.connector.Error as ex:
             self.logger.error(f"Created activity table returned {ex}")
             raise  # Re-raise the exception to notify higher-level code
 
-    def create_activity_table(self):
+        try:
+            self._create_not_bad_get_string()
+            self.logger.info("Created not bad get string table successfully.")
+        except mysql.connector.Error as ex:
+            self.logger.error(f"Created not bad get string table returned {ex}")
+            raise  # Re-raise the exception to notify higher-level code
+        
+    def _create_activity_table(self):
         """Create the activity_table and the index on ip_address if they don't exist."""
         conn = self.database_connection_pool.get_connection()
         cursor = conn.cursor()
@@ -240,6 +247,75 @@ class ManageBanActivityDatabase_MariaDB:
             cursor.close()
             self.database_connection_pool.return_connection(conn)
 
+    def _create_not_bad_get_string(self):
+        """Create the not_bad_get_string_table if it doesn't exist."""
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
+        # Check if the table exists
+        cursor.execute("SHOW TABLES LIKE 'not_bad_get_string_table';")
+        if cursor.fetchone():
+            pass
+        else:
+            # Create the table if it does not exist
+            create_table_query = '''
+            CREATE TABLE not_bad_get_string_table (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                ip_address CHAR(39) NOT NULL UNIQUE,
+                not_bad_get CHAR(32),
+                examined BOOLEAN DEFAULT FALSE
+            );
+            '''
+            try:
+                cursor.execute(create_table_query)
+                conn.commit()
+                print("not_bad_get_string_table created.")
+            except mysql.connector.Error as e:
+                print(f"Error creating table: {e}")
+            finally:
+                cursor.close()
+                self.database_connection_pool.return_connection(conn)
+
+    def put_not_bad_get_string(self, ip_address, not_bad_get_string):
+        """Insert or update a record in not_bad_get_string_table."""
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
+        insert_query = '''
+        INSERT INTO not_bad_get_string_table (ip_address, not_bad_get, examined)
+        VALUES (%s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+        not_bad_get = VALUES(not_bad_get), examined = FALSE;
+        '''
+        try:
+            cursor.execute(insert_query, (ip_address, not_bad_get_string, False))
+            conn.commit()
+            print(f"Record for {ip_address} added/updated.")
+        except mysql.connector.Error as e:
+            print(f"Error inserting/updating record: {e}")
+        finally:
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
+
+    def show_not_bad_get_string_table(self):
+        """Display all records in not_bad_get_string_table."""
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("SELECT * FROM not_bad_get_string_table;")
+            rows = cursor.fetchall()
+            if rows:
+                for row in rows:
+                    print(row)
+            else:
+                print("No records found.")
+        except mysql.connector.Error as e:
+            print(f"Error fetching records: {e}")
+        finally:
+            cursor.close()
+            self.database_connection_pool.return_connection(conn)
+            
     def cleanup(self):
         pass
 
