@@ -217,7 +217,7 @@ class Maria_DB:
     #
     # Handle ban table
     #
-    def add_or_update_ban(self, ip_addr, jail_name, minutes_until_ban_end):
+    def add_or_update_ban(self, ip_addr, jail_name='n/a', minutes_until_ban_end):
         """Add or update a ban record in the ban_table."""
         
         # Borrow a connection
