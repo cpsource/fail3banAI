@@ -58,7 +58,7 @@ class ManageIpset6:
                     print(f"Invalid IPv6 address skipped: {line}")
     
     def start(self):
-        """Start the ipset and ip6tables configuration"""
+        """Create self.ipsetname"""
         if not self.set_exists(self.ipsetname):
             subprocess.run([self.ipset_exe, "create", self.ipsetname, "hash:net", "family", "inet6", "hashsize", "32768", "maxelem", "65536"])
 
@@ -66,7 +66,7 @@ class ManageIpset6:
             # Create the chain if it doesn't exist
             subprocess.run(["ip6tables", "-N", "ufw-blocklist-input"], check=True)
     
-            # Append the rule to INPUT to jump to ufw-blocklist-input chain for the IP set
+            # Append the rule to INPUTto jump to ufw-blocklist-input chain for the IP set
             subprocess.run([
                 "ip6tables", "-A", "INPUT", "-m", "set", "--match-set", self.ipsetname, "dst", "-j", "ufw-blocklist-input" ], check=True)
     
@@ -77,6 +77,8 @@ class ManageIpset6:
             # Insert the DROP rule into the ufw-blocklist-input chain
             subprocess.run([
                 "ip6tables", "-I", "ufw-blocklist-input", "2", "-p", "all", "-s", "0.0.0.0/0", "-d", "0.0.0.0/0", "-j", "DROP" ], check=True)
+        else:
+            print("INPUT fail, chain exists")
 
         if not self.chain_exists("ufw-blocklist-output"):
             # Create the chain if it doesn't exist
@@ -116,7 +118,7 @@ class ManageIpset6:
     def stop(self):
         """Stop the ipset and delete the chains and sets"""
         if self.chain_exists("ufw-blocklist-input"):
-            subprocess.run(["ip6tables", "-D", "INPUT", "-m", "set", "--match-set", self.ipsetname, "src", "-j", "ufw-blocklist-input"])
+            subprocess.run(["ip6tables", "-D", "INPUT", "-m", "set", "--match-set", self.ipsetname, "dst", "-j", "ufw-blocklist-input"])
             subprocess.run(["ip6tables", "-F", "ufw-blocklist-input"])
             subprocess.run(["ip6tables", "-X", "ufw-blocklist-input"])
 

@@ -1,3 +1,5 @@
+#!/home/ubuntu/openai/bin/python3
+
 import os
 import re
 import sys
@@ -31,8 +33,10 @@ def main():
     # Get the regex patterns from command-line arguments
     patterns = sys.argv[1:]
 
+    start_at = os.getenv("FAIL3BAN_PROJECT_ROOT")
     # Start walking the directory tree from the current directory
-    walk_tree_and_find(os.getcwd(), patterns)
+    #walk_tree_and_find(os.getcwd(), patterns)
+    walk_tree_and_find(start_at, patterns)
 
 if __name__ == "__main__":
     main()

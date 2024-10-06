@@ -22,10 +22,9 @@ class ManageIpset4:
         """Check if a file is executable"""
         return os.path.isfile(path) and os.access(path, os.X_OK)
 
-    def chain_exists(self, chain_name, table=None):
+    def chain_exists(self, chain_name):
         """Check if a chain exists in iptables"""
-        table_arg = ["--table", table] if table else []
-        result = subprocess.call(["iptables", "-n", "--list", chain_name] + table_arg, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.call(["iptables", "-n", "--list", chain_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return result == 0
 
     def set_exists(self, setname):
@@ -95,8 +94,9 @@ class ManageIpset4:
 
     def stop(self):
         """Stop the ipset and delete the chains and sets"""
+
         if self.chain_exists("ufw-blocklist-input"):
-            subprocess.run(["iptables", "-D", "INPUT", "-m", "set", "--match-set", self.ipsetname, "src", "-j", "ufw-blocklist-input"])
+            subprocess.run(["iptables", "-D", "INPUT", "-m", "set", "--match-set", self.ipsetname, "dst", "-j", "ufw-blocklist-input"])
             subprocess.run(["iptables", "-F", "ufw-blocklist-input"])
             subprocess.run(["iptables", "-X", "ufw-blocklist-input"])
 
