@@ -179,7 +179,7 @@ class Maria_DB:
                 return (False, None)
         except mysql.connector.Error as e:
             self.logger.error(f"Error occurred: {e}")
-<            # dump the stack
+            # dump the stack
             traceback.print_exc()
             return (False, None)
         finally:
@@ -217,10 +217,9 @@ class Maria_DB:
     #
     # Handle ban table
     #
-
     def add_or_update_ban(self, ip_addr, jail_name, minutes_until_ban_end):
         """Add or update a ban record in the ban_table."""
-
+        
         # Borrow a connection
         conn = self.database_connection_pool.get_connection()
         cursor = conn.cursor()
@@ -231,12 +230,17 @@ class Maria_DB:
             ip_addr = ip_obj.exploded  # Use the long form of the IP address
         except ValueError as e:
             self.logger.error(f"Invalid IP address '{ip_addr}': {e}")
-            # dump the stack
             traceback.print_exc()
             raise
 
         # Calculate new ban expiration time
-        ban_expire_time = datetime.now() + timedelta(minutes=minutes_until_ban_end)
+        if minutes_until_ban_end is None or minutes_until_ban_end == -1:
+            # Infinite ban: set ban_expire_time to NULL
+            ban_expire_time = None
+            self.logger.info(f"Setting infinite ban for IP {ip_addr} in jail '{jail_name}'.")
+        else:
+            # Set regular ban expiration time
+            ban_expire_time = datetime.now() + timedelta(minutes=minutes_until_ban_end)
 
         try:
             select_query = '''
@@ -246,6 +250,7 @@ class Maria_DB:
             record = cursor.fetchone()
 
             if record:
+                # Update an existing ban
                 update_query = '''
                 UPDATE ban_table 
                 SET usage_count = usage_count + 1, ban_expire_time = %s 
@@ -255,6 +260,7 @@ class Maria_DB:
                 conn.commit()
                 self.logger.info(f"Updated ban for IP {ip_addr} in jail '{jail_name}'.")
             else:
+                # Insert a new ban
                 insert_query = '''
                 INSERT INTO ban_table (ip_address, jail, usage_count, ban_expire_time) 
                 VALUES (%s, %s, %s, %s)
@@ -264,7 +270,6 @@ class Maria_DB:
                 self.logger.info(f"Added new ban for IP {ip_addr} in jail '{jail_name}'.")
         except mysql.connector.Error as e:
             self.logger.error(f"An error occurred while adding/updating ban: {e}")
-            # dump the stack
             traceback.print_exc()
             raise
         finally:
