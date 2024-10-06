@@ -321,31 +321,94 @@ class Maria_DB:
                 cursor.close()
                 self.database_connection_pool.return_connection(conn)
 
-    def get_expired_records(self):
-        """Return a list of expired records in the form [ip_addr, True-if-ipv6, else False, jail]."""
-        expired_records = []
+    # Example callback function
+    # def process_record(record):
+    #  ip_addr, is_ipv6, jail = record
+    #  print(f"Processing: IP={ip_addr}, IPv6={is_ipv6}, Jail={jail}")
+                
+    def get_expired_records(self, callback):
+        """
+        Fetch one expired record at a time and pass it to the callback function.
+
+        Args:
+            callback (function): A function to process each record.
+        """
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
         current_time = datetime.now()
 
         query = '''
         SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time < %s
         '''
         self.cursor.execute(query, (current_time,))
-        records = self.cursor.fetchall()
 
-        for record in records:
+        # Fetch records one by one and pass them to the callback
+        while True:
+            record = cursor.fetchone()
+            if record is None:
+                break  # No more records
+
             ip_addr, jail, ban_expire_time = record
+
             try:
                 ip_obj = ipaddress.ip_address(ip_addr)
                 is_ipv6 = isinstance(ip_obj, ipaddress.IPv6Address)
                 if is_ipv6:
-                    ip_addr = ip_obj.compressed
+                    ip_addr = ip_obj.compressed  # Compress IPv6 address
             except ValueError:
                 is_ipv6 = False
 
-            expired_records.append([ip_addr, is_ipv6, jail])
+            # Pass the processed record to the callback function
+            callback([ip_addr, is_ipv6, jail])
 
-        return expired_records
+        # cleanup
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
 
+    # Example callback function
+    # def process_record(record):
+    #  ip_addr, is_ipv6, jail = record
+    #  print(f"Processing: IP={ip_addr}, IPv6={is_ipv6}, Jail={jail}")
+        
+    def get_banned_records(self, callback):
+        """
+        Fetch one expired record at a time and pass it to the callback function.
+
+        Args:
+            callback (function): A function to process each record.
+        """
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
+        query = '''
+        SELECT ip_address, jail, ban_expire_time FROM ban_table WHERE ban_expire_time IS NULL
+        '''
+        self.cursor.execute(query)
+
+        # Fetch records one by one and pass them to the callback
+        while True:
+            record = cursor.fetchone()
+            if record is None:
+                break  # No more records
+
+            ip_addr, jail, ban_expire_time = record
+
+            try:
+                ip_obj = ipaddress.ip_address(ip_addr)
+                is_ipv6 = isinstance(ip_obj, ipaddress.IPv6Address)
+                if is_ipv6:
+                    ip_addr = ip_obj.compressed  # Compress IPv6 address
+            except ValueError:
+                is_ipv6 = False
+
+            # Pass the processed record to the callback function
+            callback([ip_addr, is_ipv6, jail])
+
+        # cleanup
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
+        
     def show_database(self):
         """Print all records in the database in a human-readable format, and show if the ban has expired."""
         current_time = datetime.now()
