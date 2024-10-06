@@ -5,6 +5,7 @@ import atexit
 from datetime import datetime, timedelta
 import logging
 import mysql.connector
+import traceback
 
 LOG_ID = "fail3ban"
 
@@ -23,6 +24,8 @@ class ManageBanActivityDatabase_MariaDB:
             self.logger.info("Created activity table successfully.")
         except mysql.connector.Error as ex:
             self.logger.error(f"Created activity table returned {ex}")
+            # dump the stack
+            traceback.print_exc()
             raise  # Re-raise the exception to notify higher-level code
 
         try:
@@ -30,6 +33,8 @@ class ManageBanActivityDatabase_MariaDB:
             self.logger.info("Created not bad get string table successfully.")
         except mysql.connector.Error as ex:
             self.logger.error(f"Created not bad get string table returned {ex}")
+            # dump the stack
+            traceback.print_exc()
             raise  # Re-raise the exception to notify higher-level code
         
     def _create_activity_table(self):
@@ -56,6 +61,8 @@ class ManageBanActivityDatabase_MariaDB:
                 conn.commit()
                 print("Activity table created.")
             except mysql.connector.Error as e:
+                # dump the stack
+                traceback.print_exc()
                 print(f"Error creating table: {e}")
 
         # Check if the index exists
@@ -71,6 +78,8 @@ class ManageBanActivityDatabase_MariaDB:
                 print("Index 'idx_ip_address' created.")
             except mysql.connector.Error as er:
                 print(f"Error creating index: {er}")
+                # dump the stack
+                traceback.print_exc()
 
         cursor.close()
         self.database_connection_pool.return_connection(conn)
@@ -195,6 +204,8 @@ class ManageBanActivityDatabase_MariaDB:
             print(f"Deleted record ID {record_id}")
         except mysql.connector.Error as e:
             print(f"Error deleting record: {e}")
+            # dump the stack
+            traceback.print_exc()
 
         cursor.close()
         self.database_connection_pool.return_connection(conn)
@@ -221,7 +232,13 @@ class ManageBanActivityDatabase_MariaDB:
                 WHERE ip_address = %s
                 ''', (current_date_time, new_usage_count, ip_addr))
 
-                last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S')
+                try:
+                    # Try to parse with fractional seconds
+                    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S.%f')
+                except ValueError:
+                    # If fractional seconds are not present, parse without them
+                    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S')
+
                 time_difference = datetime.now() - last_ban_time
 
                 if time_difference.total_seconds() <= N * 60:
@@ -241,6 +258,8 @@ class ManageBanActivityDatabase_MariaDB:
 
         except mysql.connector.Error as e:
             print(f"SQL Error: {e}")
+            # dump the stack
+            traceback.print_exc()
             return False
 
         finally:
@@ -261,8 +280,8 @@ class ManageBanActivityDatabase_MariaDB:
             create_table_query = '''
             CREATE TABLE not_bad_get_string_table (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                ip_address CHAR(39) NOT NULL UNIQUE,
-                not_bad_get CHAR(32),
+                ip_address CHAR(39) NOT NULL,
+                not_bad_get CHAR(32) NOT NULL,
                 examined BOOLEAN DEFAULT FALSE
             );
             '''
@@ -272,6 +291,8 @@ class ManageBanActivityDatabase_MariaDB:
                 print("not_bad_get_string_table created.")
             except mysql.connector.Error as e:
                 print(f"Error creating table: {e}")
+                # dump the stack
+                traceback.print_exc()
             finally:
                 cursor.close()
                 self.database_connection_pool.return_connection(conn)
@@ -293,6 +314,8 @@ class ManageBanActivityDatabase_MariaDB:
             print(f"Record for {ip_address} added/updated.")
         except mysql.connector.Error as e:
             print(f"Error inserting/updating record: {e}")
+            # dump the stack
+            traceback.print_exc()
         finally:
             cursor.close()
             self.database_connection_pool.return_connection(conn)
@@ -312,6 +335,8 @@ class ManageBanActivityDatabase_MariaDB:
                 print("No records found.")
         except mysql.connector.Error as e:
             print(f"Error fetching records: {e}")
+            # dump the stack
+            traceback.print_exc()
         finally:
             cursor.close()
             self.database_connection_pool.return_connection(conn)
@@ -353,6 +378,8 @@ if __name__ == "__main__":
                     manage_ban.delete_record(record_id)
                 except ValueError:
                     print("Error: Record ID must be a valid integer.")
+                    # dump the stack
+                    traceback.print_exc()
 
         elif command == "expired":
             if len(sys.argv) != 3:
@@ -363,6 +390,8 @@ if __name__ == "__main__":
                     manage_ban.scan_for_expired(days_old)
                 except ValueError:
                     print("Error: Days must be a valid integer.")
+                    # dump the stack
+                    traceback.print_exc()
 
         elif command == "insert":
             if len(sys.argv) != 3:

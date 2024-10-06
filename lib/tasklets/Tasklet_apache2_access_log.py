@@ -118,6 +118,8 @@ class Tasklet_apache2_access_log:
             timestamp      = parsed_res.get('extracted_info', {}).get('timestamp')
         except Exception as e:
             self.logger.error(f"Error extracting info: {e}")
+            # dump the stack
+            traceback.print_exc()
 
         #
         # convert timestamp to iso_timestamp
@@ -235,7 +237,7 @@ class Tasklet_apache2_access_log:
             self.logger.error(f"Error monitoring log: {e}")
             # dump the stack
             traceback.print_exc()
-
+ww
 # Thread - Main entry point from thread pool mgr
 def run_tasklet_apache2_access_log(**kwargs):
 
@@ -338,6 +340,8 @@ if __name__ == "__main__":
     except Exception as e:
         # Handle any exceptions that may occur
         print(f"An error occurred while loading dotenv: {e}")
+        # dump the stack
+        traceback.print_exc()
     
     # debugging
     user=os.getenv('MARIADB_USER_NAME')

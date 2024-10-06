@@ -184,3 +184,49 @@ etc are reported as BAD
 Error returned from compressed_line = No match found for line 2001:bc8:1201:1f:ba2a:72ff:fee1:16a2 - - [03/Oct/2024:07:37:42 +0000] "GET /xmlrpc.php HTTP/1.1" 200 4041 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
 
 This should have matched !!!!
+
+----
+
+requested_file = /.env.production, ip_address = 78.153.140.223, iso_timestamp =2024-10-06T08:27:47+00:00
+Is a bad get. continuing ...
+Is not whitelisted for address 78.153.140.223
+2024-10-06 08:27:51,246 - connectionpool.py:1051 - DEBUG - Starting new HTTPS connection (1): api.abuseipdb.com:443
+2024-10-06 08:27:51,400 - connectionpool.py:546 - DEBUG - https://api.abuseipdb.com:443 "GET /api/v2/check?ipAddress=78.153.140.223&maxAgeInDays=90 HTTP/11" 200 None
+{
+    "data": {
+        "abuseConfidenceScore": 100,
+        "countryCode": "GB",
+        "domain": "interlan.ru",
+        "hostnames": [
+            "hostglobal.plus"
+        ],
+        "ipAddress": "78.153.140.223",
+        "ipVersion": 4,
+        "isPublic": true,
+        "isTor": false,
+        "isWhitelisted": false,
+        "isp": "LLC Company Interlan Communications",
+        "lastReportedAt": "2024-10-06T08:27:36+00:00",
+        "numDistinctUsers": 417,
+        "totalReports": 1885,
+        "usageType": "Fixed Line ISP"
+    }
+}
+is_white_listed False, abuse_confidence_score = 100
+Checking if IP address 78.153.140.223 is within 15 minutes window...
+2024-10-06 08:27:51,403 - MariaDBConnectionPool.py:94 - DEBUG - Returned connection to pool: <mysql.connector.connection.MySQLConnection object at 0x7c8c204a23e0>
+2024-10-06 08:27:51,404 - Tasklet_apache2_access_log.py:235 - ERROR - Error monitoring log: unconverted data remains: .778180
+Traceback (most recent call last):
+  File "/home/ubuntu/fail3banAI/lib/tasklets/Tasklet_apache2_access_log.py", line 229, in monitor_log
+    self.process_line(line.strip())
+  File "/home/ubuntu/fail3banAI/lib/tasklets/Tasklet_apache2_access_log.py", line 170, in process_line
+    window_flag = self.mba.is_in_window(ip_address,window_size)
+  File "/home/ubuntu/fail3banAI/lib/ManageBanActivityDatabase_MariaDB.py", line 224, in is_in_window
+    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S')
+  File "/usr/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/lib/python3.10/_strptime.py", line 352, in _strptime
+    raise ValueError("unconverted data remains: %s" %
+ValueError: unconverted data remains: .778180
+2024-10-06 08:27:51,424 - Tasklet_apache2_access_log.py:277 - DEBUG - taal.monitor_log returns status = None
+Tasklet has finished.
