@@ -13,6 +13,10 @@
 # sudo auditctl -a always,exit -F arch=b64 -S accept -k accept-monitoring
 # sudo auditctl -w /usr/sbin/iptables -p x -k iptables-monitoring
 
+# monitor udp
+# sudo auditctl -a always,exit -F arch=b64 -S sendto -S sendmsg -F a0=2 -k udp-out-ipv4
+# sudo auditctl -a always,exit -F arch=b64 -S sendto -S sendmsg -F a0=10 -k udp-out-ipv6
+
 # delete
 # sudo auditctl -d always,exit -F arch=b64 -S connect -k network-connect
 #
