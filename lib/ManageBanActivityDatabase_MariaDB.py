@@ -339,6 +339,38 @@ class ManageBanActivityDatabase_MariaDB:
         finally:
             cursor.close()
             self.database_connection_pool.return_connection(conn)
+
+    def get_activity_records(self, callback):
+        """
+        Fetch one activity record at a time and pass it to the callback function.
+
+        Args:
+            callback (function): A function to process each record.
+        """
+        # Borrow a connection from the pool
+        conn = self.database_connection_pool.get_connection()
+        cursor = conn.cursor()
+
+        # Define the query to fetch records from activity_table
+        query = '''
+        SELECT ip_address, usage_count, datetime_of_last_ban FROM activity_table
+        '''
+        cursor.execute(query)
+
+        # Fetch records one by one and pass them to the callback
+        while True:
+            record = cursor.fetchone()
+            if record is None:
+                break  # No more records
+
+            ip_addr, usage_count, datetime_of_last_ban = record
+
+            # Pass the processed record to the callback function
+            callback([ip_addr, usage_count, datetime_of_last_ban])
+
+        # Cleanup
+        cursor.close()
+        self.database_connection_pool.return_connection(conn)
             
     def cleanup(self):
         pass
