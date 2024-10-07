@@ -67,7 +67,7 @@ abuse_ipdb = AbuseIPDB.AbuseIPDB()
 OUTPUT_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/" + "blacklist-4.ctl"
 
 item_count = 0
-# Get blacklist_endpoints for IPv6
+# Get blacklist_endpoints for IPv4
 try:
     response = abuse_ipdb.blacklist_endpoint(ip_version="4")
     if response is not None:

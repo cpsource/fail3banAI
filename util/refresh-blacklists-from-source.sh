@@ -6,13 +6,20 @@
 #
 
 curl -sS -f --compressed -o ../control/ipsum.7.ctl 'https://raw.githubusercontent.com/stamparm/ipsum/master/levels/7.txt'
+
+# get blacklist data from AbuseIPDB
 python3 ./build-blacklist-4.py
 python3 ./build-blacklist-6.py
-./sudoIt.sh ../lib/blacklist.py
+
+# build master-blacklist.ctl
+./sudoIt.sh ../lib/BlackList.py
+
+# start ipsets
+sudo -E $(which python3) ../lib/ManageIpset4.py start
+sudo -E $(which python3) ../lib/ManageIpset6.py start
 
 # load master-blacklist.ctl into ipset
-
 ./sudoIt.sh ./load-master-blacklist.py
 
-# save
+# save a copy of kernel ipset to rules.v4 and rules.v6 
 sudo ./ipset-save.sh

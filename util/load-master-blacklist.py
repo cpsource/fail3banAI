@@ -37,7 +37,7 @@ def load_master_blacklist():
         raise EnvironmentError("Environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
 
     # Path to the master-blacklist.ctl file
-    blacklist_file = os.path.join(project_root, 'ufw-blocklist', 'master-blacklist.ctl')
+    blacklist_file = os.path.join(project_root, 'control', 'master-blacklist.ctl')
 
     # Check if master-blacklist.ctl exists
     if not os.path.exists(blacklist_file):
@@ -57,6 +57,8 @@ def load_master_blacklist():
         with open(blacklist_file, 'r') as file:
             for line in file:
                 line_no += 1
+
+                #print(f"Processing {line_no}, ip_data = {line}...")                
 
                 # Print progress for every 500 lines processed
                 if line_no % 500 == 0:

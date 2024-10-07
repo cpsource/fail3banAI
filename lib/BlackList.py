@@ -41,7 +41,7 @@ import WhiteList
 
 import Maria_DB
 
-import MariaDBConnectionPool
+import ManageBanActivityDatabase_MariaDB
 
 class BlackList:
 
@@ -107,11 +107,12 @@ class BlackList:
     # a callback that adds ip_address to blacklist if it's not already there
     def _callback(self, record):
         ip_address , _ , _ = record
-        # If the line contains an IP address and is not already blacklisted
-        if ip_address not in self.blacklist:
-            self.blacklist.add(ip_address)
-            self.ip_count_loaded += 1
-            self.ban_table_count += 1
+        # If the line contains an IP address and is not already whitelisted or blacklisted
+        if not self.wl.is_whitelisted(ip_address):
+            if ip_address not in self.blacklist:
+                self.blacklist.add(ip_address)
+                self.ip_count_loaded += 1
+                self.ban_table_cnt += 1
         
     # Initialize the class by reading blacklist.ctl into a list
     def _blacklist_init(self):
@@ -140,8 +141,16 @@ class BlackList:
                 mdb = None # Garbage Collect ???
                 self.logger.debug(f"ban_table added {self.ban_table_cnt} records to blacklist")
 
+        mbadm = ManageBanActivityDatabase_MariaDB.ManageBanActivityDatabase_MariaDB(
+            self.database_connection_pool)
+        if mbadm:
+            # walk activity table and try to ban these guys
+            mbadm.get_activity_records(self._callback)
+            # done
+            mbadm = None # Garbage Collect ???
+        
         # now write out
-        file_path = f"{project_root}" + "/ufw-blocklist/master-blacklist.ctl"
+        file_path = f"{project_root}" + "/control/master-blacklist.ctl"
         self.write_blacklist_to_file(file_path)
 
         self.logger.debug(f"blacklists loaded {self.ip_count_loaded} ip addresses")
@@ -237,6 +246,7 @@ class BlackList:
 if __name__ == "__main__":
 
     from dotenv import load_dotenv
+    import MariaDBConnectionPool
 
     # Extracted function to set up logging configuration
     def setup_logging():

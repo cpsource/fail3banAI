@@ -10,6 +10,9 @@
 98.97.19.141
 98.97.20.132
 
+# And our aws Private IPv4 address
+172.26.10.222
+
 # And Thyne
 127.0.0.1
 

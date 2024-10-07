@@ -5,7 +5,7 @@ import subprocess
 class ManageIpset:
     def __init__(self):
         self.ipsetname = "ufw-blocklist-ipsum"
-        self.seedlist = "ipsum.7.ctl
+        self.seedlist = "ipsum.7.ctl"
         self.ipset_exe = subprocess.getoutput("which ipset")
 
         # Check if ipset exists

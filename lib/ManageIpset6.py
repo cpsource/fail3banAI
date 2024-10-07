@@ -16,7 +16,8 @@ class ManageIpset6:
         if not self.is_executable(self.ipset_exe):
             errmsg = f"{self.ipset_exe} is not executable"
             raise RuntimeError(errmsg)
-        self.seedlist = self.project_root + "/control/blacklist-6.ctl"
+        #self.seedlist = self.project_root + "/control/blacklist-6.ctl"
+        self.seedlist = self.project_root + "/control/master-blacklist.ctl"
 
     def is_executable(self, path):
         """Check if a file is executable"""
@@ -34,6 +35,7 @@ class ManageIpset6:
         return result == 0
 
     def add_ip_addresses_to_ipset(self):
+        return
         """Add IPv6 addresses from seedlist to ipset, skipping comments and shrinking IPv6 addresses."""
         with open(self.seedlist, 'r') as f:
             for line in f.readlines():

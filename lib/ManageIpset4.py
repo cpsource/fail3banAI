@@ -11,7 +11,8 @@ class ManageIpset4:
         self.project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
         if not self.project_root:
             raise EnvironmentError("Environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
-        self.seedlist = self.project_root + "/control/" + "blacklist-4.ctl"
+        #self.seedlist = self.project_root + "/control/" + "blacklist-4.ctl"
+        self.seedlist = self.project_root + "/control/master-blacklist.ctl"
 
         # Check if ipset exists
         if not self.is_executable(self.ipset_exe):
@@ -32,6 +33,31 @@ class ManageIpset4:
         result = subprocess.call([self.ipset_exe, "list", setname], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return result == 0
 
+    def add_ip_addresses_to_ipset(self):
+        return
+        """Add IPv6 addresses from seedlist to ipset, skipping comments and shrinking IPv6 addresses."""
+        with open(self.seedlist, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+
+                # Skip comments or empty lines
+                if not line or line.startswith('#'):
+                    continue
+
+                try:
+                    # Parse the IP address
+                    ip_obj = ipaddress.ip_address(line)
+
+                    # If it's a valid IPv6 address, shrink it
+                    if isinstance(ip_obj, ipaddress.IPv4Address):
+                        line = ip_obj.compressed
+
+                        # Add the IP to the ipset
+                        subprocess.run([self.ipset_exe, "add", self.ipsetname, line])
+                except ValueError:
+                    # Skip invalid IP addresses
+                    print(f"Invalid IPv6 address skipped: {line}")
+    
     def start(self):
         """Start the ipset and iptables configuration"""
         if not self.set_exists(self.ipsetname):
@@ -88,9 +114,7 @@ class ManageIpset4:
         #sys.exit(0)
         
         # Add IP addresses to ipset
-        with open(self.seedlist, 'r') as f:
-            for ip in f.readlines():
-                subprocess.run([self.ipset_exe, "add", self.ipsetname, ip.strip()])
+        self.add_ip_addresses_to_ipset()
 
     def stop(self):
         """Stop the ipset and delete the chains and sets"""
