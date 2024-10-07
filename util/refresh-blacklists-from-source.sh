@@ -5,7 +5,8 @@
 # ipsets
 #
 
-curl -sS -f --compressed -o ../control/ipsum.7.ctl 'https://raw.githubusercontent.com/stamparm/ipsum/master/levels/7.txt'
+# Warning - we download set3 but call it 7 !!! It picks up about 8000+ more addresses
+curl -sS -f --compressed -o ../control/ipsum.7.ctl 'https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt'
 
 # get blacklist data from AbuseIPDB
 python3 ./build-blacklist-4.py
@@ -13,6 +14,10 @@ python3 ./build-blacklist-6.py
 
 # build master-blacklist.ctl
 ./sudoIt.sh ../lib/BlackList.py
+
+# stop ipsets
+sudo -E $(which python3) ../lib/ManageIpset4.py stop
+sudo -E $(which python3) ../lib/ManageIpset6.py stop
 
 # start ipsets
 sudo -E $(which python3) ../lib/ManageIpset4.py start
