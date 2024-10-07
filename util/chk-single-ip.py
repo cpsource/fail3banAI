@@ -6,7 +6,9 @@ chklst = [
     '103.203.57.21',
     '141.98.11.79',
     '78.153.140.78',
-    '154.213.184.15' ]
+    '154.213.184.15',
+    '93.123.85.155',
+    ]
 
 # Defining the api-endpoint
 url = 'https://api.abuseipdb.com/api/v2/check'
