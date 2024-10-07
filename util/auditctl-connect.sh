@@ -25,4 +25,20 @@
 #
 # see /etc/audit ... for perminant rules, etc
 #
+
+#
+# current monitoring setup
+#
+
+sudo auditctl -a always,exit -F arch=b64 -S connect -k network-connect
+sudo auditctl -a always,exit -F arch=b64 -S sendto -k sendto-monitoring
+sudo auditctl -a always,exit -F arch=b64 -S sendmsg -k sendmsg-monitoring
+sudo auditctl -a always,exit -F arch=b64 -S socket -F a0=2 -F a1=3 -k raw-socket-monitoring
+
+#
+# and show
+#
 sudo auditctl -l
+
+# To decode strings, use
+# cat 'str' | xxd -r -p
