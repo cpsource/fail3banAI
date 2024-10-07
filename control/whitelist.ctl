@@ -13,6 +13,10 @@
 # And our aws Private IPv4 address
 172.26.10.222
 
+# And our new node at aws
+100.28.189.226
+172.26.0.114
+
 # And Thyne
 127.0.0.1
 
