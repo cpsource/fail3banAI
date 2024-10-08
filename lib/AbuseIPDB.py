@@ -26,9 +26,7 @@ class AbuseIPDB:
         self.logger = logging.getLogger("fail3ban")
 
         # Check that project_root exists
-        if self.project_root:
-            self.logger.info(f"Project root is set to: {self.project_root}")
-        else:
+        if not self.project_root:
             self.logger.error("FAIL3BAN_PROJECT_ROOT is not set.")
             sys.exit(1)
         

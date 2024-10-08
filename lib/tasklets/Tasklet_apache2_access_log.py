@@ -36,6 +36,9 @@ if p not in sys.path:
 p = f"{project_root}" + "/lib/parselets"
 if p not in sys.path:
     sys.path.insert(1,p)
+p = f"{project_root}" + "/lib/parselets/apache2/access-log"
+if p not in sys.path:
+    sys.path.insert(1,p)
 p = f"{project_root}" + "/lib/tasklets"
 if p not in sys.path:
     sys.path.insert(2,p)
@@ -237,7 +240,7 @@ class Tasklet_apache2_access_log:
             self.logger.error(f"Error monitoring log: {e}")
             # dump the stack
             traceback.print_exc()
-ww
+
 # Thread - Main entry point from thread pool mgr
 def run_tasklet_apache2_access_log(**kwargs):
 

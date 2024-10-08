@@ -46,3 +46,25 @@ sudo auditctl -l
 
 # To decode strings, use
 # cat 'str' | xxd -r -p
+
+#
+# for failure status
+#
+echo "*** network-connect"
+sudo ausearch -k network-connect | egrep -H -e "success=no"
+echo "*** sendto-monitoring"
+sudo ausearch -k sendto-monitoring | egrep -H -e "success=no"
+echo "*** sendmsg-monitoring"
+sudo ausearch -k sendmsg-monitoring | egrep -H -e "success=no"
+echo "*** raw-socket-monitoring"
+sudo ausearch -k raw-socket-monitoring | egrep -H -e "success=no"
+echo "*** udp-out-ipv4"
+sudo ausearch -k udp-out-ipv4 | egrep -H -e "success=no"
+echo "*** udp-out-ipv6"
+sudo ausearch -k udp-out-ipv6 | egrep -H -e "success=no"
+
+#
+# fork and vfork
+# sudo auditctl -a always,exit -F arch=b64 -S fork -S vfork -k process_creation
+# execve
+# sudo auditctl -a always,exit -F arch=b64 -S execve -k exec_events
