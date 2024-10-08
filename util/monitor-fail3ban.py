@@ -272,7 +272,7 @@ import re
 
 # If we have a valid checkpoint, we must tell journalctl
 since_time = checkpoint.get()
-if True or since_time is None:
+if since_time is None:
     command = ['journalctl', '-f']
 else:
     command = ['journalctl', '-f', f'--since={since_time}']
@@ -424,7 +424,7 @@ worker_thread_id.start()
 # run a test one time
 tst = False
 
-# Our Main Loop
+# Our Main Loop - TODO: belongs as a Tasklet/Parselet
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
         # Process each line from journalctl -f
@@ -438,6 +438,13 @@ try:
                 break
 
             line = line.strip()
+
+            # Lets skip audit lines for now
+            is_audit_present = ' audit[' in line
+            if is_audit_present is False:
+                is_audit_present = ' audit: ' in line                
+            if is_audit_present is True:
+                continue
             
             print(f"mainloop: line = <{line}>")
 

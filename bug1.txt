@@ -354,3 +354,28 @@ Ip Address: 93.123.85.155
         "usageType": "Data Center/Web Hosting/Transit"
     }
 }
+
+--------------------
+
+2024-10-08 10:16:27,178 - Tasklet_ZDrop.py:52 - DEBUG - Entry: input_str = Oct 08 10:16:26 ip-172-26-10-222 kernel: zDROP ufw-blocklist-output: IN= OUT=ens5 SRC=172.26.10.222 DST=95.214.55.138 LEN=44 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=TCP SPT=80 DPT=51231 WINDOW=62727 RES=0x00 ACK SYN URGP=0
+Checking if IP address 172.26.10.222 is within 15 minutes window...
+2024-10-08 10:16:27,185 - MariaDBConnectionPool.py:94 - DEBUG - Returned connection to pool: <mysql.connector.connection.MySQLConnection object at 0x7ae7b7c45f90>
+Exception in thread Thread-1 (worker_thread):
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.10/threading.py", line 953, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/ubuntu/fail3banAI/lib/WorkManager.py", line 86, in worker_thread
+    work_unit.execute()
+  File "/home/ubuntu/fail3banAI/lib/WorkManager.py", line 17, in execute
+    result = self.function(*self.args, **self.kwargs)
+  File "/home/ubuntu/fail3banAI/lib/tasklets/Tasklet_ZDrop.py", line 213, in wait_and_process
+    tasklet_zdrop.is_zdrop(message_unit.get_message_string())
+  File "/home/ubuntu/fail3banAI/lib/tasklets/Tasklet_ZDrop.py", line 106, in is_zdrop
+    window_flag = self.mba.is_in_window(ip_address,window_size)
+  File "/home/ubuntu/fail3banAI/lib/ManageBanActivityDatabase_MariaDB.py", line 238, in is_in_window
+    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S.%f')
+TypeError: strptime() argument 1 must be str, not datetime.datetime
+mainloop: line = <Oct 08 10:16:27 ip-172-26-10-222 kernel: zDROP ufw-blocklist-output: IN= OUT=ens5 SRC=172.26.10.222 DST=95.214.55.138 LEN=44 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=TCP SPT=80 DPT=51231 WINDOW=62727 RES=0x00 ACK SYN URGP=0>
+Updating Checkpoint with date 2024-10-08 10:16:27
