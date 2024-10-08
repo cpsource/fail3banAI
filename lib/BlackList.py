@@ -45,11 +45,11 @@ import ManageBanActivityDatabase_MariaDB
 
 class BlackList:
 
-    def __init__(self, database_connection_pool, config_data=None, logger_id=LOG_ID):
+    def __init__(self, conn, config_data=None, logger_id=LOG_ID):
         # cnt added by ban_table
         self.ban_table_cnt = 0
         # save off
-        self.database_connection_pool = database_connection_pool
+        self.conn = conn
         # ip_count
         self.ip_count_loaded = 0
         # our config data
@@ -132,7 +132,7 @@ class BlackList:
         self.process_rules_vx(file_path)
 
         # Load blacklisted ip's from ban_table
-        mdb = Maria_DB.Maria_DB(self.database_connection_pool)
+        mdb = Maria_DB.Maria_DB(self.conn)
         if mdb is None:
                 self.logger.error("Can't create an instance of Maria_DB")
         else:
@@ -141,8 +141,7 @@ class BlackList:
                 mdb = None # Garbage Collect ???
                 self.logger.debug(f"ban_table added {self.ban_table_cnt} records to blacklist")
 
-        mbadm = ManageBanActivityDatabase_MariaDB.ManageBanActivityDatabase_MariaDB(
-            self.database_connection_pool)
+        mbadm = ManageBanActivityDatabase_MariaDB.ManageBanActivityDatabase_MariaDB(self.conn)
         if mbadm:
             # walk activity table and try to ban these guys
             mbadm.get_activity_records(self._callback)

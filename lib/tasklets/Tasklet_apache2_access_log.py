@@ -46,7 +46,8 @@ if p not in sys.path:
 print(sys.path)
 
 # database pool
-import MariaDBConnectionPool
+#import MariaDBConnectionPool
+
 # This class does the actual notification work
 import AbuseIPDB
 # manage ban activity deatabase
@@ -65,12 +66,12 @@ import WorkManager
 LOG_ID = "fail3ban"
 
 class Tasklet_apache2_access_log:
-    def __init__(self, database_connection_pool, parselet, work_controller, log_id=LOG_ID):
+    def __init__(self, conn, parselet, work_controller, log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
         self.wctlr = work_controller
         self.abi = AbuseIPDB.AbuseIPDB()  # AbuseIPDB instance for reporting
-        self.mba = ManageBanActivityDatabase_MariaDB(database_connection_pool,LOG_ID) # TODO - two loggers?
+        self.mba = ManageBanActivityDatabase_MariaDB(conn,LOG_ID) # TODO - two loggers?
         self.parselet = parselet
         self.badgets = BadGets.BadGets()
 
@@ -246,14 +247,14 @@ def run_tasklet_apache2_access_log(**kwargs):
 
     # get logging setup early
     logger = kwargs['logger']
-
+    
     if True:
         # for debug, lets display these
         for key, value in kwargs.items():
             logger.debug(f"{key} = {value}")
     
     # database link
-    database_connection_pool = kwargs['database_connection_pool']
+    self.conn = kwargs['conn']
     # lets check our arguments, none are optional
     if 'stop_event' not in kwargs:
         logger.warning("no stop_event. Exiting ...")
@@ -268,7 +269,7 @@ def run_tasklet_apache2_access_log(**kwargs):
     work_controller = kwargs['work_controller']
     
     # create our main class
-    taal = Tasklet_apache2_access_log(database_connection_pool, parselet, work_controller)
+    taal = Tasklet_apache2_access_log(conn, parselet, work_controller)
 
     # monitor this file
     file_path = "/var/log/apache2/access.log"

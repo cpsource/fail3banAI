@@ -199,7 +199,7 @@ import MessageManager
 import BlackList
 
 # database pool
-import MariaDBConnectionPool
+import zMariaDBConnectionPool
 
 #
 # Tasklets, be sure to add to message_manager
@@ -282,10 +282,13 @@ else:
 journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
 # Setup database pool
-database_connection_pool = MariaDBConnectionPool.MariaDBConnectionPool(logger, pool_size=10 )
+database_connection_pool = zMariaDBConnectionPool.MariaDBConnectionPool(logger, pool_size=10 )
+
+# get our conn
+conn = database_connection_pool.get_connection()
 
 # Setup blacklist
-bl = BlackList.BlackList(database_connection_pool)
+bl = BlackList.BlackList(conn)
 print(f"Number of blacklisted items: {len(bl.get_blacklist())}")
 
 # use new PreviousJournalctl class
@@ -297,7 +300,7 @@ cc = CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = ShortenJournalString.ShortenJournalString()
 # setup database
-db = Maria_DB.Maria_DB(database_connection_pool)
+db = Maria_DB.Maria_DB(conn, create_ban_table=True)
 db.reset_hazard_level()
 db.show_threats()
 # and GlobalShutdown
@@ -359,12 +362,13 @@ def task_callback(msg):
 
 # build and run Tasklet_ZDrop
 data = "Tasklet_ZDrop"
+thread_conn = database_connection_pool.get_connection()
 work_unit = WorkManager.WorkUnit(
     function=Tasklet_ZDrop.wait_and_process,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
             'message_manager' : message_manager,
-            'database_connection_pool' : database_connection_pool
+            'conn' : thread_conn
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
@@ -372,12 +376,13 @@ work_controller.enqueue(work_unit)
 
 # build and run Tasklet_Console
 data = "Tasklet_Console"
+thread_conn = database_connection_pool.get_connection()
 work_unit = WorkManager.WorkUnit(
     function=Tasklet_Console.run_tasklet_console,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
             'message_manager' : message_manager,
-            'database_connection_pool' : database_connection_pool
+            'conn' : thread_conn
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
@@ -385,12 +390,13 @@ work_controller.enqueue(work_unit)
 
 # build and run Tasklet_apache2_access_log
 data = "Tasklet_apache2_access_log"
+thread_conn = database_connection_pool.get_connection()
 work_unit = WorkManager.WorkUnit(
     function=Tasklet_apache2_access_log.run_tasklet_apache2_access_log,
     kwargs={'data'                     : data,
             'stop_event'               : stop_event,
             'logger'                   : logger,
-            'database_connection_pool' : database_connection_pool,
+            'conn'                     : thread_conn,
             'work_controller'          : work_controller,
             'message_manager'          : message_manager,
             },
