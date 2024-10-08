@@ -379,3 +379,19 @@ Traceback (most recent call last):
 TypeError: strptime() argument 1 must be str, not datetime.datetime
 mainloop: line = <Oct 08 10:16:27 ip-172-26-10-222 kernel: zDROP ufw-blocklist-output: IN= OUT=ens5 SRC=172.26.10.222 DST=95.214.55.138 LEN=44 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=TCP SPT=80 DPT=51231 WINDOW=62727 RES=0x00 ACK SYN URGP=0>
 Updating Checkpoint with date 2024-10-08 10:16:27
+
+------------------
+
+2024-10-08 16:42:00,179 - monitor-fail3ban.py:498 - DEBUG - shortened_str = Oct 08 16:41:59 <destination-ip> <task-name>[<pid>]: Invalid user  from <ip-address> port <port>
+mainloop: line = <Oct 08 16:42:04 ip-172-26-10-222 sshd[43763]: Connection closed by invalid user  2001:470:1:332::6 port 50682 [preauth]>
+Updating Checkpoint with date 2024-10-08 16:42:04
+2024-10-08 16:42:04,928 - PreviousJournalctl.py:144 - DEBUG - *** Combined: Matches:(1, 0) Str: Oct 08 16:41:59 ip-172-26-10-222 sshd[43763]: Invalid user  from 2001:470:1:332::6 port 50682 Connection closed by invalid user  2001:470:1:332::6 port 50682 [preauth]
+combine_result: Oct 08 16:41:59 ip-172-26-10-222 sshd[43763]: Invalid user  from 2001:470:1:332::6 port 50682 Connection closed by invalid user  2001:470:1:332::6 port 50682 [preauth]
+2024-10-08 16:42:04,929 - monitor-fail3ban.py:498 - DEBUG - shortened_str = Oct 08 16:41:59 <destination-ip> <task-name>[<pid>]: Invalid user  from <ip-address> port <port> Connection closed by invalid user  <ip-address> port <port> [preauth]
+mainloop: line = <Oct 08 16:42:53 ip-172-26-10-222 systemd[1]: Starting Ubuntu Pro Timer for running repeated jobs...>
+Updating Checkpoint with date 2024-10-08 16:42:53
+combine_result: Oct 08 16:42:53 ip-172-26-10-222 systemd[1]: Starting Ubuntu Pro Timer for running repeated jobs...
+
+Invalid User should have been caught !
+
+---------------------------------------
