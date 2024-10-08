@@ -17,7 +17,7 @@ sys.path.append(tasklet_path)
 import WorkManager
 import MessageManager
 from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
-from ManageBanActivityDatabase import ManageBanActivityDatabase
+from ManageBanActivityDatabase_MariaDB import ManageBanActivityDatabase_MariaDB
 
 #
 # We'll get lines of this sort from journalctl.
@@ -39,7 +39,7 @@ class Tasklet_ZDrop:
         # a callback
         self.task_callback = lambda result: print(f"Task completed with result: {result}")
         # and a ManageBanActivityDatabase - manages 
-        self.mba = ManageBanActivityDatabase(self.database_connection_pool)
+        self.mba = ManageBanActivityDatabase_MariaDB(self.database_connection_pool)
 
     def shutdown(self):
         pass

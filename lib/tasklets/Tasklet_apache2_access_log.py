@@ -167,7 +167,7 @@ class Tasklet_apache2_access_log:
         # report to AbuseIPDB ???
         #
 
-        # $$$ just for test - False will report everything to AbuseIPDB
+        # just for test - False will report everything to AbuseIPDB
         if True:
             # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
             window_size = 15
@@ -206,7 +206,7 @@ class Tasklet_apache2_access_log:
             # and lower our priority a bit for a bit - Cheezy Python3, hack, hack, hack !!!
             time.sleep(.01)
             
-        # done for now $$$
+        # done for now
         return True
 
     # We should hang here basically forever
@@ -216,7 +216,7 @@ class Tasklet_apache2_access_log:
         
         try:
             with open(file_path, 'r') as log_file:
-                # $$$ - for production, enable this line
+                # for production, enable this line
                 log_file.seek(0, os.SEEK_END)  # Go to the end of the file
                 last_inode = os.stat(file_path).st_ino
 
@@ -262,7 +262,7 @@ def run_tasklet_apache2_access_log(**kwargs):
         stop_event = kwargs['stop_event']
     
     # parselet
-    parselet = kwargs['parselet']
+    parselet = Parselet_GET.Parselet_GET()
 
     # work controller
     work_controller = kwargs['work_controller']

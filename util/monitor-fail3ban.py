@@ -155,6 +155,7 @@ if lib_path not in sys.path:
     sys.path.insert(0, lib_path)
     print(f"Prepending {lib_path} to sys.path")
 
+    
 print(sys.path)
 
 # Get the absolute path of the current directory (the directory containing this script)
@@ -180,7 +181,7 @@ import CountryCodes
 import ShortenJournalString
 
 # get database
-import MariaDB
+import Maria_DB
 
 # get whitelist
 import WhiteList
@@ -194,17 +195,21 @@ import WorkManager
 # get our message manager
 import MessageManager
 
-# a thread to handle zdrops
-import Tasklet_ZDrop
-
-# tasklet Console
-import Tasklet_Console
+# our blacklist
+import BlackList
 
 # database pool
 import MariaDBConnectionPool
 
-# our blacklist
-import BlackList
+#
+# Tasklets, be sure to add to message_manager
+#
+# a thread to handle zdrops
+import Tasklet_ZDrop
+# tasklet Console
+import Tasklet_Console
+# tasklet Apache2 Access Logging
+import Tasklet_apache2_access_log
 
 # 
 #
@@ -267,7 +272,7 @@ import re
 
 # If we have a valid checkpoint, we must tell journalctl
 since_time = checkpoint.get()
-if since_time is None:
+if True or since_time is None:
     command = ['journalctl', '-f']
 else:
     command = ['journalctl', '-f', f'--since={since_time}']
@@ -277,12 +282,11 @@ else:
 journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
 # Setup database pool
-db_name = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/fail3ban_server.db"
-database_connection_pool = MariaDBConnectionPool.MariaDBConnectionPool(db_name=db_name, pool_size=10 )
+database_connection_pool = MariaDBConnectionPool.MariaDBConnectionPool(logger, pool_size=10 )
 
 # Setup blacklist
 bl = BlackList.BlackList(database_connection_pool)
-print(f"Number of blacklisted items: {len(bl.get_blacklist()}")
+print(f"Number of blacklisted items: {len(bl.get_blacklist())}")
 
 # use new PreviousJournalctl class
 prevs = PreviousJournalctl()
@@ -293,7 +297,7 @@ cc = CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = ShortenJournalString.ShortenJournalString()
 # setup database
-db = MariaDB.MariaDB(database_connection_pool)
+db = Maria_DB.Maria_DB(database_connection_pool)
 db.reset_hazard_level()
 db.show_threats()
 # and GlobalShutdown
@@ -303,7 +307,6 @@ gs.cleanup()
 
 # our whitelist
 wl = WhiteList.WhiteList()
-wl.whitelist_init()
 
 def remove_pid(pid_file):
     # Check if the PID file exists
@@ -339,14 +342,20 @@ def worker_thread():
                 break
 
             time.sleep(0.5)  # Sleep in shorter intervals to check the event frequently
+    print("worker_thread (checkpoint) is stopping.")
 
-    print("worker_thread is stopping.")
-
-work_controller = WorkManager.WorkController(num_workers=6)
-message_manager = MessageManager.MessageManager(("Default","Tasklet_ZDrop", "Tasklet_Console"))
-
+work_controller = WorkManager.WorkController(num_workers=10)
+message_manager = MessageManager.MessageManager(("Default",
+                                                 "Tasklet_ZDrop",
+                                                 "Tasklet_Console",
+                                                 "Tasklet_apache2_access_log",
+                                                 ))
 def task_callback(msg):
     print(f"task_callback: {msg}")
+
+#
+# Start various tasklets
+#
 
 # build and run Tasklet_ZDrop
 data = "Tasklet_ZDrop"
@@ -370,6 +379,21 @@ work_unit = WorkManager.WorkUnit(
             'message_manager' : message_manager,
             'database_connection_pool' : database_connection_pool
             },  # Using kwargs to pass arguments
+    callback=task_callback
+)
+work_controller.enqueue(work_unit)
+
+# build and run Tasklet_apache2_access_log
+data = "Tasklet_apache2_access_log"
+work_unit = WorkManager.WorkUnit(
+    function=Tasklet_apache2_access_log.run_tasklet_apache2_access_log,
+    kwargs={'data'                     : data,
+            'stop_event'               : stop_event,
+            'logger'                   : logger,
+            'database_connection_pool' : database_connection_pool,
+            'work_controller'          : work_controller,
+            'message_manager'          : message_manager,
+            },
     callback=task_callback
 )
 work_controller.enqueue(work_unit)
