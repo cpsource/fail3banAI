@@ -37,7 +37,7 @@ class Swan:
         atexit.register(self.finis)
 
     # Extracted function to set up logging configuration
-    def _setup_logging(LOG_FILE_NAME, LOG_FORMAT):
+    def _setup_logging(self, LOG_FILE_NAME, LOG_FORMAT):
         logging.basicConfig(
             level=logging.DEBUG,
             format=LOG_FORMAT,
@@ -64,7 +64,7 @@ class Swan:
 
     # load dotenv
     def load_dotenv(self):
-        logger = get_logger()
+        logger = self.get_logger()
         try:
             # Attempt to load dotenv file using the environment variable
             dotenv_config = load_dotenv(f"{os.getenv('HOME')}/.env")

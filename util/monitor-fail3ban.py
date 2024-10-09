@@ -3,7 +3,11 @@
 import os
 import sys
 
-def save_pid(pid_file):
+#
+# Up front, handle detach if requested from command line
+#
+PID_FILE = '/tmp/monitor-fail3ban.pid'
+def save_pid(pid_file=PID_FILE):
     pid = os.getpid()  # Get the current process ID (PID)
     
     # Save the PID to the specified file
@@ -51,12 +55,10 @@ def daemonize(log_file="/dev/null"):
 status = None
 if '--daemonize' in sys.argv:
     status = daemonize('/tmp/monitor-fail3ban.log')
-    
 if status is not None and status == 'parent':
     sys.exit(0)
 # Save our pid - must be done after a possible daemonize
-pid_file = '/tmp/monitor-fail3ban.pid'
-save_pid(pid_file)
+save_pid()
    
 #import subprocess
 import tempfile
@@ -70,99 +72,22 @@ import ipaddress; is_ipv6 = lambda addr: isinstance(ipaddress.ip_address(addr), 
 import re
 from datetime import datetime
 import time
-
-# Configure logging
 import logging
-# and some magic numbers for logging
-FLAG_CRITICAL = 50
-FLAG_ERROR = 40
-FLAG_WARNING = 30
-FLAG_INFO = 20
-FLAG_DEBUG = 10
-FLAG_NOSET = 0
 
-# Extracted constants for log file name and format
-LOG_FILE_NAME = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/" + "fail3ban.log"
-# Set up the logging format to include file name and line number
-LOG_FORMAT = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
-# And our log id
-LOG_ID = "fail3ban"
-
-# Extracted function to set up logging configuration
-def setup_logging():
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format=LOG_FORMAT,
-        handlers=[
-            logging.FileHandler(LOG_FILE_NAME),
-            logging.StreamHandler()
-        ]
-    )
-# Call the extracted function to configure logging
-setup_logging()
-
-# Create a named logger consistent with the log file name
-logger = logging.getLogger(LOG_ID)
-
-# load dotenv
-try:
-    # Attempt to load dotenv file using the environment variable
-    dotenv_config = load_dotenv(f"{os.getenv('HOME')}/.env")
-    logger.info("dotenv file loaded successfully.")
-except Exception as e:
-    # Handle any exceptions that may occur
-    logger.error(f"An error occurred while loading dotenv: {e}")
-
-#
-# Load our python3 paths
-#
-# Get the FAIL3BAN_PROJECT_ROOT environment variable
-
-# Step 1: Get the FAIL3BAN_PROJECT_ROOT environment variable
-
-project_root = os.getenv('FAIL3BAN_PROJECT_ROOT')
-# Check if FAIL3BAN_PROJECT_ROOT is not set
-if project_root is None:
-    print("Error: The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set.")
-    sys.exit(1)  # Exit the program with an error code
-# Construct the lib path
-
-# Example of loading startup code at the beginning of any script
-#startup_file = os.path.join(os.getenv('FAIL3BAN_PROJECT_ROOT', ''), 'lib', 'startup.py')
-#if os.path.exists(startup_file):
-#    exec(open(startup_file).read())
-# Continue with the rest of your script
-#print("Script is running")
-
+project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
 # Add the constructed path to sys.path only if it's not already in sys.path
-# Step 2: Construct the paths for lib and parselets
 lib_path = os.path.join(project_root, 'lib')
-parselets_path = os.path.join(project_root, 'lib/parselets')
-tasklets_path = os.path.join(project_root, 'lib/tasklets')
-
-# Step 3: Check if parselets_path is already in sys.path, if not, prepend it
-if parselets_path not in sys.path:
-    sys.path.insert(0, parselets_path)
-    print(f"Prepending {parselets_path} to sys.path")
-
-# Step 4: Check if tasklets_path is already in sys.path, if not, prepend it
-if tasklets_path not in sys.path:
-    sys.path.insert(0, tasklets_path)
-    print(f"Prepending {tasklets_path} to sys.path")
-
-# Step 5: Check if lib_path is already in sys.path, if not, prepend it
 if lib_path not in sys.path:
     sys.path.insert(0, lib_path)
     print(f"Prepending {lib_path} to sys.path")
 
-    
-print(sys.path)
-
-# Get the absolute path of the current directory (the directory containing this script)
-#current_dir = os.path.dirname(os.path.abspath(__file__))
-# Add the subdirectory to the system path
-#subdirectory_path = os.path.join(current_dir, '../lib')
-#sys.path.append(subdirectory_path)
+# Get our swiss army knife
+import Swan
+swan = Swan.Swan()
+logger = swan.get_logger()
+logger.debug(sys.path)
+swan.set_os_path()
+swan.load_dotenv()
 
 # Setup Checkpoint
 from Checkpoint import Checkpoint
@@ -173,9 +98,6 @@ from PreviousJournalctl import PreviousJournalctl
 
 # get HashedSet
 import f3b_HashedSet
-
-# get CountryCode
-import CountryCodes
 
 # get ShortenJournalString
 import ShortenJournalString
@@ -211,61 +133,16 @@ import Tasklet_Console
 # tasklet Apache2 Access Logging
 import Tasklet_apache2_access_log
 
-# 
-#
-# Here's a double line that needs to be combined
-# into one line, so we can process it effectively.
-# I suggest we keep track of the previous line and
-# combine them if the [digits] and [jail] are the same.
-#
-
-#Journalctl line: Sep 13 12:46:37 ip-172-26-10-222 sshd[172070]: error: kex_exchange_identification: Connection closed by remote host
-#Journalctl line: Sep 13 12:46:37 ip-172-26-10-222 sshd[172070]: Connection closed by 104.152.52.121 port 51587
-
-# Path to the temporary file in /tmp
-#temp_file = tempfile.NamedTemporaryFile(delete=False, dir='/tmp', mode='w', prefix='journal_', suffix='.log')
-
 import subprocess
 import re
 import time
 
-def find_country(ip_address_string):
-    attempts = 3  # Number of retry attempts
-    sleep_time = 0.1  # Sleep for 100 milliseconds (0.1 seconds)
-
-    for attempt in range(attempts):
-        try:
-            # Execute the 'whois' command for the given IP address
-            tmp_result = subprocess.run(['whois', ip_address_string], capture_output=True, text=True)
-
-            # Check if the command ran successfully
-            if tmp_result.returncode != 0:
-                raise Exception("Failed to run whois command.")
-
-            # Search for the line starting with 'country:'
-            match = re.search(r"^country:\s+(.+)$", tmp_result.stdout, re.MULTILINE | re.IGNORECASE)
-
-            if match:
-                # Extract and return the country code (everything after 'country:')
-                tmp_country = match.group(1).strip()
-                tmp_country_code = cc.get_country(tmp_country).strip()
-                return tmp_country_code
-            else:
-                # Return None if no country line is found
-                return None
-        except Exception as e:
-            if attempt < attempts - 1:  # If this isn't the last attempt, sleep and retry
-                time.sleep(sleep_time)
-            else:
-                print(f"Error after {attempts} attempts: {e}")
-                return None
-
-
-# Function to delete temporary files created by the script
-def clean_temp_files():
-    if os.path.exists(temp_file.name):
-        os.remove(temp_file.name)
-    #print("Cleaned up temporary files.")
+if False:
+    # Function to delete temporary files created by the script
+    def clean_temp_files():
+        if os.path.exists(temp_file.name):
+            os.remove(temp_file.name)
+            #print("Cleaned up temporary files.")
 
 # Function to check if a jail is enabled by searching for 'enabled = true' or 'enabled = false'
 import re
@@ -277,26 +154,19 @@ if since_time is None:
 else:
     command = ['journalctl', '-f', f'--since={since_time}']
 #print(f"command = {command}")
-
 # Start journalctl
 journalctl_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
 # Setup database pool
 database_connection_pool = zMariaDBConnectionPool.MariaDBConnectionPool(logger, pool_size=10 )
-
 # get our conn
 conn = database_connection_pool.get_connection()
-
 # Setup blacklist
 bl = BlackList.BlackList(conn)
 print(f"Number of blacklisted items: {len(bl.get_blacklist())}")
-
 # use new PreviousJournalctl class
 prevs = PreviousJournalctl()
 # and our HashedSet class
 hs = f3b_HashedSet.HashedSet()
-# and our country codes class
-cc = CountryCodes.CountryCodes()
 # and our ShortenJournalString
 sjs = ShortenJournalString.ShortenJournalString()
 # setup database
@@ -311,7 +181,7 @@ gs.cleanup()
 # our whitelist
 wl = WhiteList.WhiteList()
 
-def remove_pid(pid_file):
+def remove_pid(pid_file=PID_FILE):
     # Check if the PID file exists
     if os.path.exists(pid_file):
         try:
@@ -324,12 +194,8 @@ def remove_pid(pid_file):
     else:
         print(f"PID file {pid_file} does not exist.")
 
-#
-# signaling
-#
-
 # Create a global event object to signaling threads to stop
-stop_event = threading.Event()
+stop_event = swan.get_stop_event()
 
 # this guy makes sure we flush our checkpoint from time to time
 worker_thread_id = None
@@ -367,8 +233,10 @@ work_unit = WorkManager.WorkUnit(
     function=Tasklet_ZDrop.wait_and_process,
     kwargs={'data'       : data,
             'work_controller' : work_controller,
+            'stop_event'      : stop_event,
             'message_manager' : message_manager,
-            'conn' : thread_conn
+            'conn' : thread_conn,
+            'swan' : swan
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
@@ -379,10 +247,12 @@ data = "Tasklet_Console"
 thread_conn = database_connection_pool.get_connection()
 work_unit = WorkManager.WorkUnit(
     function=Tasklet_Console.run_tasklet_console,
-    kwargs={'data'       : data,
+    kwargs={'data'            : data,
+            'stop_event'      : stop_event,
             'work_controller' : work_controller,
             'message_manager' : message_manager,
-            'conn' : thread_conn
+            'conn'            : thread_conn,
+            'swan'            : swan
             },  # Using kwargs to pass arguments
     callback=task_callback
 )
@@ -399,13 +269,11 @@ work_unit = WorkManager.WorkUnit(
             'conn'                     : thread_conn,
             'work_controller'          : work_controller,
             'message_manager'          : message_manager,
+            'swan'                     : swan
             },
     callback=task_callback
 )
 work_controller.enqueue(work_unit)
-
-# Get a ZDROP instance
-#zdr = ZDrop.ZDrop(work_controller, message_manager)
 
 def handle_signal(signum, frame):
     print("Received SIGHUP signal.")
@@ -430,7 +298,7 @@ worker_thread_id.start()
 # run a test one time
 tst = False
 
-# Our Main Loop - TODO: belongs as a Tasklet/Parselet
+# Our Main Loop - TODO: belongs as a Tasklet
 try:
     while not stop_event.is_set() and not gs.is_shutdown():
         # Process each line from journalctl -f
@@ -572,7 +440,7 @@ except KeyboardInterrupt:
         worker_thread_id.join()
 finally:
     work_controller.shutdown()
-    remove_pid(pid_file)
+    remove_pid()
     gs.cleanup()
     message_manager.shutdown()
     database_connection_pool.shutdown()
