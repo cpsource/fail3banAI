@@ -1,10 +1,7 @@
+import os
+import sys
 import atexit
-# get ShortenJournalString
-import ShortenJournalString
-# get prevs
-from PreviousJournalctl import PreviousJournalctl
-# get whitelist
-import WhiteList
+import subprocess
 
 class Tasklet_journalctl:
     def __init__(self, swan, journalctl_proc, sjs, message_manager, prevs, wl):
@@ -166,6 +163,7 @@ def run_tasklet_journalctl(data, **kwargs):
     swan = kwargs.get('swan', None)
     conn = kwargs.get('conn', None)
     message_manager = kwargs.get('message_manager', None)
+    logger = swan.get_logger()
     
     stop_event = swan.get_stop_event()
 
@@ -191,14 +189,19 @@ def run_tasklet_journalctl(data, **kwargs):
         work_controller = kwargs.get('work_controller', None)
         message_manager = kwargs.get('message_manager', None)
         tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager, conn)
-    
-    while not stop_event:
-        message_unit = message_manager.dequeue()
-        if message_unit is None: #shutdown condition
-            print("Shutting down Tasklet_ZDrop")
-            break
-        tasklet_zdrop.is_zdrop(message_unit.get_message_string())
+        while not stop_event:
+            message_unit = message_manager.dequeue()
+            if message_unit is None: #shutdown condition
+                print("Shutting down Tasklet_ZDrop")
+                break
+            tasklet_zdrop.is_zdrop(message_unit.get_message_string())
 
+    # do the deed
+    status = tj.process_input()
+
+    # report that we are done
+    logger.info(f"run_tasklet_journalctl returns with status = {status}")
+        
 if __name__ == "__main__":
 
     project_root = os.getenv("FAIL3BAN_PROJECT_ROOT")
@@ -209,17 +212,22 @@ if __name__ == "__main__":
         print(f"Prepending {lib_path} to sys.path")
 
     from Swan import Swan
+    # get ShortenJournalString
+    import ShortenJournalString
+    # get prevs
+    from PreviousJournalctl import PreviousJournalctl
+    # get whitelist
+    import WhiteList
 
     swan = Swan()
     stop_event = swan.get_stop_event()
     logger = swan.get_logger()
 
     data = 'Tasklet_journalctl'
-    kwargs={'data'                     : data,
-            'stop_event'               : stop_event,
+    kwargs={'stop_event'               : stop_event,
             'logger'                   : logger,
             'swan'                     : swan
             }
-    run_tasklet_journalctl(data, **kwargs):
+    run_tasklet_journalctl(data, **kwargs)
 
     logger.info("Tasklet done")
