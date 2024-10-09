@@ -70,3 +70,19 @@ if response.status_code == 200:
         print(f"Failed to retrieve data: {response.status_code}")
     
 #print(f"ip info = {ip_info}")
+
+#
+# schema to store all this
+#
+# CREATE TABLE ip_responses (
+#     id INT AUTO_INCREMENT PRIMARY KEY,
+#     ip_address VARCHAR(45) NOT NULL UNIQUE,  -- Unique IP address
+#     response TEXT NOT NULL,                  -- Response data (JSON or plain text)
+#     ref_cnt INT DEFAULT 1,                   -- Reference count, initialized to 1
+#     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+# );
+
+# # for speed, do this too
+# CREATE INDEX idx_ip_address ON ip_responses (ip_address);
+#
+# see update_ip_info.py for example usage
