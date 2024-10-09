@@ -22,6 +22,8 @@ import mysql.connector
 # get CountryCodes
 import CountryCodes
 import threading
+from Checkpoint import Checkpoint
+from GlobalShutdown import GlobalShutdown
 
 class Swan:
     def __init__(self):
@@ -32,10 +34,29 @@ class Swan:
         if self.project_root is None:
             print("Error: The environment variable 'FAIL3BAN_PROJECT_ROOT' is not set. Exiting ...")
             sys.exit(1)  # Exit the program with an error code
+        # Setup Checkpoint
+        CHECKPOINT_PATH = os.getenv("FAIL3BAN_PROJECT_ROOT") + "/control/checkpoint.ctl"
+        self.checkpoint = Checkpoint(CHECKPOINT_PATH)
+        # and GlobalShutdown
+        self.gs = GlobalShutdown()
+        # get rid of stale gs control flag
+        self.gs.cleanup()
 
         # Register the finisher function for cleanup at exit
         atexit.register(self.finis)
 
+    # return checkpoint
+    def get_checkpoint(self):
+        return self.checkpoint
+    
+    # return gs
+    def get_gs(self):
+        return self.gs
+    
+    # return our checkpoint
+    def get_checkpoint(self):
+        return self.checkpoint
+    
     # Extracted function to set up logging configuration
     def _setup_logging(self, LOG_FILE_NAME, LOG_FORMAT):
         logging.basicConfig(
