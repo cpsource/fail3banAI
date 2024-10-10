@@ -3,6 +3,7 @@ import mysql.connector
 import os
 import sys
 import json
+import requests
 
 class CreateIPResponseTable:
     def __init__(self, conn):
