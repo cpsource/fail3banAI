@@ -53,10 +53,6 @@ class Swan:
     def get_gs(self):
         return self.gs
     
-    # return our checkpoint
-    def get_checkpoint(self):
-        return self.checkpoint
-    
     # Extracted function to set up logging configuration
     def _setup_logging(self, LOG_FILE_NAME, LOG_FORMAT):
         logging.basicConfig(
@@ -146,7 +142,22 @@ class Swan:
         # Create a global event object to signaling threads to stop
         self.stop_event = threading.Event()
         return self.stop_event
-    
+
+    def get_new_connection(self):
+        """Create a connection to the database"""
+        conn = mysql.connector.connect(
+            user=os.getenv('MARIADB_USER_NAME'),
+            password=os.getenv('MARIADB_USER_PASSWORD'),
+            host=os.getenv('MARIADB_USER_HOST'),
+            port=os.getenv('MARIADB_USER_PORT'),
+            database=os.getenv('MARIADB_USER_DATABASE')
+        )
+        if conn is not None:
+            self.logger.debug("Created connection ok")
+        else:
+            self.logger.debug("Failed to create connection")
+        return conn
+        
     def finis(self):
         # Add your cleanup logic here
         print("Finishing up...")
