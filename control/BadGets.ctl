@@ -56,8 +56,6 @@
 /db
 /mysql
 /phpMyAdmin
-/phpmyAdmin
-/phpmyadmin
 /phpmyadmin
 /sql
 /sqlmanager
