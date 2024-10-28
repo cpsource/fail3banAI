@@ -1,6 +1,6 @@
 import time
 import os
-import sys
+#gimport sys
 import threading
 
 # Now thread safe (exiting the with block releases the lock)
