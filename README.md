@@ -1,4 +1,3 @@
-
 ## Announcing fail3banAI
 
 ## What is fail3banAI ?
@@ -14,9 +13,9 @@ It can be run without AI, but you have to manually update various control tables
 The code has the usual goodies you'd expect, such as blacklists and whitelists. It also supports
 either mariaDB or SQLite3 for databases.
 
-### Why do we need this intrustion tool anyway?
+### Why do we need this intrusion tool anyway?
 
-Just take a look at a snipit of my daily log file to see why:
+Just take a look at a snippet of my daily log file to see why:
 
 ```
 United States : <time> <ip> xmlrpc.php[195689]: 'xmlrpc.php' executed by 34.122.181.129.
@@ -24,10 +23,10 @@ Russia        : <time> <ip> sshd[208904]: Connection closed by 78.29.41.83 port 
 Indonesia     : <time> <ip> sshd[208907]: Connection closed by 103.157.114.66 port 37702
 ```
 
-On the first line, someone from the US is probing for the existance of xmlrpc.php. It's used by WordPress
+On the first line, someone from the US is probing for the existence of xmlrpc.php. It's used by WordPress
 and others and is a threat point (that you should remove from your system!)
 
-The second line shows someone in Russia probing sshd. ssh comonly uses port 22 by system administrators
+The second line shows someone in Russia probing sshd. ssh commonly uses port 22 by system administrators
 to manage remote systems.
 
 The third line shows someone from Indonesia trying the same port.
@@ -38,14 +37,14 @@ You can add a table driven threat detector to your system, such as fail2ban, but
 you, the system administrator to continuously monitor for threats and adjust the input tables.
 
 With fail3banAI, none of this is necessary. Your faithful AI assistant is continually monitoring
-your logs to detect intrustion attempts. When one is detected, fail3banAI adjusts itself and
+your logs to detect intrusion attempts. When one is detected, fail3banAI adjusts itself and
 begins monitoring for the new threat immediately.
 
-### Prerequsites
+### Prerequisites
 
 You'll need to signup with openai.com for an API key. This author did so with a pay as you go plan. I deposited
 $20.00 with them, and their system deducts a few pennies from this sum for every request I make.
-When it runs out, I replunish it. For production though, you can use a higher dollar limit, or set the limit so high that you'd never hit it, yet still keep your costs under control.
+When it runs out, I replenish it. For production though, you can use a higher dollar limit, or set the limit so high that you'd never hit it, yet still keep your costs under control.
 
 fail3banAI is quite miserly with AI usage too. It will only make a request if it has not seen a particular threat
 before. Then fail3banAI will ask if the log line is a threat at all. If not, no ban action will be taken, but the
@@ -57,69 +56,68 @@ these into its control structures.
 
 Get the latest copy of fail3banAI as follows:
 
-```
-	cd ~/
-	git clone https://github.com/cpsource/fail3banAI.git
+```bash
+cd ~/
+git clone https://github.com/cpsource/fail3banAI.git
 ```
 
 If you've already done the last step, you can update to the latest baselevel of fail3banAI by:
 
-```
-	cd ~/
-	cd fail3banAI
-	git pull
+```bash
+cd ~/
+cd fail3banAI
+git pull
 ```
 
 Make sure you are running python version 3. Do so by:
 
-```
-	python3 --version
+```bash
+python3 --version
 ```
 
 It's customary to create a virtual python environment, so let's do so:
 
-```
-	cd ~/
-	python3 -m venv openai
+```bash
+cd ~/
+python3 -m venv openai
 ```
 
 Now enter the virtual environment as so:
 
-```
-	cd ~/
-	. openai/bin/activate
+```bash
+cd ~/
+. openai/bin/activate
 ```
 
-Next, be shure you are activated with the previous step, then
+Next, be sure you are activated with the previous step, then
 make sure you have the right number of packages installed, as so:
 
-```
-	cd ~/fail3banAI
-	pip install --upgrade pip
-	pip install -r requirements.txt
+```bash
+cd ~/fail3banAI
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 You must obtain an API key, etc from openai.com. Then, create a key file of the form
 
 ```
-	~/OpenAI-keys.sh
+~/OpenAI-keys.sh
 ```
 
 It should look like this (Note: fail3banAI requires the three OPENAI_ environmental variables
 be defined, as the code uses them.):
 
-```
-	#!/bin/bash
-	export OPENAI_API_KEY="<your-key-here>"
-	export OPENAI_ORGANIZATION_ID="<your organization id here>"
-	export OPENAI_PROJECT_ID="<your project id here>"
-
+```bash
+#!/bin/bash
+export OPENAI_API_KEY="<your-key-here>"
+export OPENAI_ORGANIZATION_ID="<your organization id here>"
+export OPENAI_PROJECT_ID="<your project id here>"
 ```
 
 Be sure to make OpenAI-keys.sh runnable by:
 
-```
-	chmod 755 ~/OpenAI-keys.sh
+```bash
+chmod 755 ~/OpenAI-keys.sh
 ```
 
 ## How to run.
@@ -129,11 +127,10 @@ in this repository.
 
 In any event, do these setup steps first:
 
-```
-	cd ~/
-	. ~/OpenAI-keys.sh
-	. ~/openai/bin/activate
-	cd fail3binAI
-
+```bash
+cd ~/
+. ~/OpenAI-keys.sh
+. ~/openai/bin/activate
+cd fail3banAI
 ```
 
