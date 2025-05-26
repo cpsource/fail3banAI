@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8b49e915-cf6b-4d4f-8048-80c24c0170bc" name="Changes" comment="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings.">
-      <change beforePath="$PROJECT_DIR$/lib/IpSet4.py" beforeDir="false" afterPath="$PROJECT_DIR$/lib/IpSet4.py" afterDir="false" />
-    </list>
+    <list default="true" id="8b49e915-cf6b-4d4f-8048-80c24c0170bc" name="Changes" comment="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -58,7 +56,7 @@
       <option name="presentableId" value="Default" />
       <updated>1727159446859</updated>
       <workItem from="1727159449225" duration="8841000" />
-      <workItem from="1730108051834" duration="3712000" />
+      <workItem from="1730108051834" duration="3769000" />
     </task>
     <task id="LOCAL-00001" summary="Refactor blacklist code and update IDE configurations&#10;&#10;Refactored function names and variable casing for consistency in `lib/blacklist.py`. Commented out unused imports to clean up the code. Enhanced `.idea` configuration files to include SDK details and auto-import settings.">
       <option name="closed" value="true" />
