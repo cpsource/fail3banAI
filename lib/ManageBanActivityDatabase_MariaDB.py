@@ -6,15 +6,16 @@ from datetime import datetime, timedelta
 import logging
 import mysql.connector
 import traceback
+import time
 
 LOG_ID = "fail3ban"
 
 class ManageBanActivityDatabase_MariaDB:
-    def __init__(self, database_connection_pool, log_id=LOG_ID):
+    def __init__(self, conn, log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
-        # Save off connection pool
-        self.database_connection_pool = database_connection_pool
+        # Save conn
+        self.conn = conn
 
         # Register cleanup function to close the database connection
         atexit.register(self.cleanup)
@@ -39,7 +40,7 @@ class ManageBanActivityDatabase_MariaDB:
         
     def _create_activity_table(self):
         """Create the activity_table and the index on ip_address if they don't exist."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         # Check if the table exists
@@ -82,13 +83,35 @@ class ManageBanActivityDatabase_MariaDB:
                 traceback.print_exc()
 
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
     def update_usage_count(self, ip_address):
         """Update the usage_count for the given IP address, or create it if it doesn't exist."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
+        # Get the current timestamp
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Prepare the query to either insert a new record or update if it exists
+        query = '''
+        INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
+        VALUES (%s, 1, %s)
+        ON DUPLICATE KEY UPDATE 
+          usage_count = usage_count + 1,
+          datetime_of_last_ban = VALUES(datetime_of_last_ban)
+        '''
+
+        if True:
+            self.execute_with_retry(cursor, conn, query, (ip_address, current_time))
+        else:
+            # Execute the query with the IP address and current time
+            cursor.execute(query, (ip_address, current_time))
+        # Commit the changes
+        conn.commit()
+        cursor.close()
+        return
+
+        # TODO - Dead Code
         # Check if the IP address exists
         cursor.execute("SELECT usage_count FROM activity_table WHERE ip_address = %s", (ip_address,))
         record = cursor.fetchone()
@@ -116,19 +139,186 @@ class ManageBanActivityDatabase_MariaDB:
         # Commit the changes
         conn.commit()
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
+    # Method to print active transactions
+    def _show_active_transactions(self, conn):
+        try:
+            cursor = conn.cursor()
+
+            # Query to get active transactions from the innodb_trx table
+            query = """
+            SELECT trx_id, trx_started, trx_state, trx_mysql_thread_id, trx_query 
+            FROM information_schema.innodb_trx;
+            """
+            cursor.execute(query)
+            transactions = cursor.fetchall()
+
+            # Print out the transaction details
+            print(f"{'Transaction ID':<20} {'Started':<30} {'State':<15} {'Thread ID':<10} {'Query':<50}")
+            print("-" * 120)
+            for trx in transactions:
+                trx_id = trx[0]
+                trx_started = trx[1]
+                trx_state = trx[2] if trx[2] else 'None'
+                trx_thread_id = trx[3] if trx[3] else 'None'
+                trx_query = trx[4] if trx[4] else 'None'
+
+                print(f"{trx_id:<20} {trx_started:<30} {trx_state:<15} {trx_thread_id:<10} {trx_query:<50}")
+
+        except Exception as e:
+            print(f"Failed to retrieve transactions: {e}")
+        finally:
+            cursor.close()
+        
+    # help debug locks
+    def _show_processlist(self, conn):
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SHOW PROCESSLIST")
+            processlist = cursor.fetchall()
+
+            # Display the process list
+            print(f"{'Id':<6} {'User':<16} {'Host':<24} {'Db':<16} {'Command':<16} {'Time':<6} {'State':<16} {'Info':<16}")
+            print("-" * 120)
+
+            for process in processlist:
+                # Handle None values to prevent format errors
+                process_id = process[0] if process[0] is not None else 'NULL'
+                user = process[1] if process[1] is not None else 'NULL'
+                host = process[2] if process[2] is not None else 'NULL'
+                db = process[3] if process[3] is not None else 'NULL'
+                command = process[4] if process[4] is not None else 'NULL'
+                time = process[5] if process[5] is not None else 'NULL'
+                state = process[6] if process[6] is not None else 'NULL'
+                info = process[7] if process[7] is not None else 'NULL'
+
+                print(f"{process_id:<6} {user:<16} {host:<24} {db:<16} {command:<16} {time:<6} {state:<16} {info:<16}")
+
+        except Exception as e:
+            print(f"Failed to retrieve process list: {e}")
+        finally:
+            cursor.close()
+
+    # Method to show detailed diagnostics (transactions, locks, open tables, etc.)
+    def _show_detailed_diagnostics(self, conn):
+        try:
+            cursor = conn.cursor()
+
+            # 1. SHOW ENGINE INNODB STATUS: Detailed InnoDB information, including locks and transactions
+            cursor.execute("SHOW ENGINE INNODB STATUS")
+            innodb_status = cursor.fetchone()
+            print("\n==== INNODB STATUS ====")
+            print(innodb_status[2])  # InnoDB status is in the third column
+
+            # 2. Check for long-running transactions in information_schema
+            print("\n==== RUNNING TRANSACTIONS ====")
+            cursor.execute("""
+                SELECT * 
+                FROM information_schema.innodb_trx 
+                WHERE trx_state = 'RUNNING'
+            """)
+            running_transactions = cursor.fetchall()
+            if running_transactions:
+                for trx in running_transactions:
+                    print(f"Transaction ID: {trx[0]}, State: {trx[4]}, Time: {trx[6]}, Info: {trx[15]}")
+            else:
+                print("No long-running transactions found.")
+
+            # 3. Information about currently held locks
+            print("\n==== LOCKS ====")
+            cursor.execute("SELECT * FROM information_schema.innodb_locks")
+            locks = cursor.fetchall()
+            if locks:
+                for lock in locks:
+                    print(f"Lock ID: {lock[0]}, Lock Mode: {lock[3]}, Lock Type: {lock[4]}, Locked Table: {lock[2]}")
+            else:
+                print("No locks found.")
+
+            # 4. Open tables (check if many tables are open)
+            print("\n==== OPEN TABLES ====")
+            cursor.execute("SHOW STATUS LIKE 'Open_tables'")
+            open_tables = cursor.fetchone()
+            print(f"Open Tables: {open_tables[1]}")
+
+            # 5. Check for the number of active connections
+            print("\n==== THREADS CONNECTED ====")
+            cursor.execute("SHOW STATUS LIKE 'Threads_connected'")
+            threads_connected = cursor.fetchone()
+            print(f"Threads Connected: {threads_connected[1]}")
+
+        except Exception as e:
+            print(f"Failed to retrieve detailed diagnostics: {e}")
+        finally:
+            cursor.close()
+            
+    # we will use this if we have to
+    def execute_with_retry(self, cursor, conn, query, params, retries=3, delay=2):
+        for attempt in range(retries):
+            try:
+                cursor.execute(query, params)
+                conn.commit()
+                print(f"execute_with_retry, completed on attempt {attempt} ...")
+                return True
+            except mysql.connector.errors.DatabaseError as e:
+                print(f"execute_with_retry, received e.errno = {e.errno}")
+                if e.errno == 1205:  # Lock wait timeout exceeded
+                    self._show_processlist(conn)
+                    self._show_detailed_diagnostics(conn)
+                    self._show_active_transactions(conn)
+
+                    if attempt < retries - 1:
+                        print(f"execute_with_retry: sleeping {delay}, attempt = {attempt}")
+                        time.sleep(delay)  # Wait before retrying
+                    else:
+                        # Out of retries
+                        raise TimeoutError("Database Retries exhausted") from e
+                else:
+                    # Not error 1205
+                    raise
+                
+        # If all retries are exhausted, raise the exception
+        raise Exception("Database Retries exhausted")
+            
     def update_time(self, ip_address):
         """Update the datetime_of_last_ban for the given IP address, or create it if it doesn't exist."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        #current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # mysql.connector will convert ???
+        current_time = datetime.now()
 
+        # Prepare the query to insert or update based on existence
+        query = '''
+        INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
+        VALUES (%s, 1, %s)
+          ON DUPLICATE KEY UPDATE 
+          datetime_of_last_ban = VALUES(datetime_of_last_ban)
+        '''
+
+        # Execute the query in a single step
+        if True:
+            self.execute_with_retry(cursor, conn, query, (ip_address, current_time))
+        else:               
+            cursor.execute(query, (ip_address, current_time))
+        conn.commit()
+        cursor.close()
+        return
+
+        # This one will update the usage count if necessary too
+        query = '''
+        INSERT INTO activity_table (ip_address, usage_count, datetime_of_last_ban)
+        VALUES (%s, 1, %s)
+        ON DUPLICATE KEY UPDATE 
+          usage_count = usage_count + 1,
+          datetime_of_last_ban = VALUES(datetime_of_last_ban)
+        '''
+
+        # TODO - dead code
         # Check if the IP address exists
         cursor.execute("SELECT id FROM activity_table WHERE ip_address = %s", (ip_address,))
         record = cursor.fetchone()
-
+    
         if record:
             # If the IP address exists, update the datetime_of_last_ban
             update_query = '''
@@ -149,11 +339,10 @@ class ManageBanActivityDatabase_MariaDB:
 
         conn.commit()
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
     def show(self):
         """Display all records from the activity_table along with the age in days."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM activity_table")
@@ -170,11 +359,10 @@ class ManageBanActivityDatabase_MariaDB:
             print("No records found in the activity table.")
 
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
     def scan_for_expired(self, days_old=30):
         """Scan for records older than the specified number of days and delete them."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         cutoff_date = (datetime.now() - timedelta(days=days_old)).strftime('%Y-%m-%d %H:%M:%S')
@@ -191,11 +379,10 @@ class ManageBanActivityDatabase_MariaDB:
             print(f"No records older than {days_old} days found.")
 
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
     def delete_record(self, record_id):
         """Delete a record from the activity_table by its ID."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -208,13 +395,30 @@ class ManageBanActivityDatabase_MariaDB:
             traceback.print_exc()
 
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
+    # handle any wacko date format, in any event, return proper datetime we can use in comparison
+    def parse_date(self, date_input):
+        if isinstance(date_input, datetime):
+            # If it's already a datetime object, return it
+            return date_input
+        elif isinstance(date_input, str):
+            try:
+                # Try parsing the string with fractional seconds
+                return datetime.strptime(date_input, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                try:
+                    # If fractional seconds are not present, parse without them
+                    return datetime.strptime(date_input, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    raise ValueError("Unsupported date format")
+        else:
+            raise TypeError("Input must be a string or datetime object")
+    
     def is_in_window(self, ip_addr, N=20):
         """Check if the record for the given IP address exists and is within N minutes old."""
         print(f"Checking if IP address {ip_addr} is within {N} minutes window...")
 
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -233,13 +437,8 @@ class ManageBanActivityDatabase_MariaDB:
                 WHERE ip_address = %s
                 ''', (current_date_time, new_usage_count, ip_addr))
 
-                try:
-                    # Try to parse with fractional seconds
-                    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S.%f')
-                except ValueError:
-                    # If fractional seconds are not present, parse without them
-                    last_ban_time = datetime.strptime(last_ban_time_str, '%Y-%m-%d %H:%M:%S')
-
+                last_ban_time = self.parse_date(last_ban_time_str)
+                
                 time_difference = datetime.now() - last_ban_time
 
                 if time_difference.total_seconds() <= N * 60:
@@ -263,11 +462,10 @@ class ManageBanActivityDatabase_MariaDB:
 
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def _create_not_bad_get_string(self):
         """Create the not_bad_get_string_table if it doesn't exist."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         # Check if the table exists
@@ -294,11 +492,10 @@ class ManageBanActivityDatabase_MariaDB:
                 traceback.print_exc()
             finally:
                 cursor.close()
-                self.database_connection_pool.return_connection(conn)
 
     def put_not_bad_get_string(self, ip_address, not_bad_get_string):
         """Insert or update a record in not_bad_get_string_table."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         insert_query = '''
@@ -317,11 +514,10 @@ class ManageBanActivityDatabase_MariaDB:
             traceback.print_exc()
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def show_not_bad_get_string_table(self):
         """Display all records in not_bad_get_string_table."""
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -338,7 +534,6 @@ class ManageBanActivityDatabase_MariaDB:
             traceback.print_exc()
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def get_activity_records(self, callback):
         """
@@ -348,7 +543,7 @@ class ManageBanActivityDatabase_MariaDB:
             callback (function): A function to process each record.
         """
         # Borrow a connection from the pool
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         # Define the query to fetch records from activity_table
@@ -370,7 +565,6 @@ class ManageBanActivityDatabase_MariaDB:
 
         # Cleanup
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
             
     def cleanup(self):
         pass

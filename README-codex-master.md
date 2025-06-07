@@ -1,0 +1,195 @@
+# Codex Master
+
+This repository is the master branch of **fail3banAI**, a Python project that provides tools for log monitoring, IP address banning, and integration with services like ipset and AbuseIPDB.  The code base contains experimental scripts for regex-based log parsing, OpenAI requests, database utilities, and firewall management.
+
+## Directory Overview
+- `ai/` – prototype scripts for pattern matching, OpenAI integration and log scanning experiments.
+- `control/` – configuration files and temporary helpers.
+- `lib/` – main library modules for managing blacklists, whitelists, iptables rules, database connections, parselets and tasklets.
+- `tmp`, `tmp1`, `tmp2/` – assorted temporary utilities and tests.
+- `ufw-blocklist/` – helpers for interacting with firewall blocklists.
+- `util/` – command-line utilities and scripts.
+- `wastebasket/` – deprecated or experimental modules.
+- `fail3ban-server.py` – the main server entry point demonstrating log monitoring logic.
+
+Below is a list of each Python file in this branch with a short description derived from the first comment or docstring in the file.
+
+- **ai/01-mini-match-example.py**: process = subprocess.Popen(['journalctl', '-f', '-u', 'sshd'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+- **ai/01-mini-match-json1-example.py**: Sample JSON1 data
+- **ai/01-mini-match-json2-example.py**: !/usr/bin/env python3
+- **ai/01-test.py**: No description found
+- **ai/02-mini-match-json2-example.py**: !/usr/bin/env python3
+- **ai/02-request.py**: This example uses a plain old https request, and returns
+- **ai/03-request.py**: Your OpenAI API key
+- **ai/04-request.py**: This is the default and can be omitted
+- **ai/ScanClass.py**: Initialize an empty list to hold method entry points
+- **ai/buildMdFile.py**: Note:
+- **ai/ipv6_to_4.py**: Check if the address is an IPv4-mapped IPv6 address (e.g., ::ffff:192.168.0.1)
+- **ai/is_jail.py**: Define the regex pattern to extract date, jail, and IP address
+- **ai/scan_connection_closed.py**: Regex pattern to match both IPv4 and IPv6 addresses and capture the user if present
+- **ai/scan_invalid_user.py**: Regex pattern to match both IPv4 and IPv6 addresses and capture the invalid user
+- **ai/simpleq.py**: No description found
+- **ai/simpleq1.py**: Subroutine 1: Match the date
+- **ai/simpleq2.py**: Subroutine 1: Match the date
+- **ai/simpleq3.py**: Subroutine 1: Match the date
+- **ai/simpleq4.py**: Dictionary to store subroutines
+- **ai/simpleq5.py**: Dictionary to store subroutines
+- **ai/simpleq6.py**: Dictionary to store subroutines
+- **ai/smallcase.py**: Define the regex pattern to extract the IP address
+- **ai/smaltst.py**: No description found
+- **ai/tst.py**: Print the remaining string starting from the given position
+- **ai/unimport.py**: Example usage
+- **ai/upload-file.py**: Initialize the chat class, retrieving the API key from the environment and setting the model.
+- **ai/upload1-file.py**: Main function that handles command-line arguments
+- **control/tmp/zz3.py**: No description found
+- **fail3ban-server.py**: fail3ban-server
+- **lib/AbuseIPDB.py**: all things Abuse_IPDB
+- **lib/BadGets.py**: if this goes to zero, check the filepath for change
+- **lib/BlackList.py**: BlackList.py
+- **lib/Checkpoint.py**: gimport sys
+- **lib/CountryCodes.py**: Initialize the dictionary of country codes to country names
+- **lib/FinalDisposer.py**: FinalDisposer - We are at the end of the processing line for an ip_address. We
+- **lib/GlobalShutdown.py**: obsolete - TODO remove
+- **lib/HashedSet.py**: Dynamically import the hashed_set from the given file
+- **lib/IpSet.py**: Initialize both IpSet4 and IpSet6
+- **lib/IpSet4.py**: import sys
+- **lib/IpSet6.py**: from xxlimited_35 import error
+- **lib/ManageBanActivityDatabase_MariaDB.py**: Obtain logger
+- **lib/ManageIpset.py**: Check if ipset exists
+- **lib/ManageIpset4.py**: self.seedlist = self.project_root + "/control/" + "blacklist-4.ctl"
+- **lib/ManageIpset6.py**: Check if executable ipset exists
+- **lib/Maria_DB.py**: Initializes the database connection pool.
+- **lib/MessageManager.py**: Stub for later expansion, currently prints the message
+- **lib/PreviousJournalctl.py**: PreviousJournalctl.py
+- **lib/SectionParser.py**: Strip whitespace from the line
+- **lib/ShortenJournalString.py**: Regex patterns for the optional fields
+- **lib/Swan.py**: Swan - swiss army knife of methods
+- **lib/WhiteList.py**: whitelist.py
+- **lib/WorkManager.py**: Create a global event object to signaling threads to stop
+- **lib/ZDrop.py**: obsoleted - TODO - remove
+- **lib/__init__.py**: No description found
+- **lib/config.py**: register a cleanup
+- **lib/expand_ipv6_address-test.py**: Check if it's an IPv6 address
+- **lib/f3b_HashedSet.py**: Dynamically import the hashed_set from the given file
+- **lib/f3b_SectionParser.py**: Strip whitespace from the line
+- **lib/f3b_config.py**: register a cleanup
+- **lib/f3b_fail3baninit.py**: Initialize an empty dictionary to store the variables
+- **lib/f3b_iptables.py**: iptables.py
+- **lib/f3b_matchRule.py**: Preprocess and match a log line using the jail_regex."""
+- **lib/f3b_monitorJournalctl.py**: Start monitoring the journal logs in real time."""
+- **lib/f3b_ruleset.py**: Initialize an empty array to store filename, enabled flag, and associated regex rules
+- **lib/fail3baninit.py**: Initialize an empty dictionary to store the variables
+- **lib/iptables.py**: iptables.py
+- **lib/matchRule.py**: Preprocess and match a log line using the jail_regex."""
+- **lib/monitorJournalctl.py**: Start monitoring the journal logs in real time."""
+- **lib/parselets/ParseletManager.py**: Walk through the directory tree below root_dir and find all parselets
+- **lib/parselets/apache2/access-log/Dynamic_Importer_apache2_access_log.py**: Add the directory to the Python search path
+- **lib/parselets/apache2/access-log/Parselet_GET.py**: One might wonder why I broke out the parsing of the ip_address. Well, re can't handle it.
+- **lib/parselets/apache2/access-log/Parselet_HEAD.py**: One might wonder why I broke out the parsing of the ip_address. Well, re can't handle it.
+- **lib/parselets/apache2/access-log/Parselet_OPTIONS.py**: One might wonder why I broke out the parsing of the ip_address. Well, re can't handle it.
+- **lib/parselets/apache2/access-log/Parselet_POST.py**: One might wonder why I broke out the parsing of the ip_address. Well, re can't handle it.
+- **lib/parselets/apache2/access-log/Parselet_Probe_Attack.py**: import ipaddress
+- **lib/parselets/apache2/access-log/__init__.py**: No description found
+- **lib/parselets/apache2/access-log/zz.py**: Define the regex pattern for IPv4 and IPv6 addresses
+- **lib/parselets/apache2/access-log/zz1.py**: Define the regex pattern for IPv4 and IPv6 addresses
+- **lib/parselets/apache2/access-log/zz2.py**: Define the regex pattern for IPv4 and IPv6 addresses
+- **lib/parselets/apache2/access-log/zz3.py**: Define the regex pattern for IPv4 and IPv6 addresses
+- **lib/parselets/apache2/access-log/zz4.py**: Regular expression pattern
+- **lib/parselets/apache2/access-log/zz5.py**: Scan the directory for Python files of the form Parselet_*.py and import them
+- **lib/parselets/apache2/access-log/zz6.py**: Scan the directory for Python files of the form Parselet_*.py and import them
+- **lib/parselets/apache2/error-log/Parselet_htaccess.py**: Regex pattern to extract datetime, pid, script, and both IPv4 and IPv6 addresses
+- **lib/ruleset.py**: Initialize an empty array to store filename, enabled flag, and associated regex rules
+- **lib/sqlite3-dead-code/ManageBanActivityDatabase.py**: Obtain logger
+- **lib/sqlite3-dead-code/SQLiteConnectionPool.py**: Configure logging
+- **lib/sqlite3-dead-code/bigger_sqlite-test.py**: Create 5 threads, pound on sqlite3 and look for lock errors
+- **lib/sqlite3-dead-code/cursor_sqlite3-test.py**: Connect to the database
+- **lib/sqlite3-dead-code/sqlite3_db.py**: sqlite3_db.py
+- **lib/tasklets/TaskletManager.py**: Walk through the directory tree below root_dir and find all tasklets
+- **lib/tasklets/Tasklet_Console.py**: Run the ManageBanActivityDatabase.py show command with an optional filter argument."""
+- **lib/tasklets/Tasklet_ZDrop.py**: Define the FAIL3BAN_PROJECT_ROOT environment variable or path
+- **lib/tasklets/Tasklet_apache2_access_log.py**: Tasklet_apache2_accedss_log.py
+- **lib/tasklets/Tasklet_apache2_error_log.py**: Tasklet_apache2_error_log.py
+- **lib/tasklets/Tasklet_hello_world.py**: Tasklets are small routines that are kicked off from our thread pool, because
+- **lib/tasklets/Tasklet_journalctl.py**: Register the finisher function for cleanup at exit
+- **lib/tasklets/Tasklet_notify_abuseIPDB.py**: Tasklet_notify_abuseIPDB.py
+- **lib/tasklets/zz.py**: Run the ManageBanActivityDatabase.py show command with an optional filter argument."""
+- **lib/tmp/mariadb-test.py**: load dotenv
+- **lib/tmp/mariadb.py**: Note: To use this class, you must export DB_PASSWORD as something or the other
+- **lib/tmp/zz.py**: Original date string
+- **lib/tmp/zz1.py**: Regex pattern to extract datetime, pid, script, and both IPv4 and IPv6 addresses
+- **lib/tmp/zz10.py**: Configure logging
+- **lib/tmp/zz11.py**: Update the datetime_of_last_ban for the given IP address."""
+- **lib/tmp/zz14.py**: Dummy logger setup
+- **lib/tmp/zz15.py**: Start the telnet server and listen for a connection."""
+- **lib/tmp/zz16.py**: Start the telnet server and listen for a connection."""
+- **lib/tmp/zz17.py**: Start the telnet server and listen for a connection."""
+- **lib/tmp/zz2.py**: Regex pattern to extract datetime, pid, script, and both IPv4 and IPv6 addresses
+- **lib/tmp/zz20.py**: Define valid Ubuntu file name characters (alphanumeric, dot, dash, underscore)
+- **lib/tmp/zz21.py**: Initialize the class with a database connection pool."""
+- **lib/tmp/zz22.py**: Initialize the class with a database connection pool."""
+- **lib/tmp/zz3.py**: Dynamically import the module using importlib
+- **lib/tmp/zz4.py**: Dynamically import the module using importlib
+- **lib/tmp/zz5.py**: No description found
+- **lib/tmp/zz6.py**: Stub for later expansion, currently prints the message
+- **lib/tmp/zz7.py**: Stub for later expansion, currently prints the message
+- **lib/tmp/zz8.py**: Configure logging
+- **lib/tmp/zz9.py**: Configure logging
+- **lib/tst.py**: line =  "Sep 19 08:30:12 ip-172-26-10-222 sshd[27642]: Disconnected from user ubuntu 98.97.16.226 port 22216:22"
+- **lib/zMariaDBConnectionPool.py**: Manage a database pool for mariaDB
+- **tmp/AbuseIPDB.py**: and some magic numbers from logging showing their log levels
+- **tmp/ManageIpset.py**: Check if ipset exists
+- **tmp/ManageIpset4.py**: self.seedlist = self.project_root + "/control/" + "blacklist-4.ctl"
+- **tmp/ManageIpset6.py**: Check if executable ipset exists
+- **tmp/check_endpoint.py**: gives back  isWhiteListed: true, false, null
+- **tmp/chk.py**: Dictionaries to hold the IP addresses from str1 and str2
+- **tmp/ipv6-chk.py**: Defining the api-endpoint
+- **tmp/parse_logs.py**: !/usr/bin/env python3
+- **tmp/playwithjson.py**: Convert ISO 8601 time string to a Python UTC datetime format"""
+- **tmp/report-in.py**: Defining the api-endpoint
+- **tmp/report_endpoint.py**: Defining the api-endpoint
+- **tmp/time-8601.py**: Get the current time (UTC) and convert it to the local time zone
+- **tmp/tst.py**: and some magic numbers from logging showing their log levels
+- **tmp1/Tasklet_hello_world.py**: Tasklets are small routines that are kicked off from our thread pool, because
+- **tmp1/WorkManager.py**: Assuming WorkManager and WorkUnit classes are already defined as above
+- **tmp1/WorkManager1.py**: Create a WorkManager instance
+- **tmp1/WorkManager2.py**: Create a WorkManager instance
+- **tmp1/tasklet_tst.py**: 2023-10-18T11:25:11-04:00
+- **tmp2/openai-request.py**: Convert table name and columns
+- **tmp2/request-1.py**: No description found
+- **tmp2/request-2.py**: No description found
+- **tmp2/request-3.py**: No description found
+- **ufw-blocklist/BLACKLIST-Endpoint.py**: Defining the api-endpoint
+- **ufw-blocklist/CHECK-Endpoint.py**: Defining the api-endpoint
+- **ufw-blocklist/ManageIpset.py**: Check if ipset exists
+- **util/CreateIPResponseTable.py**: cursor = self.conn.cursor()
+- **util/Parselet_GETenv.py**: Regex pattern to extract IP address, timestamp, HTTP method, requested file, response code, bytes sent, and user agent
+- **util/ban_bad_access.py**: ban_bad_access.py
+- **util/build-blacklist-4.py**: build-blacklist-4.py
+- **util/build-blacklist-6.py**: build-blacklist-6.py
+- **util/check_ip.py**: Check if an IP address was provided as a command-line argument
+- **util/chk-single-ip.py**: Set up argument parser
+- **util/exclusive_sqlite3-test.py**: Start an exclusive transaction
+- **util/finder.py**: !/home/ubuntu/openai/bin/python3
+- **util/generate_hashed_set.py**: This program reads 'ipsum.4.txt' and generates 'hashed_set.py' with the set of IPs.
+- **util/ipv4-6.py**: Perform a reverse DNS lookup to get the domain name from the IPv4 address
+- **util/load-master-blacklist.py**: Load our python3 paths
+- **util/misc/add_column.py**: List of valid SQLite3 field types
+- **util/misc/contains_host-test.py**: Returns True if the string contains '<HOST>', else False."""
+- **util/misc/convert-db-sqlite3-to-mariadb.py**: Load dotenv
+- **util/misc/datetime-cvt.py**: Define the format of the input string
+- **util/misc/debug_print-test.py**: Helper method to print debug messages with different error levels.
+- **util/misc/dt.py**: Get the current year and append it to the date string
+- **util/misc/exception-test.py**: Custom exception class
+- **util/misc/hashed_set.py**: No description found
+- **util/misc/listen-on-port-3306-and-report.py**: Create a TCP/IP socket
+- **util/misc/match_rule-test.py**: Preprocess the jail_regex to replace <HOST> with the host-matching regex
+- **util/misc/show-OPTIONS.py**: Display allowed methods and status code
+- **util/misc/tasklet_tst.py**: Load our python3 paths
+- **util/misc/tst.py**: load dotenv - contains ChatGPT Keys
+- **util/monitor-fail3ban.py**: !/usr/bin/env python3
+- **util/remove_iptables_rules.py**: Function to list iptables rules with line numbers for a specific chain
+- **util/update_ip_info-A.py**: Connect to MariaDB
+- **util/update_ip_info.py**: Function to update or insert IP info
+- **util/who-am-i.py**: !/usr/bin/python3
+- **wastebasket/DebugPrint.py**: Initialize DebugPrint and get the system_log_level from the config."""
+- **wastebasket/f3b_DebugPrint.py**: Initialize DebugPrint and get the system_log_level from the config."""

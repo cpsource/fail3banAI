@@ -17,7 +17,7 @@ sys.path.append(tasklet_path)
 import WorkManager
 import MessageManager
 from Tasklet_notify_abuseIPDB import Tasklet_notify_abuseIPDB
-from ManageBanActivityDatabase import ManageBanActivityDatabase
+from ManageBanActivityDatabase_MariaDB import ManageBanActivityDatabase_MariaDB
 
 #
 # We'll get lines of this sort from journalctl.
@@ -26,7 +26,7 @@ from ManageBanActivityDatabase import ManageBanActivityDatabase
 # Sep 25 14:53:52 ip-172-26-10-222 kernel: zDROP ufw-blocklist-input: IN=ens5 OUT= MAC=0a:ff:d3:68:68:11:0a:9b:ae:dc:47:03:08:00 SRC=110.175.220.250 DST=172.26.10.222 LEN=60 TOS=0x08 PREC=0x20 TTL=46 ID=41887 DF PROTO=TCP SPT=57801 DPT=22 WINDOW=29200 RES=0x00 SYN URGP=0
 
 class Tasklet_ZDrop:
-    def __init__(self, work_controller, message_manager, database_connection_pool):
+    def __init__(self, work_controller, message_manager, conn):
         # Create a named logger consistent with the log file name
         self.logger = logging.getLogger("fail3ban")
         # and a work manager
@@ -35,11 +35,11 @@ class Tasklet_ZDrop:
         # and save message_manager
         self.message_manager = message_manager
         # and save connection_pool
-        self.database_connection_pool = database_connection_pool
+        self.conn = conn
         # a callback
         self.task_callback = lambda result: print(f"Task completed with result: {result}")
         # and a ManageBanActivityDatabase - manages 
-        self.mba = ManageBanActivityDatabase(self.database_connection_pool)
+        self.mba = ManageBanActivityDatabase_MariaDB(self.conn)
 
     def shutdown(self):
         pass
@@ -201,9 +201,9 @@ def wait_and_process(data, **kwargs):
     # get args from kwargs
     work_controller = kwargs.get('work_controller', None)
     message_manager = kwargs.get('message_manager', None)
-    database_connection_pool = kwargs.get('database_connection_pool', None)
+    conn            = kwargs.get('conn', None)
 
-    tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager, database_connection_pool)
+    tasklet_zdrop = Tasklet_ZDrop(work_controller, message_manager, conn)
     
     while True:
         message_unit = message_manager.dequeue()

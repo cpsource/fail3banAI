@@ -10,7 +10,7 @@ LOG_ID = "fail3ban"
 
 class Maria_DB:
 
-    def __init__(self, database_connection_pool, log_id=LOG_ID):
+    def __init__(self, conn, log_id=LOG_ID, create_ban_table=False):
         """
         Initializes the database connection pool.
         """
@@ -18,14 +18,15 @@ class Maria_DB:
         self.logger = logging.getLogger(log_id)
         # Register a cleanup function
         atexit.register(self.cleanup)
-        # Save our pool
-        self.database_connection_pool = database_connection_pool
+        # Save our connection
+        self.conn = conn
         
         try:
             # Create tables if they don't exist
-            self._create_ban_table()
-            self._create_threat_table()
-            self.logger.info("Created ban and threat tables successfully.")
+            if create_ban_table is True:
+                self._create_ban_table()
+                self._create_threat_table()
+                self.logger.info("Created ban and threat tables successfully.")
         except mysql.connector.Error as e:
             self.logger.error(f"An error occurred while creating ban and threat tables: {e}")
             # dump the stack
@@ -36,7 +37,7 @@ class Maria_DB:
         """Create the ban_table if it doesn't already exist."""
 
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         create_table_query = '''
@@ -61,13 +62,12 @@ class Maria_DB:
         finally:
             # Return the connection we had on loan
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
             
     def _create_threat_table(self):
         """Create the threat_table if it doesn't already exist."""
 
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         create_threat_query = '''
@@ -91,7 +91,6 @@ class Maria_DB:
         finally:
             # Return the connection we had on loan
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
             
     #
     # Handle threat table
@@ -101,7 +100,7 @@ class Maria_DB:
         """Reset hazard_level to 'unk' for rows with hazard_level = 'no'."""
 
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -121,13 +120,12 @@ class Maria_DB:
         finally:
             # Return the connection we had on loan
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def insert_or_update_threat(self, shortened_string, hit_count, hazard_level):
         """Insert or update a threat in the threat_table."""
 
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -145,13 +143,12 @@ class Maria_DB:
             traceback.print_exc()
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def fetch_threat_level(self, shortened_string):
         """Fetch the threat level and hit count for a given shortened_string."""
 
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -184,13 +181,12 @@ class Maria_DB:
             return (False, None)
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def show_threats(self):
         """Show all records from the threat_table."""
 
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         try:
@@ -212,7 +208,6 @@ class Maria_DB:
             traceback.print_exc()
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     #
     # Handle ban table
@@ -221,7 +216,7 @@ class Maria_DB:
         """Add or update a ban record in the ban_table."""
         
         # Borrow a connection
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         # Parse and expand the IP address (IPv6 addresses to full form)
@@ -274,7 +269,6 @@ class Maria_DB:
             raise
         finally:
             cursor.close()
-            self.database_connection_pool.return_connection(conn)
 
     def is_banned_for_life(self, ip_address):
         """
@@ -288,10 +282,11 @@ class Maria_DB:
                   False if not banned for life,
                   None if the IP address is not in the database.
         """
+
         conn = None
         try:
             # Borrow a connection from the pool
-            conn = self.database_connection_pool.get_connection()
+            conn = self.conn
             cursor = conn.cursor()
 
             # Query to check if the IP address is banned for life (ban_expire_time is NULL)
@@ -317,9 +312,7 @@ class Maria_DB:
             print(f"Error occurred while checking the ban: {e}")
             return None
         finally:
-            if conn:
-                cursor.close()
-                self.database_connection_pool.return_connection(conn)
+            cursor.close()
 
     # Example callback function
     # def process_record(record):
@@ -333,7 +326,7 @@ class Maria_DB:
         Args:
             callback (function): A function to process each record.
         """
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         current_time = datetime.now()
@@ -364,7 +357,6 @@ class Maria_DB:
 
         # cleanup
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
 
     # Example callback function
     # def process_record(record):
@@ -378,7 +370,7 @@ class Maria_DB:
         Args:
             callback (function): A function to process each record.
         """
-        conn = self.database_connection_pool.get_connection()
+        conn = self.conn
         cursor = conn.cursor()
 
         query = '''
@@ -407,16 +399,18 @@ class Maria_DB:
 
         # cleanup
         cursor.close()
-        self.database_connection_pool.return_connection(conn)
         
     def show_database(self):
         """Print all records in the database in a human-readable format, and show if the ban has expired."""
+        conn = self.conn
+        cursor = conn.cursor()
+        
         current_time = datetime.now()
 
         query = '''
         SELECT id, ip_address, jail, usage_count, ban_expire_time FROM ban_table
         '''
-        self.cursor.execute(query)
+        cursor.execute(query)
         records = self.cursor.fetchall()
 
         if records:
@@ -437,14 +431,22 @@ class Maria_DB:
         else:
             print("No records found in the database.")
 
+        # cleanup
+        cursor.close()
+
     def remove_record(self, ip_addr):
         """Remove a record from the ban_table based on ip_address and jail_name."""
+        conn = self.conn
+        cursor = conn.cursor()
+
         delete_query = '''
         DELETE FROM ban_table WHERE ip_address = %s
         '''
-        self.cursor.execute(delete_query, (ip_addr,))
-        self.connection.commit()
+        cursor.execute(delete_query, (ip_addr,))
+        conn.commit()
         print(f"Record for IP {ip_addr} in jail {jail_name} has been removed.")
+        # cleanup
+        cursor.close()
                 
     def cleanup(self):
         pass

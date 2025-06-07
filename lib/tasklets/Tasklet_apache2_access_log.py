@@ -36,6 +36,9 @@ if p not in sys.path:
 p = f"{project_root}" + "/lib/parselets"
 if p not in sys.path:
     sys.path.insert(1,p)
+p = f"{project_root}" + "/lib/parselets/apache2/access-log"
+if p not in sys.path:
+    sys.path.insert(1,p)
 p = f"{project_root}" + "/lib/tasklets"
 if p not in sys.path:
     sys.path.insert(2,p)
@@ -43,7 +46,8 @@ if p not in sys.path:
 print(sys.path)
 
 # database pool
-import MariaDBConnectionPool
+#import MariaDBConnectionPool
+
 # This class does the actual notification work
 import AbuseIPDB
 # manage ban activity deatabase
@@ -62,12 +66,12 @@ import WorkManager
 LOG_ID = "fail3ban"
 
 class Tasklet_apache2_access_log:
-    def __init__(self, database_connection_pool, parselet, work_controller, log_id=LOG_ID):
+    def __init__(self, conn, parselet, work_controller, log_id=LOG_ID):
         # Obtain logger
         self.logger = logging.getLogger(log_id)
         self.wctlr = work_controller
         self.abi = AbuseIPDB.AbuseIPDB()  # AbuseIPDB instance for reporting
-        self.mba = ManageBanActivityDatabase_MariaDB(database_connection_pool,LOG_ID) # TODO - two loggers?
+        self.mba = ManageBanActivityDatabase_MariaDB(conn,LOG_ID) # TODO - two loggers?
         self.parselet = parselet
         self.badgets = BadGets.BadGets()
 
@@ -164,7 +168,7 @@ class Tasklet_apache2_access_log:
         # report to AbuseIPDB ???
         #
 
-        # $$$ just for test - False will report everything to AbuseIPDB
+        # just for test - False will report everything to AbuseIPDB
         if True:
             # within 15 minute window ??? - if True, then we can't send do AbuseIPDB
             window_size = 15
@@ -203,7 +207,7 @@ class Tasklet_apache2_access_log:
             # and lower our priority a bit for a bit - Cheezy Python3, hack, hack, hack !!!
             time.sleep(.01)
             
-        # done for now $$$
+        # done for now
         return True
 
     # We should hang here basically forever
@@ -213,7 +217,7 @@ class Tasklet_apache2_access_log:
         
         try:
             with open(file_path, 'r') as log_file:
-                # $$$ - for production, enable this line
+                # for production, enable this line
                 log_file.seek(0, os.SEEK_END)  # Go to the end of the file
                 last_inode = os.stat(file_path).st_ino
 
@@ -237,20 +241,20 @@ class Tasklet_apache2_access_log:
             self.logger.error(f"Error monitoring log: {e}")
             # dump the stack
             traceback.print_exc()
-ww
+
 # Thread - Main entry point from thread pool mgr
 def run_tasklet_apache2_access_log(**kwargs):
 
     # get logging setup early
     logger = kwargs['logger']
-
+    
     if True:
         # for debug, lets display these
         for key, value in kwargs.items():
             logger.debug(f"{key} = {value}")
     
     # database link
-    database_connection_pool = kwargs['database_connection_pool']
+    self.conn = kwargs['conn']
     # lets check our arguments, none are optional
     if 'stop_event' not in kwargs:
         logger.warning("no stop_event. Exiting ...")
@@ -259,13 +263,13 @@ def run_tasklet_apache2_access_log(**kwargs):
         stop_event = kwargs['stop_event']
     
     # parselet
-    parselet = kwargs['parselet']
+    parselet = Parselet_GET.Parselet_GET()
 
     # work controller
     work_controller = kwargs['work_controller']
     
     # create our main class
-    taal = Tasklet_apache2_access_log(database_connection_pool, parselet, work_controller)
+    taal = Tasklet_apache2_access_log(conn, parselet, work_controller)
 
     # monitor this file
     file_path = "/var/log/apache2/access.log"

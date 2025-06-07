@@ -8,7 +8,8 @@ class IpSet:
         self.ipset4 = IpSet4(ipsetname4)
         self.ipset6 = IpSet6(ipsetname6)
 
-    def is_ipv6(self, addr):
+    @staticmethod
+    def is_ipv6(addr):
         """Helper method to determine if the address is IPv6"""
         return isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address)
 

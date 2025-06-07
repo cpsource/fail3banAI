@@ -172,7 +172,7 @@ class MariaDBConnectionPool:
         temp_list = []
         while not self.pool.empty():
             conn = self.pool.get()
-            print(f"Connection in pool: {conn}")
+            self.logger.debug(f"Connection in pool: {conn}")
             temp_list.append(conn)
         
         # Return all connections to the pool
