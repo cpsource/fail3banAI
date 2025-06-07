@@ -5,3 +5,4 @@ zz
 *.log
 fail3ban_server.db
 .env
+aide
